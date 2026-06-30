@@ -3,10 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { AUTH_CONFIG } from '../config/authConfig';
 
-// =========================================================================
-// ⚙️ KHU VỰC CẤU HÌNH TẬP TRUNG (DỄ DÀNG CONFIG HỆ THỐNG TẠI ĐÂY)
-// =========================================================================
-
 const Register = () => {
     const navigate = useNavigate();
 
