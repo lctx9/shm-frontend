@@ -27,21 +27,42 @@ export default function TeamExplorer() {
         }
     };
 
-    const handleJoinTeam = async (e) => {
+    // 1. Hàm xử lý cho đội PUBLIC (Không cần pass, gửi yêu cầu thẳng)
+    const handleJoinPublic = async (teamId) => {
+        try {
+            await axiosClient.post(`/teams/${teamId}/join-request`);
+
+            alert('✅ Đã gửi yêu cầu gia nhập thành công! Đang chờ Leader duyệt.');
+            fetchTeams();
+        } catch (err) {
+            // Lấy đúng lỗi từ Backend trả về
+            const errorMsg = err.message || err.result || 'Có lỗi xảy ra!';
+            alert('Chi tiết lỗi: ' + errorMsg);
+        }
+    };
+
+    // 2. Hàm xử lý cho đội PRIVATE (Nhập pass qua Modal)
+    const handleJoinPrivate = async (e) => {
         e.preventDefault();
         if (!selectedTeam) return;
 
         try {
-            // Gọi API xin gia nhập đội
-            await axiosClient.post(`/teams/${selectedTeam.id}/join`, {
+            // Gọi đúng API /join-private của Backend
+            await axiosClient.post(`/teams/${selectedTeam.id}/join-private`, {
                 password: joinPassword
             });
+
             alert('🎉 Gia nhập đội thành công! Chào mừng bạn đến với ' + selectedTeam.name);
             setSelectedTeam(null);
             setJoinPassword('');
-            fetchTeams(); // Tải lại danh sách
+
+            // Vào thành công thì chuyển trang sang My Team luôn
+            window.location.href = '/dashboard/my-team';
+
         } catch (err) {
-            alert('Lỗi: ' + (err.message || 'Mật khẩu không đúng hoặc đội đã đầy!'));
+            // Lấy đúng lỗi từ Backend, BỎ thông báo hardcode
+            const errorMsg = err.message || err.result || 'Có lỗi xảy ra từ máy chủ!';
+            alert('Chi tiết lỗi: ' + errorMsg);
         }
     };
 
@@ -75,8 +96,8 @@ export default function TeamExplorer() {
                                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
                                         team.type === 'PUBLIC' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'
                                     }`}>
-                    {team.type === 'PUBLIC' ? '🌍 Mở' : '🔒 Riêng tư'}
-                  </span>
+                                        {team.type === 'PUBLIC' ? '🌍 Mở' : '🔒 Riêng tư'}
+                                    </span>
                                 </div>
 
                                 <div className="space-y-2 mb-6">
@@ -89,10 +110,11 @@ export default function TeamExplorer() {
                                 </div>
 
                                 <button
-                                    onClick={() => team.type === 'PUBLIC' ? handleJoinTeam({ preventDefault: () => {}, selectedTeam: team }) : setSelectedTeam(team)}
+                                    // Đã sửa lại logic OnClick cho chuẩn
+                                    onClick={() => team.type === 'PUBLIC' ? handleJoinPublic(team.id) : setSelectedTeam(team)}
                                     className="w-full px-4 py-2 bg-indigo-50 text-indigo-700 font-medium rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-200"
                                 >
-                                    {team.type === 'PUBLIC' ? 'Gia nhập ngay' : 'Xin gia nhập'}
+                                    {team.type === 'PUBLIC' ? 'Xin gia nhập' : 'Nhập mã gia nhập'}
                                 </button>
                             </div>
                         </div>
@@ -107,7 +129,7 @@ export default function TeamExplorer() {
                         <h3 className="text-lg font-bold text-gray-900 mb-2">Gia nhập đội: {selectedTeam.name}</h3>
                         <p className="text-sm text-gray-500 mb-4">Đội thi này được thiết lập riêng tư. Vui lòng nhập mật khẩu để tham gia.</p>
 
-                        <form onSubmit={handleJoinTeam}>
+                        <form onSubmit={handleJoinPrivate}>
                             <input
                                 type="text" required placeholder="Nhập mật khẩu đội..."
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 mb-4"
