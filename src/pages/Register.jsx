@@ -36,7 +36,7 @@ export default function Register() {
                 studentId: formData.studentId,
                 isFptStudent: formData.isFptStudent,
                 universityName: formData.isFptStudent ? 'Đại học FPT' : formData.universityName,
-                studentCardUrl: formData.studentCardUrl || 'https://example.com/card.jpg' // Tạm thời fake url nếu rỗng
+                studentCardUrl: formData.studentCardUrl || ''
             });
 
             // Sử dụng chuẩn trường response.result từ ApiResponse

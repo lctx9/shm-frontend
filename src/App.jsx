@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Homepage from './pages/Homepage';
+import Homepage from './pages/Homepage'; // Chính là trang Home bọc Header/Footer động của bro
 import Login from './pages/Login';
 import Register from './pages/Register';
 import DashboardLayout from './components/DashboardLayout';
@@ -12,8 +12,10 @@ import Submission from './pages/Submission';
 import TeamExplorer from './pages/TeamExplorer';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
+import Events from './pages/Events';
+import EventDetail from './pages/EventDetail';
 
-// Hàm bảo vệ Route (Nếu chưa có token thì đá về Login)
+// Hàm bảo vệ Route (Nếu chưa có token thì đá thẳng về Login, không cho xem Dashboard bậy)
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('token');
     if (!token) return <Navigate to="/login" replace />;
@@ -25,45 +27,53 @@ function App() {
         <BrowserRouter>
             <div className="min-h-screen font-sans text-gray-900 bg-gray-50">
                 <Routes>
-                    {/* Khi vào trang chủ, tự động điều hướng đến Dashboard (Public) */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-                    {/* Các trang đăng nhập / đăng ký độc lập */}
+                    {/* =========================================================
+                        1. 🌐 LUỒNG TRANG CHỦ & CÁC TRANG PUBLIC (Không cần Login)
+                       ========================================================= */}
+                    {/* Vừa vào web sẽ hiện ngay trang Landing Page giống như mẫu giải đấu Pickleball */}
+                    <Route path="/" element={<Homepage />} />
+                    <Route path="/events" element={<Events />} />
+                    <Route path="/events/:eventId" element={<EventDetail />} />
+
+                    {/* Tuyến đường public xem giải đấu/bảng xếp hạng bên ngoài Landing Page */}
+                    <Route path="/leaderboard" element={<Leaderboard />} />
+                    {/* Bro có thể tạo thêm trang public hoặc giữ nguyên tùy ý ở đây */}
+
+
+                    {/* =========================================================
+                        2. 🔐 LUỒNG ĐĂNG NHẬP / ĐĂNG KÝ (Độc lập full màn hình)
+                       ========================================================= */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
 
-                    {/* Layout chính của ứng dụng - Đã mở khóa (Public) */}
-                    <Route path="/dashboard" element={<DashboardLayout />}>
 
-                        {/* --- CÁC TRANG PUBLIC (Ai cũng vào xem được) --- */}
-                        {/* Index route: Vừa vào /dashboard sẽ hiển thị trang Tổng quan */}
+                    {/* =========================================================
+                        3. 📊 LUỒNG NỘI BỘ DASHBOARD MANAGEMENT (Bắt buộc Login)
+                       ========================================================= */}
+                    {/* Toàn bộ các trang quản lý nội bộ đều được bọc bởi ProtectedRoute */}
+                    <Route path="/dashboard" element={
+                        <ProtectedRoute>
+                            <DashboardLayout />
+                        </ProtectedRoute>
+                    }>
+                        {/* Index route: Vừa vào /dashboard sẽ hiển thị trang Tổng quan hệ thống */}
                         <Route index element={<Dashboard />} />
+
+                        {/* Các chức năng quản lý riêng biệt phân quyền */}
+                        <Route path="teams" element={<TeamExplorer />} />
+                        <Route path="my-team" element={<MyTeam />} />
+                        <Route path="submissions" element={<Submission />} />
+                        <Route path="events" element={<EventManagement />} />
+                        <Route path="users" element={<UserManagement />} />
+                        <Route path="grading" element={<Grading />} />
                         <Route path="leaderboard" element={<Leaderboard />} />
-
-                        {/* --- CÁC TRANG PRIVATE (Bắt buộc phải đăng nhập) --- */}
-                        <Route path="teams" element={
-                            <ProtectedRoute><TeamExplorer /></ProtectedRoute>
-                        } />
-                        <Route path="my-team" element={
-                            <ProtectedRoute><MyTeam /></ProtectedRoute>
-                        } />
-                        <Route path="submissions" element={
-                            <ProtectedRoute><Submission /></ProtectedRoute>
-                        } />
-                        <Route path="events" element={
-                            <ProtectedRoute><EventManagement /></ProtectedRoute>
-                        } />
-                        <Route path="users" element={
-                            <ProtectedRoute><UserManagement /></ProtectedRoute>
-                        } />
-                        <Route path="grading" element={
-                            <ProtectedRoute><Grading /></ProtectedRoute>
-                        } />
-                        <Route path="profile" element={
-                            <ProtectedRoute><Profile /></ProtectedRoute>
-                        } />
-
+                        <Route path="profile" element={<Profile />} />
                     </Route>
+
+                    {/* Điều hướng các đường dẫn tầm bậy không tồn tại quay về trang chủ */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+
                 </Routes>
             </div>
         </BrowserRouter>
