@@ -13,7 +13,7 @@ export default function DashboardLayout() {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         localStorage.removeItem('email');
-        navigate('/dashboard');
+        navigate('/login');
     };
 
     // Hàm kiểm tra xem tab nào đang được active theo chuẩn màu hệ thống [#1E5BB8]
