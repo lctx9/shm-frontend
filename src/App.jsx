@@ -27,7 +27,7 @@ function App() {
                     {/* Khi vào trang chủ, tự động điều hướng đến Dashboard (Public) */}
                     <Route path="/" element={<Navigate to="/login" replace />} />
 
-                    {/* Các trang đăng nhập / đăng ký độc lập*/}
+                    {/* Các trang đăng nhập /đăng ký độc lập*/}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
 
