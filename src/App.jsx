@@ -12,7 +12,6 @@ import TeamExplorer from './pages/TeamExplorer';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 
-// Hàm bảo vệ Route (Nếu chưa có token thì đá về Login)
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('token');
     if (!token) return <Navigate to="/login" replace />;
