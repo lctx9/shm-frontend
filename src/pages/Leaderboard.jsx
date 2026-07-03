@@ -1,95 +1,165 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import { demoWinners } from '../utils/hackathon';
+
+function rankLabel(rank) {
+    if (rank === 1) return 'Vô địch';
+    if (rank === 2) return 'Á quân';
+    if (rank === 3) return 'Hạng ba';
+    return `Hạng ${rank}`;
+}
 
 export default function Leaderboard() {
     const [rankings, setRankings] = useState([]);
+    const [events, setEvents] = useState([]);
+    const [season, setSeason] = useState('LATEST');
+    const [mode, setMode] = useState('TEAM');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
-    useEffect(() => {
-        fetchLeaderboard();
-    }, []);
 
     const fetchLeaderboard = async () => {
         try {
             setLoading(true);
-            // Gọi API thực tế xuống Backend (GET /api/leaderboard)
-            const response = await axiosClient.get('/leaderboard');
-
-            // AxiosClient bọc sẵn response.result, ta chỉ cần set vào state
-            setRankings(response.result || []);
+            const [rankRes, eventRes] = await Promise.allSettled([
+                axiosClient.get('/leaderboard'),
+                axiosClient.get('/events'),
+            ]);
+            if (rankRes.status === 'fulfilled') setRankings(rankRes.value.result || []);
+            if (eventRes.status === 'fulfilled') setEvents(eventRes.value.result || []);
+            if (rankRes.status === 'rejected') throw rankRes.reason;
             setError('');
         } catch (err) {
-            setError('Không thể tải dữ liệu bảng xếp hạng. API Backend có thể chưa được cấu hình.');
+            setError(err.message || 'Không thể tải dữ liệu bảng xếp hạng.');
         } finally {
             setLoading(false);
         }
     };
 
+    useEffect(() => {
+        fetchLeaderboard();
+    }, []);
+
+    const displayRows = rankings.length ? rankings : demoWinners;
+    const seasons = useMemo(() => {
+        const fromRankings = displayRows.map((row) => row.eventYear).filter(Boolean);
+        const fromEvents = events.map((event) => event.year).filter(Boolean);
+        return [...new Set([...fromRankings, ...fromEvents])].sort((a, b) => b - a);
+    }, [displayRows, events]);
+
+    const latestSeason = seasons[0];
+    const selectedYear = season === 'LATEST' ? latestSeason : Number(season);
+    const teamRows = displayRows
+        .filter((row) => !selectedYear || !row.eventYear || row.eventYear === selectedYear)
+        .map((row, index) => ({ ...row, rank: row.rank || index + 1 }));
+
+    const individualRows = useMemo(() => {
+        const stats = new Map();
+        teamRows.forEach((team) => {
+            (team.members || []).forEach((member) => {
+                const key = member.userId || member.email || member.fullName;
+                if (!key) return;
+                const current = stats.get(key) || {
+                    userId: member.userId,
+                    fullName: member.fullName || member.email,
+                    email: member.email,
+                    first: 0,
+                    second: 0,
+                    third: 0,
+                    total: 0,
+                };
+                if (team.rank === 1) current.first += 1;
+                if (team.rank === 2) current.second += 1;
+                if (team.rank === 3) current.third += 1;
+                current.total += 1;
+                stats.set(key, current);
+            });
+        });
+        return [...stats.values()].sort((a, b) => b.first - a.first || b.second - a.second || b.third - a.third || b.total - a.total);
+    }, [teamRows]);
+
     return (
-        <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white">
+        <main className="section-shell">
+            <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-800">🏆 Bảng Xếp Hạng Giải Đấu</h2>
-                    <p className="text-sm text-gray-500 mt-1">Điểm số được tổng hợp từ Ban Giám Khảo (Cập nhật liên tục)</p>
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f63c9]">Leaderboard</p>
+                    <h1 className="section-title">Bảng xếp hạng giải gần nhất</h1>
+                    <p className="section-copy">Xem thứ hạng đội thi theo mùa giải hoặc chuyển sang thành tích cá nhân của sinh viên.</p>
                 </div>
-                <button onClick={fetchLeaderboard} className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 text-gray-700 shadow-sm transition-all">
-                    🔄 Làm mới
-                </button>
+                <button onClick={fetchLeaderboard} className="btn-secondary" type="button">Làm mới</button>
             </div>
 
-            {error && <div className="p-4 m-6 mb-0 text-sm text-red-600 bg-red-50 rounded-lg border border-red-100">{error}</div>}
-
-            <div className="p-0">
-                {loading ? (
-                    <div className="p-8 text-center text-gray-500">Đang tải dữ liệu xếp hạng...</div>
-                ) : rankings.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">Chưa có dữ liệu chấm điểm nào từ Ban giám khảo.</div>
-                ) : (
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                        <tr className="bg-gray-50 text-gray-600 text-sm uppercase tracking-wider border-b border-gray-200">
-                            <th className="px-6 py-4 font-medium text-center w-20">Hạng</th>
-                            <th className="px-6 py-4 font-medium">Đội Thi</th>
-                            <th className="px-6 py-4 font-medium">Dự án</th>
-                            <th className="px-6 py-4 font-medium text-right text-indigo-600">Điểm Số</th>
-                        </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                        {rankings.map((team, index) => {
-                            // Nếu backend không trả về field rank, ta dùng index + 1 làm thứ hạng
-                            const currentRank = team.rank || index + 1;
-
-                            return (
-                                <tr key={team.id || index} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-center">
-                                        {currentRank === 1 ? <span className="text-3xl" title="Top 1">🥇</span> :
-                                            currentRank === 2 ? <span className="text-3xl" title="Top 2">🥈</span> :
-                                                currentRank === 3 ? <span className="text-3xl" title="Top 3">🥉</span> :
-                                                    <span className="text-lg font-bold text-gray-500">{currentRank}</span>}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="font-bold text-gray-900 text-lg">{team.teamName}</div>
-                                        <div className="text-xs text-gray-500 bg-gray-100 inline-block px-2 py-1 rounded mt-1">
-                                            {team.track || 'Track chung'}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="font-medium text-indigo-700">{team.projectName || 'Chưa cập nhật tên dự án'}</div>
-                                        <div className="text-sm text-gray-600 mt-1 line-clamp-2 max-w-md">
-                                            {team.description || 'Đang chờ nội dung mô tả...'}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <span className="text-2xl font-black text-indigo-600">{team.score || 0}</span>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                        </tbody>
-                    </table>
-                )}
+            <div className="mb-6 grid gap-4 rounded-lg border border-[#d7e6f8] bg-white p-4 md:grid-cols-2">
+                <div>
+                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mùa giải</label>
+                    <select className="input-custom" value={season} onChange={(e) => setSeason(e.target.value)}>
+                        <option value="LATEST">Giải gần nhất</option>
+                        {seasons.map((year) => <option key={year} value={year}>{year}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Loại bảng xếp hạng</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => setMode('TEAM')} className={mode === 'TEAM' ? 'btn-primary' : 'btn-secondary'}>Đội thi</button>
+                        <button type="button" onClick={() => setMode('PERSONAL')} className={mode === 'PERSONAL' ? 'btn-primary' : 'btn-secondary'}>Cá nhân</button>
+                    </div>
+                </div>
             </div>
-        </div>
+
+            {error && <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+
+            {loading ? (
+                <div className="rounded-lg border border-[#d7e6f8] bg-white p-8 text-center text-[#5c6d83]">Đang tải bảng xếp hạng...</div>
+            ) : mode === 'TEAM' ? (
+                <div className="overflow-hidden rounded-lg border border-[#d7e6f8] bg-white shadow-sm">
+                    {teamRows.map((team) => (
+                        <div key={`${team.id || team.teamName}-${team.rank}`} className="grid gap-4 border-b border-[#d7e6f8] p-5 last:border-b-0 md:grid-cols-[90px_1fr_160px] md:items-center">
+                            <div className="text-center">
+                                <p className="text-3xl font-black text-[#0f63c9]">#{team.rank}</p>
+                                <p className="text-xs font-black uppercase text-[#5c6d83]">{rankLabel(team.rank)}</p>
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[#071936]">{team.teamName}</h2>
+                                <p className="mt-1 text-sm font-bold text-[#0f63c9]">{team.track || 'Bảng chung'}</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {(team.members || []).length ? team.members.map((member) => (
+                                        <Link
+                                            to={member.userId ? `/profile?userId=${member.userId}` : '/profile'}
+                                            key={member.id || member.email || member.fullName}
+                                            className="rounded-full border border-[#d7e6f8] bg-[#f8fbff] px-3 py-1 text-xs font-bold text-[#0b1f3f] hover:border-[#8ec5ff]"
+                                        >
+                                            {member.fullName || member.email}
+                                        </Link>
+                                    )) : <span className="text-sm text-[#5c6d83]">Chưa cập nhật thành viên</span>}
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-4xl font-black text-[#071936]">{team.score || 0}</p>
+                                <p className="text-xs font-black uppercase text-[#5c6d83]">điểm</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="overflow-hidden rounded-lg border border-[#d7e6f8] bg-white shadow-sm">
+                    {individualRows.length ? individualRows.map((student, index) => (
+                        <div key={student.userId || student.email || student.fullName} className="grid gap-4 border-b border-[#d7e6f8] p-5 last:border-b-0 md:grid-cols-[80px_1fr_360px] md:items-center">
+                            <p className="text-2xl font-black text-[#0f63c9]">#{index + 1}</p>
+                            <Link to={student.userId ? `/profile?userId=${student.userId}` : '/profile'} className="text-lg font-black uppercase tracking-[0.06em] text-[#071936]">
+                                {student.fullName}
+                            </Link>
+                            <div className="grid grid-cols-4 gap-2 text-center text-sm">
+                                <span className="rounded-lg bg-[#f8fbff] p-3 font-bold">Giải nhất: {student.first}</span>
+                                <span className="rounded-lg bg-[#f8fbff] p-3 font-bold">Giải nhì: {student.second}</span>
+                                <span className="rounded-lg bg-[#f8fbff] p-3 font-bold">Giải ba: {student.third}</span>
+                                <span className="rounded-lg bg-[#f8fbff] p-3 font-bold">Đã tham gia: {student.total}</span>
+                            </div>
+                        </div>
+                    )) : (
+                        <div className="p-8 text-center text-[#5c6d83]">Chưa có đủ dữ liệu thành viên để tính bảng xếp hạng cá nhân.</div>
+                    )}
+                </div>
+            )}
+        </main>
     );
 }

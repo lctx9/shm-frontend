@@ -19,6 +19,10 @@ import AuditLogs from './pages/AuditLogs';
 import Notifications from './pages/Notifications';
 import TeamChat from './pages/TeamChat';
 import About from './pages/About';
+import ScoringStats from './pages/ScoringStats';
+import SubmissionManagement from './pages/SubmissionManagement';
+import StudentApproval from './pages/StudentApproval';
+import StaffManagement from './pages/StaffManagement';
 
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('token');
@@ -53,11 +57,14 @@ function App() {
                         <Route index element={<Dashboard />} />
                         <Route path="teams" element={<TeamExplorer />} />
                         <Route path="my-team" element={<Navigate to="/my-team" replace />} />
-                        <Route path="submissions" element={<Navigate to="/submissions" replace />} />
+                        <Route path="submissions" element={<SubmissionManagement />} />
                         <Route path="events" element={<EventManagement />} />
                         <Route path="users" element={<UserManagement />} />
+                        <Route path="student-approval" element={<StudentApproval />} />
+                        <Route path="staff" element={<StaffManagement />} />
                         <Route path="audit-logs" element={<AuditLogs />} />
                         <Route path="grading" element={<Grading />} />
+                        <Route path="scoring-stats" element={<ScoringStats />} />
                         <Route path="leaderboard" element={<Leaderboard />} />
                         <Route path="notifications" element={<Notifications />} />
                         <Route path="chat" element={<TeamChat />} />

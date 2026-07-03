@@ -1,33 +1,35 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axiosClient from '../api/axiosClient';
 import heroCourt from '../assets/blue-hero-reference.png';
+import { demoWinners, formatDateTime, getCountdownParts, getEventPhase, pickFeaturedEvent } from '../utils/hackathon';
 
-const features = [
-    {
-        title: 'Quản lý sự kiện',
-        copy: 'Theo dõi mùa giải, hạng mục, vòng thi và lịch nộp bài trong một giao diện rõ ràng.',
-        icon: 'M8 21h8m-4-4v4m6-17v5a6 6 0 0 1-12 0V4h12ZM5 7H3v2a4 4 0 0 0 4 4m12-6h2v2a4 4 0 0 1-4 4',
-    },
-    {
-        title: 'Đội thi & thành viên',
-        copy: 'Thí sinh tạo đội, tham gia đội, quản lý thành viên và chuẩn bị bài dự thi thuận tiện.',
-        icon: 'M16 11a4 4 0 1 0-8 0m8 0a4 4 0 1 1-8 0m8 0v1a4 4 0 0 1-8 0v-1m12 9a8 8 0 0 0-16 0m20 0a6.5 6.5 0 0 0-4.5-6.2',
-    },
-    {
-        title: 'Nộp bài & xếp hạng',
-        copy: 'Bài nộp, điểm số và bảng xếp hạng được cập nhật để mọi đội dễ theo dõi tiến độ.',
-        icon: 'M9 12.75 11.25 15 15 9.75M7 3.75h10A2.25 2.25 0 0 1 19.25 6v12A2.25 2.25 0 0 1 17 20.25H7A2.25 2.25 0 0 1 4.75 18V6A2.25 2.25 0 0 1 7 3.75Z',
-    },
-];
-
-function Icon({ path }) {
+function Stat({ value, label }) {
     return (
-        <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d={path} />
-        </svg>
+        <div className="min-w-20 rounded-lg border border-white/70 bg-white/80 px-4 py-3 text-center shadow-sm">
+            <p className="text-2xl font-black text-[#071936]">{String(value).padStart(2, '0')}</p>
+            <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-[#5c6d83]">{label}</p>
+        </div>
     );
 }
 
 export default function Homepage() {
+    const [events, setEvents] = useState([]);
+    const [rankings, setRankings] = useState([]);
+
+    useEffect(() => {
+        Promise.allSettled([axiosClient.get('/events'), axiosClient.get('/leaderboard')]).then(([eventRes, rankRes]) => {
+            if (eventRes.status === 'fulfilled') setEvents(eventRes.value.result || []);
+            if (rankRes.status === 'fulfilled') setRankings(rankRes.value.result || []);
+        });
+    }, []);
+
+    const featuredEvent = useMemo(() => pickFeaturedEvent(events), [events]);
+    const phase = getEventPhase(featuredEvent);
+    const countdown = getCountdownParts(phase.key === 'registration' ? featuredEvent.regEndDate : featuredEvent.eventStartDate);
+    const winners = rankings.length ? rankings.slice(0, 3) : demoWinners;
+    const isEnded = phase.key === 'ended';
+
     return (
         <main>
             <section className="hero-stage">
@@ -35,73 +37,95 @@ export default function Homepage() {
                 <div className="hero-overlay" />
 
                 <div className="hero-content animate-fade-up">
-                    <p className="hero-eyebrow">Giải đấu Hackathon SEAL 2026</p>
-                    <h1 className="hero-title">
-                        SEAL
-                        <br />
-                        CHAMPIONS
-                    </h1>
-                    <div className="mt-9">
-                        <span className="badge-status-pill">
-                            <Icon path="M8 21h8m-4-4v4m6-17v5a6 6 0 0 1-12 0V4h12Z" />
-                            Nền tảng đang mở
+                    <p className="hero-eyebrow">Giải đấu nổi bật</p>
+                    <h1 className="hero-title">{featuredEvent.name}</h1>
+                    <div className="mt-7">
+                        <span className={`badge-status-pill ${isEnded ? 'border-amber-300 bg-amber-50 text-amber-700' : ''}`}>
+                            {phase.label}
                         </span>
                     </div>
+
                     <p className="hero-subtitle">
-                        Tổ chức mùa giải, quản lý đội thi, nhận bài nộp và công bố kết quả với giao diện sáng,
-                        rõ ràng và nhất quán cho thí sinh.
+                        {phase.key === 'registration'
+                            ? `Đăng ký đến ${formatDateTime(featuredEvent.regEndDate)}. Chọn hạng mục, lập đội và sẵn sàng bước vào vòng thi.`
+                            : `Thời gian thi: ${formatDateTime(featuredEvent.eventStartDate)} - ${formatDateTime(featuredEvent.eventEndDate)}.`}
                     </p>
+
+                    {countdown && (
+                        <div className="mt-7 flex flex-wrap justify-center gap-3">
+                            {countdown.map((item) => <Stat key={item.label} {...item} />)}
+                        </div>
+                    )}
+
                     <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                        <Link to="/events" className="btn-action-main">
-                            <Icon path="M12 5v14m7-7H5" />
-                            Xem sự kiện
+                        <Link to={isEnded ? '/leaderboard' : `/my-team?eventId=${featuredEvent.id}`} className="btn-action-main">
+                            {isEnded ? 'Xem kết quả' : 'Đăng ký'}
                         </Link>
-                        <Link to="/leaderboard" className="btn-secondary">
-                            Xem bảng xếp hạng
+                        <Link to={`/events/${featuredEvent.id}`} className="btn-secondary">
+                            Xem chi tiết giải
                         </Link>
                     </div>
                 </div>
             </section>
 
-            <section className="section-shell">
-                <div className="mb-8">
-                    <h2 className="section-title">Vận hành mùa giải gọn hơn</h2>
-                    <p className="section-copy">
-                        SEAL kết nối ban tổ chức, giám khảo, mentor và đội thi, nhưng giữ trải nghiệm thí sinh
-                        giống trang home: nhẹ, rõ, dễ thao tác.
-                    </p>
-                </div>
-
-                <div className="grid gap-5 md:grid-cols-3">
-                    {features.map((feature) => (
-                        <article className="feature-card" key={feature.title}>
-                            <span className="feature-icon">
-                                <Icon path={feature.icon} />
-                            </span>
-                            <h3 className="text-base font-black uppercase tracking-[0.08em] text-[#071936]">
-                                {feature.title}
-                            </h3>
-                            <p className="mt-3 text-sm leading-7 text-[#5c6d83]">
-                                {feature.copy}
-                            </p>
-                        </article>
-                    ))}
-                </div>
-            </section>
-
-            <section className="section-shell pt-0">
-                <div className="flex flex-col items-start justify-between gap-5 rounded-lg border border-[#d7e6f8] bg-white px-6 py-7 shadow-sm sm:flex-row sm:items-center">
-                    <div>
-                        <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">
-                            Theo dõi bảng xếp hạng công khai
-                        </h2>
-                        <p className="mt-2 text-sm text-[#5c6d83]">
-                            Người xem có thể cập nhật kết quả mà không cần đăng nhập.
+            {isEnded ? (
+                <section className="section-shell">
+                    <div className="mb-8">
+                        <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f63c9]">Nhà vô địch</p>
+                        <h2 className="section-title">Kết quả chung cuộc</h2>
+                    </div>
+                    <div className="grid gap-5 md:grid-cols-3">
+                        {winners.map((team, index) => (
+                            <article key={`${team.teamName}-${index}`} className="feature-card">
+                                <p className="text-4xl font-black text-[#0f63c9]">#{team.rank || index + 1}</p>
+                                <h3 className="mt-4 text-xl font-black uppercase tracking-[0.06em] text-[#071936]">{team.teamName}</h3>
+                                <p className="mt-2 text-sm font-bold text-[#0f63c9]">{team.track || 'Bảng chung'}</p>
+                                <p className="mt-4 text-sm leading-6 text-[#5c6d83]">
+                                    {(team.members || []).map((member) => member.fullName || member.email).join(', ') || 'Đang cập nhật thành viên'}
+                                </p>
+                                <p className="mt-5 text-2xl font-black text-[#071936]">{team.score || 0} điểm</p>
+                            </article>
+                        ))}
+                    </div>
+                    <div className="mt-7 text-center">
+                        <Link to="/leaderboard" className="btn-primary">Xem tất cả kết quả</Link>
+                    </div>
+                </section>
+            ) : (
+                <section className="section-shell">
+                    <div className="mb-8">
+                        <h2 className="section-title">Chuẩn bị trước giờ mở màn</h2>
+                        <p className="section-copy">
+                            Sinh viên có thể lập đội, chọn hạng mục, tìm đồng đội trong lobby và theo dõi lịch thi ngay trong hệ thống.
                         </p>
                     </div>
-                    <Link to="/leaderboard" className="btn-primary">
-                        Mở bảng xếp hạng
-                    </Link>
+                    <div className="grid gap-5 md:grid-cols-3">
+                        {[
+                            ['Lập đội', 'Tạo team public hoặc private bằng mã PIN 4 số.'],
+                            ['Tìm đồng đội', 'Lọc lobby theo hạng mục và gửi yêu cầu tham gia.'],
+                            ['Theo dõi đề thi', 'Khi giải bắt đầu, đề, guideline và deadline sẽ hiện trong Đội của tôi.'],
+                        ].map(([title, copy]) => (
+                            <article className="feature-card" key={title}>
+                                <h3 className="text-base font-black uppercase tracking-[0.08em] text-[#071936]">{title}</h3>
+                                <p className="mt-3 text-sm leading-7 text-[#5c6d83]">{copy}</p>
+                            </article>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            <section className="section-shell pt-0">
+                <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+                    <div>
+                        <h2 className="section-title">Về giải đấu</h2>
+                        <p className="section-copy">
+                            SEAL Hackathon là sân chơi dành cho sinh viên yêu thích xây dựng sản phẩm công nghệ, nơi đội thi được mentor
+                            đồng hành, trình bày trước hội đồng giám khảo và nhận chứng nhận thành tích cá nhân sau mùa giải.
+                        </p>
+                    </div>
+                    <div className="overflow-hidden rounded-lg border border-[#d7e6f8] bg-white">
+                        <img src={heroCourt} alt="Không gian tổ chức SEAL Hackathon" className="h-72 w-full object-cover" />
+                    </div>
                 </div>
             </section>
         </main>

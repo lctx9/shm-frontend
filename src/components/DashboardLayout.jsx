@@ -2,23 +2,85 @@ import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-d
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'JUDGE', 'MENTOR']);
 
-const coordinatorItems = [
-    { to: '/dashboard/events', label: 'Quản lý sự kiện' },
-    { to: '/dashboard/users', label: 'Tài khoản & staff' },
-    { to: '/dashboard/notifications', label: 'Thông báo' },
-    { to: '/dashboard/audit-logs', label: 'Audit log' },
+const coordinatorGroups = [
+    {
+        title: 'Vận hành',
+        items: [
+            { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
+            { to: '/dashboard/notifications', label: 'Thông báo' },
+        ],
+    },
+    {
+        title: 'Sự kiện',
+        items: [
+            { to: '/dashboard/events', label: 'Cấu hình sự kiện' },
+            { to: '/dashboard/teams', label: 'Đội thi' },
+            { to: '/dashboard/submissions', label: 'Bài nộp' },
+        ],
+    },
+    {
+        title: 'Tài khoản',
+        items: [
+            { to: '/dashboard/student-approval', label: 'Phê duyệt thí sinh' },
+            { to: '/dashboard/staff', label: 'Quản lý staff' },
+        ],
+    },
+    {
+        title: 'Chấm điểm',
+        items: [
+            { to: '/dashboard/grading', label: 'Chấm bài' },
+            { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
+            { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
+            { to: '/dashboard/audit-logs', label: 'Audit điểm' },
+        ],
+    },
 ];
 
-const judgeItems = [
-    { to: '/dashboard/grading', label: 'Chấm bài' },
-    { to: '/dashboard/notifications', label: 'Thông báo' },
+const judgeGroups = [
+    {
+        title: 'Judge',
+        items: [
+            { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
+            { to: '/dashboard/grading', label: 'Chấm bài' },
+            { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
+            { to: '/dashboard/notifications', label: 'Thông báo' },
+        ],
+    },
 ];
 
-const mentorItems = [
-    { to: '/dashboard/teams', label: 'Sảnh đội thi' },
-    { to: '/dashboard/chat', label: 'Chat mentor/team' },
-    { to: '/dashboard/notifications', label: 'Thông báo' },
+const mentorGroups = [
+    {
+        title: 'Mentor',
+        items: [
+            { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
+            { to: '/dashboard/teams', label: 'Đội phụ trách' },
+            { to: '/dashboard/chat', label: 'Trao đổi với đội' },
+            { to: '/dashboard/notifications', label: 'Thông báo' },
+        ],
+    },
 ];
+
+const pageTitles = {
+    '/dashboard': 'Tổng quan',
+    '/dashboard/events': 'Cấu hình sự kiện',
+    '/dashboard/teams': 'Đội thi',
+    '/dashboard/submissions': 'Bài nộp',
+    '/dashboard/student-approval': 'Phê duyệt thí sinh',
+    '/dashboard/staff': 'Quản lý staff',
+    '/dashboard/grading': 'Chấm bài',
+    '/dashboard/scoring-stats': 'Thống kê điểm',
+    '/dashboard/leaderboard': 'Bảng xếp hạng',
+    '/dashboard/notifications': 'Thông báo',
+    '/dashboard/audit-logs': 'Audit điểm',
+    '/dashboard/chat': 'Trao đổi với đội',
+    '/dashboard/profile': 'Hồ sơ',
+};
+
+function getGroups(role) {
+    if (role === 'COORDINATOR' || role === 'ADMIN') return coordinatorGroups;
+    if (role === 'JUDGE') return judgeGroups;
+    return mentorGroups;
+}
 
 export default function DashboardLayout() {
     const navigate = useNavigate();
@@ -38,62 +100,51 @@ export default function DashboardLayout() {
         navigate('/login');
     };
 
-    const navClass = (path) => (
-        location.pathname === path
-            ? 'bg-[#0f63c9] text-white shadow-sm'
-            : 'text-slate-700 hover:bg-[#eaf3ff] hover:text-[#0f63c9]'
-    );
+    const isActive = (item) => {
+        const activePath = item.activePath || item.to;
+        if (item.match) return item.match.includes(location.pathname);
+        return location.pathname === activePath;
+    };
 
-    const renderItems = (items) => items.map((item) => (
-        <Link key={item.to} to={item.to} className={`block rounded-lg px-4 py-3 text-sm font-bold ${navClass(item.to)}`}>
-            {item.label}
-        </Link>
-    ));
+    const navClass = (item) => (
+        isActive(item)
+            ? 'bg-[#0f63c9] text-white shadow-sm'
+            : 'text-slate-600 hover:bg-[#eaf3ff] hover:text-[#0f63c9]'
+    );
 
     return (
         <div className="flex h-screen bg-[#f4f8ff] text-[#0b1f3f]">
-            <aside className="flex w-72 flex-col border-r border-[#d7e6f8] bg-white">
-                <div className="flex h-20 items-center gap-3 border-b border-[#d7e6f8] px-6">
-                    <span className="brand-mark"><span className="brand-mark-text">SEAL</span></span>
-                    <div>
-                        <p className="text-sm font-black uppercase tracking-[0.16em] text-[#071936]">Dashboard</p>
+            <aside className="flex w-72 shrink-0 flex-col border-r border-[#d7e6f8] bg-white">
+                <div className="flex h-20 items-center gap-3 border-b border-[#d7e6f8] px-5">
+                    <Link to="/" className="brand-mark" aria-label="SEAL trang chủ">
+                        <span className="brand-mark-text">SEAL</span>
+                    </Link>
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-black text-[#071936]">SEAL Dashboard</p>
                         <p className="text-xs font-semibold text-[#5c6d83]">{role}</p>
                     </div>
                 </div>
 
-                <nav className="flex-1 space-y-2 overflow-y-auto p-4">
-                    <Link to="/dashboard" className={`block rounded-lg px-4 py-3 text-sm font-bold ${navClass('/dashboard')}`}>
-                        Tổng quan
-                    </Link>
-                    <Link to="/dashboard/leaderboard" className={`block rounded-lg px-4 py-3 text-sm font-bold ${navClass('/dashboard/leaderboard')}`}>
-                        Bảng xếp hạng
-                    </Link>
-
-                    {(role === 'COORDINATOR' || role === 'ADMIN') && (
-                        <div className="pt-3">
-                            <p className="mb-2 px-4 text-xs font-black uppercase tracking-[0.18em] text-[#5c6d83]">Coordinator</p>
-                            {renderItems(coordinatorItems)}
-                        </div>
-                    )}
-
-                    {role === 'JUDGE' && (
-                        <div className="pt-3">
-                            <p className="mb-2 px-4 text-xs font-black uppercase tracking-[0.18em] text-[#5c6d83]">Judge</p>
-                            {renderItems(judgeItems)}
-                        </div>
-                    )}
-
-                    {role === 'MENTOR' && (
-                        <div className="pt-3">
-                            <p className="mb-2 px-4 text-xs font-black uppercase tracking-[0.18em] text-[#5c6d83]">Mentor</p>
-                            {renderItems(mentorItems)}
-                        </div>
-                    )}
+                <nav className="flex-1 space-y-5 overflow-y-auto p-4">
+                    {getGroups(role).map((group) => (
+                        <section key={group.title}>
+                            <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.14em] text-[#748195]">
+                                {group.title}
+                            </p>
+                            <div className="space-y-1">
+                                {group.items.map((item) => (
+                                    <Link key={item.to} to={item.to} className={`block rounded-lg px-3 py-2.5 text-sm font-bold ${navClass(item)}`}>
+                                        {item.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        </section>
+                    ))}
                 </nav>
 
                 <div className="border-t border-[#d7e6f8] p-4">
-                    <Link to="/dashboard/profile" className={`mb-3 block rounded-lg px-4 py-3 text-sm font-bold ${navClass('/dashboard/profile')}`}>
-                        Profile
+                    <Link to="/dashboard/profile" className={`mb-3 block rounded-lg px-3 py-2.5 text-sm font-bold ${navClass({ to: '/dashboard/profile' })}`}>
+                        Hồ sơ
                     </Link>
                     <button type="button" onClick={logout} className="btn-secondary w-full">Đăng xuất</button>
                 </div>
@@ -102,12 +153,10 @@ export default function DashboardLayout() {
             <div className="flex min-w-0 flex-1 flex-col">
                 <header className="flex h-20 items-center justify-between border-b border-[#d7e6f8] bg-white px-8">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">SEAL Hackathon</p>
-                        <h1 className="mt-1 text-xl font-black capitalize text-[#071936]">
-                            {location.pathname.split('/').pop()?.replace('-', ' ') || 'Tổng quan'}
-                        </h1>
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">SEAL Hackathon</p>
+                        <h1 className="mt-1 text-xl font-black text-[#071936]">{pageTitles[location.pathname] || 'Dashboard'}</h1>
                     </div>
-                    <p className="text-sm font-semibold text-[#5c6d83]">{email}</p>
+                    <p className="max-w-sm truncate text-sm font-semibold text-[#5c6d83]">{email}</p>
                 </header>
 
                 <main className="flex-1 overflow-y-auto p-6">
