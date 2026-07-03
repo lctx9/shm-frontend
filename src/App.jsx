@@ -25,9 +25,9 @@ function App() {
             <div className="min-h-screen font-sans text-gray-900 bg-gray-50">
                 <Routes>
                     {/* Khi vào trang chủ, tự động điều hướng đến Dashboard (Public) */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/" element={<Navigate to="/login" replace />} />
 
-                    {/* Các trang đăng nhập / đăng ký độc lập */}
+                    {/* Các trang đăng nhập / đăng ký độc lập*/}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
 
