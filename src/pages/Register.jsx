@@ -39,6 +39,7 @@ export default function Register() {
                 studentCardUrl: formData.studentCardUrl || 'https://example.com/card.jpg' // Tạm thời fake url nếu rỗng
             });
 
+            // Sử dụng chuẩn trường response.result từ ApiResponse
             alert(response.result || 'Đăng ký thành công! Đang chờ duyệt.');
             navigate('/login');
         } catch (err) {

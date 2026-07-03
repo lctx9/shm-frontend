@@ -12,7 +12,9 @@ export default function DashboardLayout() {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         localStorage.removeItem('email');
-        navigate('/dashboard');
+        navigate('/');
+
+        navigate('/login');
     };
 
     const isActive = (path) => location.pathname === path ? 'bg-indigo-700 text-white' : 'text-indigo-100 hover:bg-indigo-600';
