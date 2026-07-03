@@ -5,7 +5,7 @@ export default function DashboardLayout() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Lấy thông tin user từ LocalStorage
+    // Lấy thông tin từ LocalStorage
     const role = localStorage.getItem('role') || 'GUEST';
     const email = localStorage.getItem('email') || 'user@example.com';
 
@@ -14,6 +14,8 @@ export default function DashboardLayout() {
         localStorage.removeItem('role');
         localStorage.removeItem('email');
         navigate('/');
+
+        navigate('/login');
     };
 
     // Hàm kiểm tra xem tab nào đang được active theo chuẩn màu hệ thống [#1E5BB8]
