@@ -5,7 +5,7 @@ export default function Grading() {
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedSub, setSelectedSub] = useState(null);
-    const [gradeForm, setGradeForm] = useState({ score: '', feedback: '' });
+    const [gradeForm, setGradeForm] = useState({ score: '', feedback: '', editReason: '' });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
@@ -31,6 +31,7 @@ export default function Grading() {
         setGradeForm({
             score: submission.score || '',
             feedback: submission.feedback || '',
+            editReason: '',
         });
     };
 
@@ -44,9 +45,11 @@ export default function Grading() {
 
         try {
             setSaving(true);
-            await axiosClient.put(`/submissions/${selectedSub.id}/grade`, {
-                score: Number(gradeForm.score),
-                feedback: gradeForm.feedback,
+            await axiosClient.post('/scores/grade', {
+                submissionId: selectedSub.id,
+                scoreValue: Number(gradeForm.score),
+                comment: gradeForm.feedback,
+                editReason: selectedSub.graded ? gradeForm.editReason : '',
             });
             setSelectedSub(null);
             await fetchSubmissions();
@@ -149,6 +152,18 @@ export default function Grading() {
                                     onChange={(e) => setGradeForm({ ...gradeForm, feedback: e.target.value })}
                                 />
                             </div>
+                            {selectedSub.graded && (
+                                <div>
+                                    <label className="mb-1 block text-sm font-bold text-slate-700">Lý do sửa điểm</label>
+                                    <input
+                                        required
+                                        className="input-custom"
+                                        value={gradeForm.editReason}
+                                        onChange={(e) => setGradeForm({ ...gradeForm, editReason: e.target.value })}
+                                        placeholder="Ví dụ: rà soát lại rubric sau khi trao đổi với BTC"
+                                    />
+                                </div>
+                            )}
                             <button type="submit" disabled={saving} className="btn-primary w-full">
                                 {saving ? 'Đang lưu...' : 'Lưu điểm'}
                             </button>

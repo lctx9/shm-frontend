@@ -14,6 +14,9 @@ import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
+import AuditLogs from './pages/AuditLogs';
+import Notifications from './pages/Notifications';
+import TeamChat from './pages/TeamChat';
 
 // Hàm bảo vệ Route (Nếu chưa có token thì đá thẳng về Login, không cho xem Dashboard bậy)
 const ProtectedRoute = ({ children }) => {
@@ -66,8 +69,11 @@ function App() {
                         <Route path="submissions" element={<Submission />} />
                         <Route path="events" element={<EventManagement />} />
                         <Route path="users" element={<UserManagement />} />
+                        <Route path="audit-logs" element={<AuditLogs />} />
                         <Route path="grading" element={<Grading />} />
                         <Route path="leaderboard" element={<Leaderboard />} />
+                        <Route path="notifications" element={<Notifications />} />
+                        <Route path="chat" element={<TeamChat />} />
                         <Route path="profile" element={<Profile />} />
                     </Route>
 
