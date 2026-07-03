@@ -13,6 +13,8 @@ export default function DashboardLayout() {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         localStorage.removeItem('email');
+        navigate('/');
+
         navigate('/login');
     };
 
