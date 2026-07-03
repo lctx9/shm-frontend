@@ -5,7 +5,7 @@ export default function DashboardLayout() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Lấy thông tin user từ LocalStorage
+    // Lấy thông tin từ LocalStorage
     const role = localStorage.getItem('role') || 'GUEST';
     const email = localStorage.getItem('email') || 'user@example.com';
 
