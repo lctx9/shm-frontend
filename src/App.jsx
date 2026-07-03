@@ -13,6 +13,7 @@ import TeamExplorer from './pages/TeamExplorer';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 
+// Hàm bảo vệ Route (Nếu chưa có token thì đá về Login)
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('token');
     if (!token) return <Navigate to="/login" replace />;
@@ -25,9 +26,9 @@ function App() {
             <div className="min-h-screen font-sans text-gray-900 bg-gray-50">
                 <Routes>
                     {/* Khi vào trang chủ, tự động điều hướng đến Dashboard (Public) */}
-                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-                    {/* Các trang đăng nhập /đăng ký độc lập*/}
+                    {/* Các trang đăng nhập / đăng ký độc lập */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
 
