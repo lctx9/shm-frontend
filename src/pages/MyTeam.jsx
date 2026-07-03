@@ -145,8 +145,8 @@ export default function MyTeam() {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                    <Link to="/dashboard/submissions" className="btn-primary">Nộp bài</Link>
-                    <Link to="/dashboard/teams" className="btn-secondary">Xem sảnh đội</Link>
+                    <Link to="/submissions" className="btn-primary">Nộp bài</Link>
+                    <Link to="/teams" className="btn-secondary">Xem sảnh đội</Link>
                 </div>
             </div>
         );

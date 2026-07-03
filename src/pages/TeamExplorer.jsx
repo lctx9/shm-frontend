@@ -56,7 +56,7 @@ export default function TeamExplorer() {
             });
             setSelectedTeam(null);
             setJoinPassword('');
-            window.location.href = '/dashboard/my-team';
+            window.location.href = '/my-team';
         } catch (err) {
             alert(err.message || 'Không thể gia nhập đội riêng tư.');
         }

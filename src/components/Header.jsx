@@ -1,84 +1,113 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+
+const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'JUDGE', 'MENTOR']);
+
+function getInitial(email) {
+    return (email || 'U').trim().charAt(0).toUpperCase();
+}
 
 export default function Header() {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
-
-    // Giả định dữ liệu user được lưu khi đăng nhập thành công
-    const user = JSON.parse(localStorage.getItem('user')) || { fullName: 'Thí sinh', avatarUrl: '' };
+    const role = localStorage.getItem('role');
+    const email = localStorage.getItem('email');
     const [showDropdown, setShowDropdown] = useState(false);
 
+    const account = useMemo(() => {
+        try {
+            return JSON.parse(localStorage.getItem('user')) || {};
+        } catch {
+            return {};
+        }
+    }, [token]);
+
+    const displayName = account.fullName || email || 'Tài khoản';
+    const avatarUrl = account.avatarUrl || '';
+    const isManager = managerRoles.has(role);
+
+    const navClass = ({ isActive }) => (isActive ? 'nav-link-active' : 'nav-link-item');
+
     const handleLogout = () => {
-        localStorage.clear();
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('email');
+        localStorage.removeItem('user');
+        setShowDropdown(false);
         navigate('/', { replace: true });
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-slate-100 px-6 py-3">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <header className="site-header">
+            <div className="site-header-inner">
+                <Link to="/" className="brand-mark" aria-label="SEAL trang chủ">
+                    <span className="brand-mark-text">SEAL</span>
+                </Link>
 
-                {/* 🧭 KHỐI MENU BÊN TRÁI (LOGO + NAV) */}
-                <div className="flex items-center gap-8">
-                    {/* Logo dự án */}
-                    <Link to="/" className="flex items-center gap-2">
-                        <span className="text-xl font-black text-[#1E5BB8] tracking-wider uppercase">SEAL</span>
-                    </Link>
+                <nav className="hidden items-center gap-9 md:flex" aria-label="Điều hướng chính">
+                    <NavLink to="/" end className={navClass}>Trang chủ</NavLink>
+                    <NavLink to="/events" className={navClass}>Sự kiện</NavLink>
+                    <NavLink to="/leaderboard" className={navClass}>Bảng xếp hạng</NavLink>
+                    <NavLink to="/about" className={navClass}>Về chúng tôi</NavLink>
+                    {token && !isManager && (
+                        <NavLink to="/my-team" className={navClass}>Đội của tôi</NavLink>
+                    )}
+                </nav>
 
-                    {/* Menu điều hướng thay đổi động */}
-                    <nav className="hidden md:flex items-center gap-6 text-[13px] font-bold text-slate-600 uppercase tracking-wider">
-                        <Link to="/" className="text-[#1E5BB8] border-b-2 border-[#1E5BB8] pb-1">Trang Chủ</Link>
-                        <Link to="/events" className="hover:text-[#1E5BB8] transition-colors pb-1">Sự Kiện</Link>
-                        <Link to="/leaderboard" className="hover:text-[#1E5BB8] transition-colors pb-1">Bảng Xếp Hạng</Link>
-
-                        {/* Hiện thêm "Đội của tôi" nếu ĐÃ ĐĂNG NHẬP */}
-                        {token && (
-                            <Link to="/my-team" className="hover:text-[#1E5BB8] text-amber-600 transition-colors pb-1 animate-pulse">
-                                ⚽ Đội Của Tôi
-                            </Link>
-                        )}
-
-                        <Link to="/about" className="hover:text-[#1E5BB8] transition-colors pb-1">Về Chúng Tôi</Link>
-                    </nav>
-                </div>
-
-                {/* 🔐 KHỐI GÓC PHẢI: ĐĂNG NHẬP HOẶC AVATAR CÁ NHÂN */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                     {token ? (
-                        /* ĐÃ ĐĂNG NHẬP: Hiện Avatar + Tên cá nhân */
                         <div className="relative">
                             <button
-                                onClick={() => setShowDropdown(!showDropdown)}
-                                className="flex items-center gap-2.5 px-3 py-1.5 rounded-full hover:bg-slate-50 border border-slate-200 transition-all"
+                                type="button"
+                                onClick={() => setShowDropdown((current) => !current)}
+                                className="flex items-center gap-2 rounded-full border border-[#d7e6f8] bg-white px-2 py-1.5 text-sm font-bold text-[#0b1f3f] transition hover:bg-[#eaf3ff]"
+                                aria-label="Mở menu tài khoản"
                             >
-                                <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-sm flex items-center justify-center overflow-hidden border border-blue-200">
-                                    {user.avatarUrl ? (
-                                        <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#0f63c9] text-xs font-black text-white">
+                                    {avatarUrl ? (
+                                        <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
                                     ) : (
-                                        user.fullName.charAt(0).toUpperCase()
+                                        getInitial(displayName)
                                     )}
-                                </div>
-                                <span className="text-xs font-bold text-slate-800">{user.fullName}</span>
-                                <svg className="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                </span>
+                                <span className="hidden max-w-36 truncate sm:inline">{displayName}</span>
                             </button>
 
-                            {/* Dropdown menu nhỏ khi bấm vào Avatar */}
                             {showDropdown && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1 z-50 animate-[fadeInUp_0.2s_ease-out]">
-                                    <Link to="/dashboard" className="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Vào Dashboard</Link>
-                                    <button onClick={handleLogout} className="w-full text-left block px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">Đăng Xuất</button>
+                                <div className="absolute right-0 mt-2 w-52 rounded-lg border border-[#d7e6f8] bg-white py-2 shadow-lg">
+                                    <Link
+                                        to={isManager ? '/dashboard' : '/profile'}
+                                        onClick={() => setShowDropdown(false)}
+                                        className="block px-4 py-2 text-sm font-bold text-[#0b1f3f] hover:bg-[#eaf3ff]"
+                                    >
+                                        {isManager ? 'Dashboard' : 'Hồ sơ cá nhân'}
+                                    </Link>
+                                    {!isManager && (
+                                        <Link
+                                            to="/my-team"
+                                            onClick={() => setShowDropdown(false)}
+                                            className="block px-4 py-2 text-sm font-bold text-[#0b1f3f] hover:bg-[#eaf3ff]"
+                                        >
+                                            Đội của tôi
+                                        </Link>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={handleLogout}
+                                        className="block w-full px-4 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50"
+                                    >
+                                        Đăng xuất
+                                    </button>
                                 </div>
                             )}
                         </div>
                     ) : (
-                        /* CHƯA ĐĂNG NHẬP: Hiện cụm nút login */
-                        <div className="flex items-center gap-2">
-                            <Link to="/login" className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-[#1E5BB8] transition-all uppercase">Đăng Nhập</Link>
-                            <Link to="/register" className="px-4 py-2 text-xs font-bold text-white bg-[#1E5BB8] rounded-xl hover:bg-[#164384] transition-all uppercase shadow-md shadow-blue-500/10">Đăng Ký</Link>
-                        </div>
+                        <>
+                            <Link to="/login" className="btn-secondary">Đăng nhập</Link>
+                            <Link to="/register" className="btn-primary">Đăng ký</Link>
+                        </>
                     )}
                 </div>
-
             </div>
         </header>
     );

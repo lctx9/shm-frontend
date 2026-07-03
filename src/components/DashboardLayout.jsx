@@ -1,16 +1,21 @@
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+
+const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'JUDGE', 'MENTOR']);
 
 const coordinatorItems = [
-    { to: '/dashboard/events', label: 'Quản lý giải đấu' },
+    { to: '/dashboard/events', label: 'Quản lý sự kiện' },
     { to: '/dashboard/users', label: 'Tài khoản & staff' },
     { to: '/dashboard/notifications', label: 'Thông báo' },
     { to: '/dashboard/audit-logs', label: 'Audit log' },
 ];
 
-const teamItems = [
+const judgeItems = [
+    { to: '/dashboard/grading', label: 'Chấm bài' },
+    { to: '/dashboard/notifications', label: 'Thông báo' },
+];
+
+const mentorItems = [
     { to: '/dashboard/teams', label: 'Sảnh đội thi' },
-    { to: '/dashboard/my-team', label: 'Đội của tôi' },
-    { to: '/dashboard/submissions', label: 'Nộp bài' },
     { to: '/dashboard/chat', label: 'Chat mentor/team' },
     { to: '/dashboard/notifications', label: 'Thông báo' },
 ];
@@ -21,10 +26,15 @@ export default function DashboardLayout() {
     const role = localStorage.getItem('role');
     const email = localStorage.getItem('email');
 
+    if (!managerRoles.has(role)) {
+        return <Navigate to="/my-team" replace />;
+    }
+
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         localStorage.removeItem('email');
+        localStorage.removeItem('user');
         navigate('/login');
     };
 
@@ -33,6 +43,12 @@ export default function DashboardLayout() {
             ? 'bg-[#0f63c9] text-white shadow-sm'
             : 'text-slate-700 hover:bg-[#eaf3ff] hover:text-[#0f63c9]'
     );
+
+    const renderItems = (items) => items.map((item) => (
+        <Link key={item.to} to={item.to} className={`block rounded-lg px-4 py-3 text-sm font-bold ${navClass(item.to)}`}>
+            {item.label}
+        </Link>
+    ));
 
     return (
         <div className="flex h-screen bg-[#f4f8ff] text-[#0b1f3f]">
@@ -56,34 +72,21 @@ export default function DashboardLayout() {
                     {(role === 'COORDINATOR' || role === 'ADMIN') && (
                         <div className="pt-3">
                             <p className="mb-2 px-4 text-xs font-black uppercase tracking-[0.18em] text-[#5c6d83]">Coordinator</p>
-                            {coordinatorItems.map((item) => (
-                                <Link key={item.to} to={item.to} className={`block rounded-lg px-4 py-3 text-sm font-bold ${navClass(item.to)}`}>
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </div>
-                    )}
-
-                    {(role === 'LEADER' || role === 'MEMBER') && (
-                        <div className="pt-3">
-                            <p className="mb-2 px-4 text-xs font-black uppercase tracking-[0.18em] text-[#5c6d83]">Đội thi</p>
-                            {teamItems.map((item) => (
-                                <Link key={item.to} to={item.to} className={`block rounded-lg px-4 py-3 text-sm font-bold ${navClass(item.to)}`}>
-                                    {item.label}
-                                </Link>
-                            ))}
+                            {renderItems(coordinatorItems)}
                         </div>
                     )}
 
                     {role === 'JUDGE' && (
                         <div className="pt-3">
                             <p className="mb-2 px-4 text-xs font-black uppercase tracking-[0.18em] text-[#5c6d83]">Judge</p>
-                            <Link to="/dashboard/grading" className={`block rounded-lg px-4 py-3 text-sm font-bold ${navClass('/dashboard/grading')}`}>
-                                Chấm bài
-                            </Link>
-                            <Link to="/dashboard/notifications" className={`block rounded-lg px-4 py-3 text-sm font-bold ${navClass('/dashboard/notifications')}`}>
-                                Thông báo
-                            </Link>
+                            {renderItems(judgeItems)}
+                        </div>
+                    )}
+
+                    {role === 'MENTOR' && (
+                        <div className="pt-3">
+                            <p className="mb-2 px-4 text-xs font-black uppercase tracking-[0.18em] text-[#5c6d83]">Mentor</p>
+                            {renderItems(mentorItems)}
                         </div>
                     )}
                 </nav>
