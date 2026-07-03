@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Homepage from './pages/Homepage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import DashboardLayout from './components/DashboardLayout';
@@ -24,8 +25,8 @@ function App() {
         <BrowserRouter>
             <div className="min-h-screen font-sans text-gray-900 bg-gray-50">
                 <Routes>
-                    {/* Khi vào trang chủ, tự động điều hướng đến Dashboard (Public) */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    {/* Trang chủ công khai - ai cũng xem được, có nút Đăng nhập / Đăng ký */}
+                    <Route path="/" element={<Homepage />} />
 
                     {/* Các trang đăng nhập / đăng ký độc lập */}
                     <Route path="/login" element={<Login />} />
