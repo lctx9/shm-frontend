@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 
 export default function TeamChat() {
@@ -11,6 +11,8 @@ export default function TeamChat() {
     const [content, setContent] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
+    const messagesEndRef = useRef(null);
     const isMentor = role === 'MENTOR';
 
     const assignedTrackIds = useMemo(() => {
@@ -30,10 +32,16 @@ export default function TeamChat() {
 
     const selectedTeam = visibleTeams.find((team) => String(team.id) === String(selectedTeamId));
 
-    const fetchMessages = async (teamId) => {
-        const response = await axiosClient.get(`/chat/teams/${teamId}`);
-        setMessages(response.result || []);
-    };
+    const fetchMessages = useCallback(async (teamId, { silent = false } = {}) => {
+        if (!teamId) return;
+        if (silent) setRefreshing(true);
+        try {
+            const response = await axiosClient.get(`/chat/teams/${teamId}`);
+            setMessages(response.result || []);
+        } finally {
+            if (silent) setRefreshing(false);
+        }
+    }, []);
 
     const bootstrap = async () => {
         try {
@@ -76,6 +84,18 @@ export default function TeamChat() {
         bootstrap();
     }, []);
 
+    useEffect(() => {
+        if (!selectedTeamId) return undefined;
+        const intervalId = window.setInterval(() => {
+            fetchMessages(selectedTeamId, { silent: true }).catch(() => {});
+        }, 2500);
+        return () => window.clearInterval(intervalId);
+    }, [fetchMessages, selectedTeamId]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, [messages]);
+
     const handleSelectTeam = async (teamId) => {
         setSelectedTeamId(teamId);
         if (teamId) await fetchMessages(teamId);
@@ -85,9 +105,13 @@ export default function TeamChat() {
         e.preventDefault();
         if (!selectedTeamId || !content.trim()) return;
         try {
-            await axiosClient.post(`/chat/teams/${selectedTeamId}`, { teamId: Number(selectedTeamId), content });
+            const response = await axiosClient.post(`/chat/teams/${selectedTeamId}`, { teamId: Number(selectedTeamId), content });
             setContent('');
-            await fetchMessages(selectedTeamId);
+            if (response.result) {
+                setMessages((current) => [...current, response.result]);
+            } else {
+                await fetchMessages(selectedTeamId);
+            }
         } catch (err) {
             setError(err.message || 'Không thể gửi tin nhắn.');
         }
@@ -128,7 +152,10 @@ export default function TeamChat() {
             </aside>
 
             <section className="flex min-h-[680px] flex-col rounded-lg border border-blue-100 bg-white shadow-sm">
-                <div className="border-b border-blue-100 bg-blue-50 px-6 py-4">
+                <div className="relative border-b border-blue-100 bg-blue-50 px-6 py-4 sm:pr-36">
+                    <span className="mt-3 inline-flex w-fit items-center rounded-full border border-green-100 bg-green-50 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-green-700 sm:absolute sm:right-6 sm:top-5 sm:mt-0">
+                        {refreshing ? 'Đang đồng bộ' : 'Realtime'}
+                    </span>
                     <h2 className="text-xl font-black text-slate-900">{selectedTeam?.name || 'Đội thi'}</h2>
                     <p className="mt-1 text-sm text-slate-600">Trao đổi trực tiếp giữa mentor và đội thi.</p>
                 </div>
@@ -136,15 +163,19 @@ export default function TeamChat() {
                 <div className="flex-1 space-y-4 overflow-y-auto p-6">
                     {messages.length === 0 ? (
                         <p className="text-center text-sm text-slate-500">Chưa có tin nhắn.</p>
-                    ) : messages.map((message) => (
-                        <div key={message.id} className="rounded-lg border border-blue-100 bg-[#f8fbff] p-4">
+                    ) : messages.map((message) => {
+                        const isMine = message.senderEmail === email;
+                        return (
+                        <div key={message.id} className={`rounded-lg border p-4 ${isMine ? 'ml-auto max-w-[82%] border-blue-200 bg-blue-50' : 'max-w-[82%] border-blue-100 bg-[#f8fbff]'}`}>
                             <div className="mb-2 flex items-center justify-between gap-4">
-                                <p className="font-bold text-slate-900">{message.senderName || message.senderEmail}</p>
+                                <p className="font-bold text-slate-900">{isMine ? 'Bạn' : (message.senderName || message.senderEmail)}</p>
                                 <p className="text-xs text-slate-400">{message.createdAt ? new Date(message.createdAt).toLocaleString('vi-VN') : ''}</p>
                             </div>
                             <p className="text-sm leading-6 text-slate-700">{message.content}</p>
                         </div>
-                    ))}
+                    );
+                    })}
+                    <div ref={messagesEndRef} />
                 </div>
                 <form onSubmit={handleSubmit} className="flex gap-3 border-t border-blue-100 p-4">
                     <input className="input-custom" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Nhập tin nhắn..." />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 
 const staffRoles = new Set(['ADMIN', 'COORDINATOR', 'JUDGE', 'MENTOR']);
@@ -343,27 +343,43 @@ function MentorChatModal({ team, onClose }) {
     const [messages, setMessages] = useState([]);
     const [content, setContent] = useState('');
     const [error, setError] = useState('');
+    const messagesEndRef = useRef(null);
 
-    const fetchMessages = async () => {
+    const fetchMessages = useCallback(async () => {
         try {
             const response = await axiosClient.get(`/chat/teams/${team.id}`);
             setMessages(response.result || []);
         } catch (err) {
             setError(err.message || 'Không thể tải tin nhắn.');
         }
-    };
+    }, [team.id]);
 
     useEffect(() => {
         fetchMessages();
-    }, [team.id]);
+    }, [fetchMessages]);
+
+    useEffect(() => {
+        const intervalId = window.setInterval(() => {
+            fetchMessages().catch(() => {});
+        }, 2500);
+        return () => window.clearInterval(intervalId);
+    }, [fetchMessages]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, [messages]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!content.trim()) return;
         try {
-            await axiosClient.post(`/chat/teams/${team.id}`, { teamId: team.id, content });
+            const response = await axiosClient.post(`/chat/teams/${team.id}`, { teamId: team.id, content });
             setContent('');
-            await fetchMessages();
+            if (response.result) {
+                setMessages((current) => [...current, response.result]);
+            } else {
+                await fetchMessages();
+            }
         } catch (err) {
             setError(err.message || 'Không thể gửi tin nhắn.');
         }
@@ -392,6 +408,7 @@ function MentorChatModal({ team, onClose }) {
                             <p className="mt-2 text-sm leading-6 text-slate-700">{message.content}</p>
                         </div>
                     ))}
+                    <div ref={messagesEndRef} />
                 </div>
                 <form onSubmit={handleSubmit} className="flex gap-3 border-t border-blue-100 p-4">
                     <input className="input-custom" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Nhập tin nhắn cho đội..." />

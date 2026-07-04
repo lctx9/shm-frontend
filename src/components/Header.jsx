@@ -49,6 +49,7 @@ export default function Header() {
                     <NavLink to="/leaderboard" className={navClass}>Bảng xếp hạng</NavLink>
                     <NavLink to="/about" className={navClass}>Về chúng tôi</NavLink>
                     {token && !isManager && <NavLink to="/my-team" className={navClass}>Đội của tôi</NavLink>}
+                    {token && !isManager && <NavLink to="/chat" className={navClass}>Chat mentor</NavLink>}
                 </nav>
 
                 <div className="flex items-center gap-2">
@@ -74,6 +75,11 @@ export default function Header() {
                                     {!isManager && (
                                         <Link to="/my-team" onClick={() => setShowDropdown(false)} className="block px-4 py-2 text-sm font-bold text-[#0b1f3f] hover:bg-[#eaf3ff]">
                                             Đội của tôi
+                                        </Link>
+                                    )}
+                                    {!isManager && (
+                                        <Link to="/chat" onClick={() => setShowDropdown(false)} className="block px-4 py-2 text-sm font-bold text-[#0b1f3f] hover:bg-[#eaf3ff]">
+                                            Chat mentor
                                         </Link>
                                     )}
                                     <button type="button" onClick={handleLogout} className="block w-full px-4 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50">
