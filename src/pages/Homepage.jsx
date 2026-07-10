@@ -13,6 +13,12 @@ function Stat({ value, label }) {
     );
 }
 
+function EditorialEventTitle({ name }) {
+    const words = String(name || '').trim().split(/\s+/);
+    const accent = words.pop();
+    return <>{words.join(' ')}{words.length > 0 && <br />}<em>{accent}</em></>;
+}
+
 export default function Homepage() {
     const [events, setEvents] = useState([]);
     const [rankings, setRankings] = useState([]);
@@ -38,7 +44,7 @@ export default function Homepage() {
 
                 <div className="hero-content animate-fade-up">
                     <p className="hero-eyebrow">Giải đấu nổi bật</p>
-                    <h1 className="hero-title">{featuredEvent.name}</h1>
+                    <h1 className="hero-title"><EditorialEventTitle name={featuredEvent.name} /></h1>
                     <div className="mt-7">
                         <span className={`badge-status-pill ${isEnded ? 'border-amber-300 bg-amber-50 text-amber-700' : ''}`}>
                             {phase.label}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 
@@ -27,6 +27,14 @@ function exportAchievement(profile, achievement) {
     URL.revokeObjectURL(url);
 }
 
+function getPrizePresentation(prizeName = '') {
+    const normalized = prizeName.toLowerCase();
+    if (normalized.includes('nhất') || normalized.includes('vô địch') || normalized.includes('first')) return { rank: '01', medal: '🥇', label: 'Giải nhất', tone: 'gold' };
+    if (normalized.includes('nhì') || normalized.includes('á quân') || normalized.includes('second')) return { rank: '02', medal: '🥈', label: 'Giải nhì', tone: 'silver' };
+    if (normalized.includes('ba') || normalized.includes('third')) return { rank: '03', medal: '🥉', label: 'Giải ba', tone: 'bronze' };
+    return { rank: '★', medal: '🏅', label: prizeName || 'Giải thưởng', tone: 'award' };
+}
+
 export default function Profile() {
     const [searchParams] = useSearchParams();
     const userId = searchParams.get('userId');
@@ -38,9 +46,10 @@ export default function Profile() {
     const [loading, setLoading] = useState(true);
     const [savingProfile, setSavingProfile] = useState(false);
     const [savingPassword, setSavingPassword] = useState(false);
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
 
-    const fetchProfile = async () => {
+    const fetchProfile = useCallback(async () => {
         const profilePath = userId ? `/users/${userId}` : '/users/me';
         const achievementPath = userId ? `/users/${userId}/achievements` : '/users/me/achievements';
         const [profileRes, achievementRes] = await Promise.allSettled([
@@ -58,14 +67,14 @@ export default function Profile() {
         if (achievementRes.status === 'fulfilled') {
             setAchievements(achievementRes.value.result || []);
         }
-    };
+    }, [userId]);
 
     useEffect(() => {
         setLoading(true);
         fetchProfile()
             .catch((err) => setMessage({ text: err.message || 'Không thể tải profile.', type: 'error' }))
             .finally(() => setLoading(false));
-    }, [userId]);
+    }, [fetchProfile]);
 
     const handleAvatarSubmit = async (e) => {
         e.preventDefault();
@@ -81,6 +90,29 @@ export default function Profile() {
         }
     };
 
+    const handleAvatarUpload = (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            setMessage({ text: 'Vui lòng chọn một file ảnh hợp lệ.', type: 'error' });
+            event.target.value = '';
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            setMessage({ text: 'Ảnh đại diện không được vượt quá 2MB.', type: 'error' });
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            setAvatarUrl(String(reader.result || ''));
+            setMessage({ text: '', type: '' });
+        };
+        reader.onerror = () => setMessage({ text: 'Không thể đọc file ảnh. Vui lòng thử lại.', type: 'error' });
+        reader.readAsDataURL(file);
+    };
+
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         if (passwords.newPassword !== passwords.confirmPassword) {
@@ -94,6 +126,7 @@ export default function Profile() {
                 newPassword: passwords.newPassword,
             });
             setPasswords({ oldPassword: '', newPassword: '', confirmPassword: '' });
+            setShowPasswordForm(false);
             setMessage({ text: 'Đổi mật khẩu thành công.', type: 'success' });
         } catch (err) {
             setMessage({ text: err.message || 'Không thể đổi mật khẩu.', type: 'error' });
@@ -114,72 +147,98 @@ export default function Profile() {
                 </div>
             )}
 
-            <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-                <aside className="space-y-6">
-                    <section className="rounded-lg border border-[#d7e6f8] bg-white p-6 shadow-sm">
-                        <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[#eaf3ff] text-3xl font-black text-[#0f63c9]">
-                            {profile?.avatarUrl ? <img src={profile.avatarUrl} alt={profile.fullName} className="h-full w-full object-cover" /> : profile?.fullName?.charAt(0)?.toUpperCase() || 'U'}
+            <div className="profile-layout">
+                <aside className="profile-sidebar">
+                    <section className="profile-summary">
+                        <div className="profile-avatar">
+                            {avatarUrl || profile?.avatarUrl ? <img src={avatarUrl || profile.avatarUrl} alt={profile.fullName} /> : profile?.fullName?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
-                        <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">{profile?.role}</p>
-                        <h1 className="mt-2 text-2xl font-black uppercase tracking-[0.06em] text-[#071936]">{profile?.fullName}</h1>
-                        <p className="mt-2 text-sm text-[#5c6d83]">{profile?.email}</p>
-                        <p className="mt-1 text-sm text-[#5c6d83]">{profile?.studentId || 'Chưa có MSSV'} - {profile?.universityName || 'Chưa có trường'}</p>
-                    </section>
-
-                    <section className="rounded-lg border border-[#d7e6f8] bg-white p-6 shadow-sm">
-                        <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Thành tích</h2>
-                        <div className="mt-4 space-y-3">
-                            {achievements.length ? achievements.map((item) => (
-                                <div key={item.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-4">
-                                    <p className="font-black text-[#071936]">{item.prizeName}</p>
-                                    <p className="mt-1 text-sm text-[#5c6d83]">{item.eventName} {item.eventYear}</p>
-                                </div>
-                            )) : <p className="text-sm text-[#5c6d83]">Chưa có thành tích được công bố.</p>}
-                        </div>
-                    </section>
-                </aside>
-
-                <div className="space-y-6">
-                    <section className="rounded-lg border border-[#d7e6f8] bg-white p-6 shadow-sm">
-                        <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Bằng khen ảo</h2>
-                        <div className="mt-5 grid gap-4 md:grid-cols-2">
-                            {achievements.length ? achievements.map((item) => (
-                                <article key={item.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-5">
-                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">SEAL Certificate</p>
-                                    <h3 className="mt-3 text-xl font-black text-[#071936]">{item.prizeName}</h3>
-                                    <p className="mt-2 text-sm leading-6 text-[#5c6d83]">{item.eventName} {item.eventYear} - {item.teamName}</p>
-                                    {isOwnProfile && (
-                                        <button type="button" onClick={() => exportAchievement(profile, item)} className="btn-primary mt-5">
-                                            Export
-                                        </button>
-                                    )}
-                                </article>
-                            )) : <div className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-6 text-[#5c6d83]">Khi ban tổ chức công bố giải thưởng, chứng nhận sẽ xuất hiện tại đây.</div>}
+                        <p className="profile-role">{profile?.role}</p>
+                        <h1>{profile?.fullName}</h1>
+                        <p className="profile-email">{profile?.email}</p>
+                        <div className="profile-meta">
+                            <div><span>Mã sinh viên</span><strong>{profile?.studentId || 'Chưa cập nhật'}</strong></div>
+                            <div><span>Trường</span><strong>{profile?.universityName || 'Chưa cập nhật'}</strong></div>
                         </div>
                     </section>
 
                     {isOwnProfile && (
-                        <>
-                            <section className="rounded-lg border border-[#d7e6f8] bg-white p-6 shadow-sm">
-                                <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Cập nhật avatar</h2>
-                                <form onSubmit={handleAvatarSubmit} className="mt-5 space-y-4">
-                                    <input type="url" className="input-custom" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://..." />
-                                    <button type="submit" disabled={savingProfile} className="btn-primary">{savingProfile ? 'Đang lưu...' : 'Lưu avatar'}</button>
-                                </form>
-                            </section>
+                        <section className="profile-actions">
+                            <div className="profile-actions__header">
+                                <p>Thiết lập tài khoản</p>
+                                <h2>Cập nhật hồ sơ</h2>
+                            </div>
 
-                            <section className="rounded-lg border border-[#d7e6f8] bg-white p-6 shadow-sm">
-                                <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Đổi mật khẩu</h2>
-                                <form onSubmit={handlePasswordSubmit} className="mt-5 space-y-4">
-                                    <input required type="password" className="input-custom" placeholder="Mật khẩu hiện tại" value={passwords.oldPassword} onChange={(e) => setPasswords({ ...passwords, oldPassword: e.target.value })} />
-                                    <input required minLength={6} type="password" className="input-custom" placeholder="Mật khẩu mới" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} />
-                                    <input required minLength={6} type="password" className="input-custom" placeholder="Xác nhận mật khẩu mới" value={passwords.confirmPassword} onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })} />
-                                    <button type="submit" disabled={savingPassword} className="btn-primary">{savingPassword ? 'Đang đổi...' : 'Đổi mật khẩu'}</button>
+                            <form onSubmit={handleAvatarSubmit} className="avatar-upload-form">
+                                <label htmlFor="profile-avatar-upload" className="avatar-upload-label">
+                                    <span className="avatar-upload-icon">↑</span>
+                                    <span><strong>Chọn ảnh đại diện</strong><small>PNG, JPG hoặc WEBP · tối đa 2MB</small></span>
+                                </label>
+                                <input id="profile-avatar-upload" type="file" accept="image/*" onChange={handleAvatarUpload} className="sr-only" />
+                                {avatarUrl && avatarUrl !== profile?.avatarUrl && (
+                                    <button type="submit" disabled={savingProfile} className="btn-primary w-full">
+                                        {savingProfile ? 'Đang lưu...' : 'Lưu ảnh đại diện'}
+                                    </button>
+                                )}
+                            </form>
+
+                            <button type="button" className="profile-password-toggle" onClick={() => setShowPasswordForm((current) => !current)} aria-expanded={showPasswordForm}>
+                                <span><strong>Đổi mật khẩu</strong><small>Tăng bảo mật cho tài khoản</small></span>
+                                <span aria-hidden="true">{showPasswordForm ? '−' : '+'}</span>
+                            </button>
+
+                            {showPasswordForm && (
+                                <form onSubmit={handlePasswordSubmit} className="profile-password-form">
+                                    <div><label htmlFor="current-password">Mật khẩu hiện tại</label><input id="current-password" required type="password" className="input-custom" value={passwords.oldPassword} onChange={(e) => setPasswords({ ...passwords, oldPassword: e.target.value })} /></div>
+                                    <div><label htmlFor="new-password">Mật khẩu mới</label><input id="new-password" required minLength={6} type="password" className="input-custom" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} /></div>
+                                    <div><label htmlFor="confirm-password">Xác nhận mật khẩu mới</label><input id="confirm-password" required minLength={6} type="password" className="input-custom" value={passwords.confirmPassword} onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })} /></div>
+                                    <div className="flex gap-2">
+                                        <button type="submit" disabled={savingPassword} className="btn-primary flex-1">{savingPassword ? 'Đang đổi...' : 'Xác nhận đổi'}</button>
+                                        <button type="button" className="btn-secondary" onClick={() => setShowPasswordForm(false)}>Hủy</button>
+                                    </div>
                                 </form>
-                            </section>
-                        </>
+                            )}
+                        </section>
                     )}
-                </div>
+                </aside>
+
+                <section className="profile-achievements">
+                    <div className="profile-achievements__header">
+                        <div>
+                            <p>Hall of achievement</p>
+                            <h2>Thành tích nổi bật</h2>
+                            <span>Những cột mốc và giải thưởng đã đạt được tại SEAL Hackathon.</span>
+                        </div>
+                        <strong>{achievements.length}<small>thành tích</small></strong>
+                    </div>
+                    <div className="achievement-list">
+                            {achievements.length ? achievements.map((item) => {
+                                const prize = getPrizePresentation(item.prizeName);
+                                return (
+                                    <article key={item.id} className={`achievement-row achievement-row--${prize.tone}`}>
+                                        <div className="achievement-row__place">
+                                            <span>{prize.medal}</span>
+                                            <strong>{prize.rank}</strong>
+                                        </div>
+                                        <div className="achievement-row__main">
+                                            <p>{prize.label} · {item.eventYear}</p>
+                                            <h3>{item.prizeName}</h3>
+                                            <span>{item.eventName}</span>
+                                        </div>
+                                        <div className="achievement-row__team">
+                                            <span>Đội thi</span>
+                                            <strong>{item.teamName || 'Đang cập nhật'}</strong>
+                                        </div>
+                                        {isOwnProfile && (
+                                            <button type="button" onClick={() => exportAchievement(profile, item)} className="achievement-row__export" title="Xuất chứng nhận">
+                                                Xuất chứng nhận <span aria-hidden="true">↗</span>
+                                            </button>
+                                        )}
+                                    </article>
+                                );
+                            }) : <div className="achievement-empty"><span>☆</span><h3>Chưa có thành tích</h3><p>Khi ban tổ chức công bố giải nhất, nhì hoặc ba, thành tích sẽ xuất hiện tại đây.</p></div>}
+                    </div>
+                </section>
             </div>
         </main>
     );

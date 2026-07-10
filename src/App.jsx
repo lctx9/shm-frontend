@@ -15,6 +15,7 @@ import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 import Events from './pages/Events';
 import EventDetail from './pages/EventDetail';
+import EventResults from './pages/EventResults';
 import AuditLogs from './pages/AuditLogs';
 import Notifications from './pages/Notifications';
 import TeamChat from './pages/TeamChat';
@@ -33,12 +34,13 @@ const ProtectedRoute = ({ children }) => {
 function App() {
     return (
         <BrowserRouter>
-            <div className="min-h-screen font-sans text-gray-900 bg-gray-50">
+            <div className="min-h-screen font-sans text-[#0b1f3f]">
                 <Routes>
                     <Route element={<PublicLayout />}>
                         <Route path="/" element={<Homepage />} />
                         <Route path="/events" element={<Events />} />
                         <Route path="/events/:eventId" element={<EventDetail />} />
+                        <Route path="/events/:eventId/results" element={<EventResults />} />
                         <Route path="/leaderboard" element={<Leaderboard />} />
                         <Route path="/about" element={<About />} />
 

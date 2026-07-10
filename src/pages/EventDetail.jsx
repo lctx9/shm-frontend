@@ -37,29 +37,33 @@ export default function EventDetail() {
 
     return (
         <main className="section-shell">
-            <section className="mb-8 rounded-lg border border-[#d7e6f8] bg-white p-7 shadow-sm">
-                <span className="badge-status-pill">{phase.label}</span>
-                <p className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-[#0f63c9]">{event.season} {event.year}</p>
-                <h1 className="mt-3 text-3xl font-black uppercase tracking-[0.06em] text-[#071936]">{event.name}</h1>
-                <div className="mt-6 grid gap-4 text-sm text-[#5c6d83] md:grid-cols-4">
+            <div className="event-detail-breadcrumb"><Link to="/events">Sự kiện</Link><span>/</span><strong>{event.name}</strong></div>
+            <section className={`event-detail-hero event-detail-hero--${phase.key}`}>
+                <div className="event-detail-hero__content">
+                    <span className="badge-status-pill">{phase.label}</span>
+                    <p>{event.season} {event.year}</p>
+                    <h1>{event.name}</h1>
+                    <span className="event-detail-hero__copy">Theo dõi lịch trình, hạng mục thi và toàn bộ thông tin quan trọng của sự kiện tại một nơi.</span>
+                </div>
+                <div className="event-detail-timeline">
                     <div><p className="font-bold text-[#0b1f3f]">Mở đăng ký</p><p>{formatDateTime(event.regStartDate)}</p></div>
                     <div><p className="font-bold text-[#0b1f3f]">Đóng đăng ký</p><p>{formatDateTime(event.regEndDate)}</p></div>
                     <div><p className="font-bold text-[#0b1f3f]">Bắt đầu</p><p>{formatDateTime(event.eventStartDate)}</p></div>
                     <div><p className="font-bold text-[#0b1f3f]">Kết thúc</p><p>{formatDateTime(event.eventEndDate)}</p></div>
                 </div>
-                <div className="mt-7 flex flex-wrap gap-3">
-                    {phase.key !== 'ended' ? (
+                <div className="event-detail-actions">
+                    {phase.key === 'registration' ? (
                         <Link to={`/my-team?eventId=${event.id}`} className="btn-action-main">Đăng ký đội thi</Link>
-                    ) : (
-                        <Link to="/leaderboard" className="btn-action-main">Xem kết quả</Link>
-                    )}
+                    ) : phase.key === 'ended' ? (
+                        <Link to={`/events/${event.id}/results`} className="btn-action-main">Xem kết quả sự kiện</Link>
+                    ) : null}
                     <Link to="/events" className="btn-secondary">Tất cả sự kiện</Link>
                 </div>
             </section>
 
-            <div className="grid gap-5 lg:grid-cols-2">
-                <section className="feature-card">
-                    <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Hạng mục thi</h2>
+            <div className="event-detail-content">
+                <section className="event-detail-panel">
+                    <div className="event-detail-panel__heading"><span>01</span><div><p>Competition tracks</p><h2>Hạng mục thi</h2></div></div>
                     <div className="mt-5 space-y-3">
                         {(event.tracks || []).map((track) => (
                             <div key={track.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-4">
@@ -70,8 +74,8 @@ export default function EventDetail() {
                     </div>
                 </section>
 
-                <section className="feature-card">
-                    <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Đề thi và deadline</h2>
+                <section className="event-detail-panel">
+                    <div className="event-detail-panel__heading"><span>02</span><div><p>Rounds & deadlines</p><h2>Đề thi và deadline</h2></div></div>
                     <div className="mt-5 space-y-3">
                         {(event.matrices || []).map((matrix) => (
                             <div key={matrix.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-4">

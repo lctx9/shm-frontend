@@ -114,35 +114,38 @@ export default function Register() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-slate-100 py-10">
-            <div className="w-full max-w-xl space-y-6 rounded-xl border border-slate-200 bg-white p-8 shadow-lg">
-                <div className="text-center">
-                    <h1 className="text-3xl font-extrabold text-indigo-600">Đăng Ký SEAL Hackathon</h1>
-                    <p className="mt-2 text-sm text-gray-500">Tạo tài khoản thí sinh để tham gia giải đấu</p>
+        <main className="auth-page">
+            <section className="auth-card auth-card-wide" aria-labelledby="register-title">
+                <div className="auth-brand">
+                    <Link to="/" className="auth-logo" aria-label="Về trang chủ SEAL">SEAL</Link>
+                    <h1 id="register-title" className="auth-title">Tạo tài khoản thí sinh</h1>
+                    <p className="auth-copy">Một bước nữa để bạn tham gia và chinh phục SEAL Hackathon.</p>
                 </div>
 
-                {error && <div className="rounded-lg bg-red-100 p-3 text-sm text-red-600">{error}</div>}
+                {error && <div className="form-alert" role="alert">{error}</div>}
 
-                <form className="space-y-4" onSubmit={handleSubmit}>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-gray-700">Họ và tên</label>
+                <form onSubmit={handleSubmit}>
+                    <div className="form-grid">
+                        <div className="form-span-full">
+                            <label htmlFor="register-name" className="form-label">Họ và tên</label>
                             <input
+                                id="register-name"
                                 required
                                 type="text"
-                                className="mt-1 w-full rounded-lg border bg-slate-50 px-4 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+                                className="input-custom"
                                 value={formData.fullName}
                                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                             />
                         </div>
 
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <div className="form-span-full">
+                            <label htmlFor="register-email" className="form-label">Email</label>
                             <div className="mt-1 grid gap-2 sm:grid-cols-[1fr_auto]">
                                 <input
                                     required
+                                    id="register-email"
                                     type="email"
-                                    className="w-full rounded-lg border bg-slate-50 px-4 py-2"
+                                    className="input-custom"
                                     value={formData.email}
                                     onChange={(e) => {
                                         setFormData({ ...formData, email: e.target.value });
@@ -153,94 +156,100 @@ export default function Register() {
                                     type="button"
                                     onClick={handleSendOtp}
                                     disabled={sendingOtp}
-                                    className="rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-bold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+                                    className="btn-secondary whitespace-nowrap disabled:opacity-50"
                                 >
                                     {sendingOtp ? 'Đang gửi...' : otpSent ? 'Gửi lại OTP' : 'Gửi mã OTP'}
                                 </button>
                             </div>
                         </div>
 
-                        <div className="col-span-2 sm:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700">Mã OTP email</label>
+                        <div>
+                            <label htmlFor="register-otp" className="form-label">Mã OTP email</label>
                             <input
+                                id="register-otp"
                                 required
                                 type="text"
                                 inputMode="numeric"
                                 maxLength="6"
                                 placeholder="Nhập 6 số"
-                                className="mt-1 w-full rounded-lg border bg-slate-50 px-4 py-2"
+                                className="input-custom"
                                 value={formData.otp}
                                 onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') })}
                             />
                         </div>
 
-                        <div className="col-span-2 sm:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700">Mã số sinh viên</label>
+                        <div>
+                            <label htmlFor="register-student-id" className="form-label">Mã số sinh viên</label>
                             <input
+                                id="register-student-id"
                                 required
                                 type="text"
-                                className="mt-1 w-full rounded-lg border bg-slate-50 px-4 py-2"
+                                className="input-custom"
                                 value={formData.studentId}
                                 onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
                             />
                         </div>
 
-                        <div className="col-span-2 sm:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700">Mật khẩu</label>
+                        <div>
+                            <label htmlFor="register-password" className="form-label">Mật khẩu</label>
                             <input
+                                id="register-password"
                                 required
                                 type="password"
-                                className="mt-1 w-full rounded-lg border bg-slate-50 px-4 py-2"
+                                className="input-custom"
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                             />
                         </div>
 
-                        <div className="col-span-2 sm:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700">Xác nhận mật khẩu</label>
+                        <div>
+                            <label htmlFor="register-confirm-password" className="form-label">Xác nhận mật khẩu</label>
                             <input
+                                id="register-confirm-password"
                                 required
                                 type="password"
-                                className="mt-1 w-full rounded-lg border bg-slate-50 px-4 py-2"
+                                className="input-custom"
                                 value={formData.confirmPassword}
                                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                             />
                         </div>
 
-                        <div className="col-span-2 mt-2 flex items-center space-x-3">
+                        <div className="form-span-full flex items-center gap-3 rounded-xl border border-[#d7e6f8] bg-[#f7fbff] p-4">
                             <input
                                 type="checkbox"
                                 id="isFpt"
-                                className="h-5 w-5 rounded text-indigo-600"
+                                className="h-5 w-5 rounded accent-[#0f63c9]"
                                 checked={formData.isFptStudent}
                                 onChange={(e) => setFormData({ ...formData, isFptStudent: e.target.checked })}
                             />
-                            <label htmlFor="isFpt" className="font-medium text-gray-700">Tôi là sinh viên Đại học FPT</label>
+                            <label htmlFor="isFpt" className="text-sm font-semibold text-[#0b1f3f]">Tôi là sinh viên Đại học FPT</label>
                         </div>
 
                         {!formData.isFptStudent && (
-                            <div className="col-span-2">
-                                <label className="block text-sm font-medium text-gray-700">Tên trường đại học</label>
+                            <div className="form-span-full">
+                                <label htmlFor="register-university" className="form-label">Tên trường đại học</label>
                                 <input
+                                    id="register-university"
                                     required
                                     type="text"
-                                    className="mt-1 w-full rounded-lg border bg-slate-50 px-4 py-2"
+                                    className="input-custom"
                                     value={formData.universityName}
                                     onChange={(e) => setFormData({ ...formData, universityName: e.target.value })}
                                 />
                             </div>
                         )}
 
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-gray-700">Upload thẻ sinh viên</label>
+                        <div className="form-span-full">
+                            <label htmlFor="register-card" className="form-label">Upload thẻ sinh viên</label>
                             <input
+                                id="register-card"
                                 required
                                 type="file"
                                 accept="image/*"
-                                className="mt-1 w-full rounded-lg border bg-slate-50 px-4 py-2 text-sm"
+                                className="input-custom h-auto cursor-pointer py-3 text-sm"
                                 onChange={handleStudentCardUpload}
                             />
-                            <p className="mt-1 text-xs text-gray-500">Ảnh cần thấy rõ tên, MSSV và logo trường. Dung lượng tối đa 2MB.</p>
+                            <p className="form-helper">Ảnh cần thấy rõ tên, MSSV và logo trường. Dung lượng tối đa 2MB.</p>
                             {studentCardPreview && (
                                 <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                                     <img src={studentCardPreview} alt="Xem trước thẻ sinh viên" className="max-h-56 w-full object-contain" />
@@ -249,15 +258,15 @@ export default function Register() {
                         </div>
                     </div>
 
-                    <button type="submit" disabled={loading} className="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700 disabled:opacity-50">
+                    <button type="submit" disabled={loading} className="btn-primary mt-6 w-full disabled:opacity-50">
                         {loading ? 'Đang xử lý...' : 'Đăng ký tài khoản'}
                     </button>
                 </form>
 
-                <p className="text-center text-sm text-gray-600">
-                    Đã có tài khoản? <Link to="/login" className="font-medium text-indigo-600 hover:underline">Đăng nhập</Link>
+                <p className="auth-footer">
+                    Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
                 </p>
-            </div>
-        </div>
+            </section>
+        </main>
     );
 }

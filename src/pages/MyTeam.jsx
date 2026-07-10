@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { formatDateTime, getCountdownParts, getEventPhase } from '../utils/hackathon';
+import TeamChat from './TeamChat';
 
 export default function MyTeam() {
     const [searchParams] = useSearchParams();
@@ -333,17 +334,19 @@ export default function MyTeam() {
                         )}
                     </section>
 
-                    <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-                        <div className="rounded-lg border border-[#d7e6f8] bg-white p-5 lg:col-span-2">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <section className="team-workspace">
+                        <div className="team-mentor-chat">
+                            <div className="team-mentor-chat__intro">
                                 <div>
-                                    <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Mentor chat</p>
-                                    <p className="mt-1 text-sm font-semibold text-[#5c6d83]">Nhận và gửi tin nhắn realtime với mentor của đội.</p>
+                                    <p>Trao đổi cùng mentor</p>
+                                    <h2>Chat mentor</h2>
+                                    <span>Hỏi nhanh và nhận góp ý từ mentor.</span>
                                 </div>
-                                <Link to="/chat" className="btn-primary">Chat mentor</Link>
+                                <strong>Realtime</strong>
                             </div>
+                            <TeamChat embedded />
                         </div>
-                        <div className="rounded-lg border border-[#d7e6f8] bg-white p-6">
+                        <div className="team-submission-panel rounded-lg border border-[#d7e6f8] bg-white p-6">
                             <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Đề thi và nộp bài</h2>
                             {matrices.length === 0 ? (
                                 <p className="mt-4 text-sm text-[#5c6d83]">Coordinator chưa thêm đề thi/guideline cho hạng mục này.</p>
@@ -365,7 +368,7 @@ export default function MyTeam() {
                             )}
                         </div>
 
-                        <div className="rounded-lg border border-[#d7e6f8] bg-white p-6">
+                        <div className="team-members-panel rounded-lg border border-[#d7e6f8] bg-white p-6">
                             <div className="flex items-center justify-between gap-3">
                                 <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Thành viên</h2>
                                 {isLeader && <button type="button" onClick={() => setShowActions((value) => !value)} className="btn-secondary">Thao tác</button>}

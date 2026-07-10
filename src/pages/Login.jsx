@@ -33,23 +33,25 @@ export default function Login() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-[#f4f8ff] px-4">
-            <div className="w-full max-w-md rounded-lg border border-[#d7e6f8] bg-white p-8 shadow-sm">
-                <div className="text-center">
-                    <h1 className="text-3xl font-black text-[#0f63c9]">SEAL Hackathon</h1>
-                    <p className="mt-2 text-sm text-[#5c6d83]">Đăng nhập vào hệ thống</p>
+        <main className="auth-page">
+            <section className="auth-card" aria-labelledby="login-title">
+                <div className="auth-brand">
+                    <Link to="/" className="auth-logo" aria-label="Về trang chủ SEAL">SEAL</Link>
+                    <h1 id="login-title" className="auth-title">Chào mừng trở lại</h1>
+                    <p className="auth-copy">Đăng nhập để tiếp tục hành trình cùng SEAL Hackathon.</p>
                 </div>
 
                 {error && (
-                    <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                    <div className="form-alert" role="alert">
                         {error}
                     </div>
                 )}
 
-                <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+                <form className="space-y-5" onSubmit={handleSubmit}>
                     <div>
-                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Email</label>
+                        <label htmlFor="login-email" className="form-label">Email</label>
                         <input
+                            id="login-email"
                             type="email"
                             required
                             className="input-custom"
@@ -59,8 +61,9 @@ export default function Login() {
                         />
                     </div>
                     <div>
-                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mật khẩu</label>
+                        <label htmlFor="login-password" className="form-label">Mật khẩu</label>
                         <input
+                            id="login-password"
                             type="password"
                             required
                             className="input-custom"
@@ -75,13 +78,13 @@ export default function Login() {
                     </button>
                 </form>
 
-                <p className="mt-6 text-center text-sm text-[#5c6d83]">
+                <p className="auth-footer">
                     Chưa có tài khoản?{' '}
                     <Link to="/register" className="font-bold text-[#0f63c9] hover:underline">
                         Đăng ký ngay
                     </Link>
                 </p>
-            </div>
-        </div>
+            </section>
+        </main>
     );
 }

@@ -7,17 +7,17 @@ function EventCard({ event }) {
     const phase = getEventPhase(event);
 
     return (
-        <article className="feature-card">
-            <div className="flex items-start justify-between gap-4">
+        <article className={`event-card event-card--${phase.key}`}>
+            <div className="event-card__header">
                 <div>
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">{event.season} {event.year}</p>
                     <h3 className="mt-2 text-xl font-black uppercase tracking-[0.06em] text-[#071936]">{event.name}</h3>
                 </div>
-                <span className="rounded-full border border-[#8ec5ff] bg-[#eaf3ff] px-3 py-1 text-xs font-black uppercase text-[#0f63c9]">
+                <span className="event-card__status">
                     {phase.label}
                 </span>
             </div>
-            <dl className="mt-5 grid gap-3 text-sm text-[#5c6d83] sm:grid-cols-2">
+            <dl className="event-card__facts">
                 <div>
                     <dt className="font-bold text-[#0b1f3f]">Đăng ký</dt>
                     <dd>{formatDateTime(event.regStartDate)} - {formatDateTime(event.regEndDate)}</dd>
@@ -35,9 +35,11 @@ function EventCard({ event }) {
                     <dd>{event.teamCount || 0}</dd>
                 </div>
             </dl>
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="event-card__actions">
                 <Link to={`/events/${event.id}`} className="btn-primary">Xem chi tiết</Link>
-                {phase.key !== 'ended' && <Link to={`/my-team?eventId=${event.id}`} className="btn-secondary">Đăng ký đội</Link>}
+                {phase.key === 'ended'
+                    ? <Link to={`/events/${event.id}/results`} className="btn-secondary">Xem kết quả</Link>
+                    : phase.key === 'registration' && <Link to={`/my-team?eventId=${event.id}`} className="btn-secondary">Đăng ký đội</Link>}
             </div>
         </article>
     );
@@ -65,7 +67,7 @@ export default function Events() {
         fetchEvents();
     }, []);
 
-    const displayEvents = events.length ? events : [demoEvent];
+    const displayEvents = useMemo(() => (events.length ? events : [demoEvent]), [events]);
     const featured = useMemo(() => pickFeaturedEvent(displayEvents), [displayEvents]);
     const phase = getEventPhase(featured);
     const countdown = getCountdownParts(phase.key === 'registration' ? featured.regEndDate : featured.eventStartDate);
@@ -84,7 +86,7 @@ export default function Events() {
 
             {error && <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
 
-            <section className="mb-8 rounded-lg border border-[#d7e6f8] bg-white p-6 shadow-sm">
+            <section className="event-featured">
                 <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
                     <div>
                         <span className="badge-status-pill">{phase.label}</span>
@@ -106,7 +108,9 @@ export default function Events() {
                 </div>
                 <div className="mt-6 flex flex-wrap gap-3">
                     <Link to={`/events/${featured.id}`} className="btn-primary">Xem chi tiết</Link>
-                    {phase.key !== 'ended' && <Link to={`/my-team?eventId=${featured.id}`} className="btn-secondary">Đăng ký</Link>}
+                    {phase.key === 'ended'
+                        ? <Link to={`/events/${featured.id}/results`} className="btn-secondary">Xem kết quả</Link>
+                        : phase.key === 'registration' && <Link to={`/my-team?eventId=${featured.id}`} className="btn-secondary">Đăng ký</Link>}
                 </div>
             </section>
 

@@ -10,6 +10,88 @@ function rankLabel(rank) {
     return `Hạng ${rank}`;
 }
 
+const podiumMeta = {
+    1: { medal: '🥇', className: 'podium-card podium-card--first' },
+    2: { medal: '🥈', className: 'podium-card podium-card--second' },
+    3: { medal: '🥉', className: 'podium-card podium-card--third' },
+};
+
+function PodiumCard({ entry, mode }) {
+    if (!entry) return <div className="podium-card podium-card--empty" aria-hidden="true" />;
+
+    const meta = podiumMeta[entry.rank];
+    const isTeam = mode === 'TEAM';
+    const name = isTeam ? entry.teamName : entry.fullName;
+    const profilePath = !isTeam && entry.userId ? `/profile?userId=${entry.userId}` : '/profile';
+
+    return (
+        <article className={meta.className}>
+            <div className="podium-card__medal" aria-label={rankLabel(entry.rank)}>{meta.medal}</div>
+            <p className="podium-card__rank">Hạng {entry.rank}</p>
+            {isTeam ? (
+                <h2 className="podium-card__name">{name}</h2>
+            ) : (
+                <Link to={profilePath} className="podium-card__name podium-card__link">{name}</Link>
+            )}
+            <p className="podium-card__track">
+                {isTeam ? (entry.track || 'Bảng chung') : `${entry.first} nhất · ${entry.second} nhì · ${entry.third} ba`}
+            </p>
+            <div className="podium-card__score">
+                <strong>{isTeam ? (entry.score || 0) : entry.total}</strong>
+                <span>{isTeam ? 'điểm' : 'lần tham gia'}</span>
+            </div>
+            {isTeam && (
+                <div className="podium-card__members">
+                    {(entry.members || []).slice(0, 4).map((member) => (
+                        <Link
+                            to={member.userId ? `/profile?userId=${member.userId}` : '/profile'}
+                            key={member.id || member.email || member.fullName}
+                        >
+                            {member.fullName || member.email}
+                        </Link>
+                    ))}
+                </div>
+            )}
+            <div className="podium-card__base"><span>{entry.rank}</span></div>
+        </article>
+    );
+}
+
+function RankedList({ rows, mode }) {
+    if (!rows.length) return <div className="leaderboard-empty">Chưa có thứ hạng tiếp theo.</div>;
+
+    return (
+        <section className="leaderboard-list" aria-label="Các thứ hạng tiếp theo">
+            <div className="leaderboard-list__heading">
+                <div><p>Thứ hạng tiếp theo</p><h2>Từ hạng 4 trở xuống</h2></div>
+                <span>{rows.length} {mode === 'TEAM' ? 'đội thi' : 'thí sinh'}</span>
+            </div>
+            {rows.map((entry) => (
+                <div key={entry.id || entry.teamName || entry.userId || entry.email || entry.fullName} className="leaderboard-row">
+                    <div className="leaderboard-row__rank">#{entry.rank}</div>
+                    <div className="leaderboard-row__main">
+                        {mode === 'TEAM' ? (
+                            <>
+                                <h3>{entry.teamName}</h3>
+                                <p>{entry.track || 'Bảng chung'} · {(entry.members || []).map((member) => member.fullName || member.email).join(', ') || 'Chưa cập nhật thành viên'}</p>
+                            </>
+                        ) : (
+                            <>
+                                <Link to={entry.userId ? `/profile?userId=${entry.userId}` : '/profile'}>{entry.fullName}</Link>
+                                <p>{entry.first} giải nhất · {entry.second} giải nhì · {entry.third} giải ba</p>
+                            </>
+                        )}
+                    </div>
+                    <div className="leaderboard-row__score">
+                        <strong>{mode === 'TEAM' ? (entry.score || 0) : entry.total}</strong>
+                        <span>{mode === 'TEAM' ? 'điểm' : 'lần tham gia'}</span>
+                    </div>
+                </div>
+            ))}
+        </section>
+    );
+}
+
 export default function Leaderboard() {
     const [rankings, setRankings] = useState([]);
     const [events, setEvents] = useState([]);
@@ -78,6 +160,13 @@ export default function Leaderboard() {
         return [...stats.values()].sort((a, b) => b.first - a.first || b.second - a.second || b.third - a.third || b.total - a.total);
     }, [teamRows]);
 
+    const rankedRows = useMemo(() => {
+        if (mode === 'TEAM') return [...teamRows].sort((a, b) => a.rank - b.rank);
+        return individualRows.map((student, index) => ({ ...student, rank: index + 1 }));
+    }, [individualRows, mode, teamRows]);
+    const podiumEntries = [2, 1, 3].map((rank) => rankedRows.find((entry) => entry.rank === rank));
+    const remainingRows = rankedRows.filter((entry) => entry.rank > 3);
+
     return (
         <main className="section-shell">
             <div className="mb-8 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
@@ -110,55 +199,25 @@ export default function Leaderboard() {
 
             {loading ? (
                 <div className="rounded-lg border border-[#d7e6f8] bg-white p-8 text-center text-[#5c6d83]">Đang tải bảng xếp hạng...</div>
-            ) : mode === 'TEAM' ? (
-                <div className="overflow-hidden rounded-lg border border-[#d7e6f8] bg-white shadow-sm">
-                    {teamRows.map((team) => (
-                        <div key={`${team.id || team.teamName}-${team.rank}`} className="grid gap-4 border-b border-[#d7e6f8] p-5 last:border-b-0 md:grid-cols-[90px_1fr_160px] md:items-center">
-                            <div className="text-center">
-                                <p className="text-3xl font-black text-[#0f63c9]">#{team.rank}</p>
-                                <p className="text-xs font-black uppercase text-[#5c6d83]">{rankLabel(team.rank)}</p>
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black uppercase tracking-[0.06em] text-[#071936]">{team.teamName}</h2>
-                                <p className="mt-1 text-sm font-bold text-[#0f63c9]">{team.track || 'Bảng chung'}</p>
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {(team.members || []).length ? team.members.map((member) => (
-                                        <Link
-                                            to={member.userId ? `/profile?userId=${member.userId}` : '/profile'}
-                                            key={member.id || member.email || member.fullName}
-                                            className="rounded-full border border-[#d7e6f8] bg-[#f8fbff] px-3 py-1 text-xs font-bold text-[#0b1f3f] hover:border-[#8ec5ff]"
-                                        >
-                                            {member.fullName || member.email}
-                                        </Link>
-                                    )) : <span className="text-sm text-[#5c6d83]">Chưa cập nhật thành viên</span>}
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-4xl font-black text-[#071936]">{team.score || 0}</p>
-                                <p className="text-xs font-black uppercase text-[#5c6d83]">điểm</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
             ) : (
-                <div className="overflow-hidden rounded-lg border border-[#d7e6f8] bg-white shadow-sm">
-                    {individualRows.length ? individualRows.map((student, index) => (
-                        <div key={student.userId || student.email || student.fullName} className="grid gap-4 border-b border-[#d7e6f8] p-5 last:border-b-0 md:grid-cols-[80px_1fr_360px] md:items-center">
-                            <p className="text-2xl font-black text-[#0f63c9]">#{index + 1}</p>
-                            <Link to={student.userId ? `/profile?userId=${student.userId}` : '/profile'} className="text-lg font-black uppercase tracking-[0.06em] text-[#071936]">
-                                {student.fullName}
-                            </Link>
-                            <div className="grid grid-cols-4 gap-2 text-center text-sm">
-                                <span className="rounded-lg bg-[#f8fbff] p-3 font-bold">Giải nhất: {student.first}</span>
-                                <span className="rounded-lg bg-[#f8fbff] p-3 font-bold">Giải nhì: {student.second}</span>
-                                <span className="rounded-lg bg-[#f8fbff] p-3 font-bold">Giải ba: {student.third}</span>
-                                <span className="rounded-lg bg-[#f8fbff] p-3 font-bold">Đã tham gia: {student.total}</span>
-                            </div>
-                        </div>
-                    )) : (
-                        <div className="p-8 text-center text-[#5c6d83]">Chưa có đủ dữ liệu thành viên để tính bảng xếp hạng cá nhân.</div>
+                <>
+                    {rankedRows.length ? (
+                        <>
+                            <section className="podium-section" aria-label="Top 3 bảng xếp hạng">
+                                <div className="podium-section__intro">
+                                    <p>Top 3 xuất sắc</p>
+                                    <h2>Vinh danh nhà vô địch</h2>
+                                </div>
+                                <div className="podium-grid">
+                                    {podiumEntries.map((entry, index) => <PodiumCard key={entry?.rank || `empty-${index}`} entry={entry} mode={mode} />)}
+                                </div>
+                            </section>
+                            <RankedList rows={remainingRows} mode={mode} />
+                        </>
+                    ) : (
+                        <div className="leaderboard-empty">Chưa có đủ dữ liệu để hiển thị bảng xếp hạng.</div>
                     )}
-                </div>
+                </>
             )}
         </main>
     );

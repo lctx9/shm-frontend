@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 
-export default function TeamChat() {
+export default function TeamChat({ embedded = false }) {
     const role = localStorage.getItem('role');
     const email = localStorage.getItem('email');
     const [teams, setTeams] = useState([]);
@@ -130,8 +130,8 @@ export default function TeamChat() {
     }
 
     return (
-        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[320px_1fr]">
-            <aside className="rounded-lg border border-blue-100 bg-white shadow-sm">
+        <div className={embedded && !isMentor ? 'team-chat team-chat--embedded' : 'team-chat mx-auto grid max-w-7xl gap-6 lg:grid-cols-[320px_1fr]'}>
+            {(!embedded || isMentor) && <aside className="rounded-lg border border-blue-100 bg-white shadow-sm">
                 <div className="border-b border-blue-100 p-5">
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Team chat</p>
                     <h2 className="mt-1 text-lg font-black text-slate-900">Đội trao đổi</h2>
@@ -149,10 +149,10 @@ export default function TeamChat() {
                         </button>
                     ))}
                 </div>
-            </aside>
+            </aside>}
 
-            <section className="flex min-h-[680px] flex-col rounded-lg border border-blue-100 bg-white shadow-sm">
-                <div className="relative border-b border-blue-100 bg-blue-50 px-6 py-4 sm:pr-36">
+            <section className={`flex flex-col rounded-lg border border-blue-100 bg-white shadow-sm ${embedded ? 'min-h-[360px]' : 'min-h-[680px]'}`}>
+                <div className="team-chat__header relative border-b border-blue-100 bg-blue-50 px-6 py-4 sm:pr-36">
                     <span className="mt-3 inline-flex w-fit items-center rounded-full border border-green-100 bg-green-50 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-green-700 sm:absolute sm:right-6 sm:top-5 sm:mt-0">
                         {refreshing ? 'Đang đồng bộ' : 'Realtime'}
                     </span>
@@ -160,7 +160,7 @@ export default function TeamChat() {
                     <p className="mt-1 text-sm text-slate-600">Trao đổi trực tiếp giữa mentor và đội thi.</p>
                 </div>
                 {error && <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
-                <div className="flex-1 space-y-4 overflow-y-auto p-6">
+                <div className="team-chat__messages flex-1 space-y-4 overflow-y-auto p-6">
                     {messages.length === 0 ? (
                         <p className="text-center text-sm text-slate-500">Chưa có tin nhắn.</p>
                     ) : messages.map((message) => {
@@ -177,7 +177,7 @@ export default function TeamChat() {
                     })}
                     <div ref={messagesEndRef} />
                 </div>
-                <form onSubmit={handleSubmit} className="flex gap-3 border-t border-blue-100 p-4">
+                <form onSubmit={handleSubmit} className="team-chat__composer flex gap-3 border-t border-blue-100 p-4">
                     <input className="input-custom" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Nhập tin nhắn..." />
                     <button type="submit" className="btn-primary">Gửi</button>
                 </form>
