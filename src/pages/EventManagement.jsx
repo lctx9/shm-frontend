@@ -418,13 +418,28 @@ export default function EventManagement() {
 
     const deleteEvent = async () => {
         if (!selectedEventId) return;
+        const hasTeams = selectedEvent && Number(selectedEvent.teamCount || 0) > 0;
+        const confirmMsg = hasTeams 
+            ? 'Bạn có chắc chắn muốn TẠM DỪNG hoạt động của sự kiện này? Các đội thi vẫn được bảo toàn lịch sử.'
+            : 'Bạn có chắc chắn muốn XÓA HOÀN TOÀN sự kiện nháp này khỏi hệ thống? Thao tác này không thể hoàn tác.';
+            
+        if (!window.confirm(confirmMsg)) return;
+
         setLoading(true);
         try {
             await axiosClient.delete(`/events/${selectedEventId}`);
-            setMessage({ type: 'success', text: 'Da tat hoat dong event.' });
+            setMessage({ 
+                type: 'success', 
+                text: hasTeams ? 'Đã tạm dừng hoạt động sự kiện.' : 'Đã xóa hoàn toàn sự kiện khỏi hệ thống.' 
+            });
             await fetchAll('');
+            if (!hasTeams) {
+                setSelectedEventId(null);
+                setSelectedEvent(null);
+                setActiveTab('list');
+            }
         } catch (err) {
-            setMessage({ type: 'error', text: err.message || 'Khong xoa duoc event.' });
+            setMessage({ type: 'error', text: err.message || 'Không thể thực hiện yêu cầu.' });
         } finally {
             setLoading(false);
         }
@@ -857,7 +872,16 @@ export default function EventManagement() {
                         <Section
                             title="Thông tin và lịch sự kiện"
                             eyebrow="Cấu hình cơ bản"
-                            actions={selectedEvent && <button type="button" className="btn-secondary" onClick={deleteEvent} disabled={loading}>Tạm dừng sự kiện</button>}
+                            actions={selectedEvent && (
+                                <button 
+                                    type="button" 
+                                    className="btn-secondary" 
+                                    onClick={deleteEvent} 
+                                    disabled={loading}
+                                >
+                                    {Number(selectedEvent.teamCount || 0) > 0 ? 'Tạm dừng sự kiện' : 'Xóa sự kiện'}
+                                </button>
+                            )}
                         >
                             <form onSubmit={saveEvent} className="space-y-5">
                                 <div><h3 className="font-black text-slate-900">1. Thông tin nhận diện</h3><p className="mt-1 text-sm text-slate-500">Nội dung cơ bản hiển thị cho người tham gia trên trang công khai.</p></div>
