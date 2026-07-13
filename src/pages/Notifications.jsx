@@ -4,7 +4,7 @@ import axiosClient from '../api/axiosClient';
 export default function Notifications() {
     const role = localStorage.getItem('role');
     const [notifications, setNotifications] = useState([]);
-    const [form, setForm] = useState({ title: '', body: '', targetRole: 'MEMBER' });
+    const [form, setForm] = useState({ title: '', body: '', targetRole: 'USER' });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -23,6 +23,27 @@ export default function Notifications() {
         }
     };
 
+    const markAsRead = async (id) => {
+        setNotifications((current) => current.map((item) => item.id === id ? { ...item, read: true } : item));
+        try {
+            await axiosClient.patch(`/notifications/${id}/read`);
+            window.dispatchEvent(new Event('notifications:refresh'));
+        } catch (err) {
+            setError(err.message || 'Không thể cập nhật thông báo.');
+            fetchNotifications();
+        }
+    };
+
+    const markAllAsRead = async () => {
+        try {
+            await axiosClient.patch('/notifications/read-all');
+            setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+            window.dispatchEvent(new Event('notifications:refresh'));
+        } catch (err) {
+            setError(err.message || 'Không thể cập nhật thông báo.');
+        }
+    };
+
     useEffect(() => {
         fetchNotifications();
     }, []);
@@ -31,7 +52,7 @@ export default function Notifications() {
         e.preventDefault();
         try {
             await axiosClient.post('/notifications', form);
-            setForm({ title: '', body: '', targetRole: 'MEMBER' });
+            setForm({ title: '', body: '', targetRole: 'USER' });
             await fetchNotifications();
         } catch (err) {
             setError(err.message || 'Không thể gửi thông báo.');
@@ -47,10 +68,8 @@ export default function Notifications() {
                         <div className="grid gap-4 md:grid-cols-[1fr_180px]">
                             <input required className="input-custom" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Tiêu đề" />
                             <select className="input-custom" value={form.targetRole} onChange={(e) => setForm({ ...form, targetRole: e.target.value })}>
-                                <option value="MEMBER">Member</option>
-                                <option value="LEADER">Leader</option>
-                                <option value="MENTOR">Mentor</option>
-                                <option value="JUDGE">Judge</option>
+                                <option value="USER">Người tham gia</option>
+                                <option value="STAFF">Staff</option>
                             </select>
                         </div>
                         <textarea required rows="4" className="input-custom" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Nội dung thông báo" />
@@ -62,7 +81,10 @@ export default function Notifications() {
             <section className="rounded-lg border border-blue-100 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50 px-6 py-4">
                     <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Thông báo của tôi</h2>
-                    <button type="button" onClick={fetchNotifications} className="btn-secondary">Làm mới</button>
+                    <div className="flex gap-2">
+                        {notifications.some((item) => !item.read) && <button type="button" onClick={markAllAsRead} className="btn-secondary">Đọc tất cả</button>}
+                        <button type="button" onClick={fetchNotifications} className="btn-secondary">Làm mới</button>
+                    </div>
                 </div>
                 {error && <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
                 <div className="divide-y divide-blue-50">
@@ -71,7 +93,7 @@ export default function Notifications() {
                     ) : notifications.length === 0 ? (
                         <div className="p-8 text-center text-slate-500">Chưa có thông báo.</div>
                     ) : notifications.map((item) => (
-                        <article key={item.id} className="px-6 py-5">
+                        <article key={item.id} onClick={() => markAsRead(item.id)} className={`cursor-pointer px-6 py-5 ${item.read ? 'bg-white' : 'bg-blue-50/70'}`}>
                             <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">{item.targetRole || 'Cá nhân'}</p>
                             <h3 className="mt-2 font-black text-slate-900">{item.title}</h3>
                             <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>

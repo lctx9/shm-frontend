@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 
 export default function TeamChat({ embedded = false }) {
-    const role = localStorage.getItem('role');
+    const storedRole = localStorage.getItem('role');
+    const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const email = localStorage.getItem('email');
     const [teams, setTeams] = useState([]);
     const [events, setEvents] = useState([]);
@@ -13,7 +14,7 @@ export default function TeamChat({ embedded = false }) {
     const [error, setError] = useState('');
     const [refreshing, setRefreshing] = useState(false);
     const messagesEndRef = useRef(null);
-    const isMentor = role === 'MENTOR';
+    const isMentor = role === 'STAFF' || role === 'MENTOR';
 
     const assignedTrackIds = useMemo(() => {
         if (!isMentor) return new Set();

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 
-const studentRoles = new Set(['MEMBER', 'LEADER']);
+const studentRoles = new Set(['USER']);
 
 function StatusBadge({ status }) {
     const tone = {

@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import axiosClient from '../api/axiosClient';
+import NotificationBell from './NotificationBell';
 
-const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'JUDGE', 'MENTOR']);
+const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
 const coordinatorGroups = [
     {
@@ -13,7 +16,7 @@ const coordinatorGroups = [
     {
         title: 'Sự kiện',
         items: [
-            { to: '/dashboard/events', label: 'Cấu hình sự kiện' },
+            { to: '/dashboard/events', label: 'Quản lý sự kiện' },
             { to: '/dashboard/teams', label: 'Đội thi' },
             { to: '/dashboard/submissions', label: 'Bài nộp' },
         ],
@@ -28,10 +31,36 @@ const coordinatorGroups = [
     {
         title: 'Chấm điểm',
         items: [
+            { to: '/dashboard/scoring-config', label: 'Cấu hình chấm điểm' },
             { to: '/dashboard/grading', label: 'Chấm bài' },
             { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
             { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
             { to: '/dashboard/audit-logs', label: 'Audit điểm' },
+        ],
+    },
+];
+
+const adminGroups = [
+    {
+        title: 'Quản trị hệ thống',
+        items: [
+            { to: '/dashboard', label: 'Tổng quan hệ thống', match: ['/dashboard'] },
+            { to: '/dashboard/users', label: 'Tài khoản & phân quyền' },
+            { to: '/dashboard/monitoring', label: 'Giám sát hệ thống' },
+        ],
+    },
+    {
+        title: 'Vận hành cuộc thi',
+        items: [
+            { to: '/dashboard/events', label: 'Quản lý sự kiện' },
+            { to: '/dashboard/scoring-config', label: 'Cấu hình chấm điểm' },
+        ],
+    },
+    {
+        title: 'Vận hành dữ liệu',
+        items: [
+            { to: '/dashboard/backups', label: 'Sao lưu & khôi phục' },
+            { to: '/dashboard/settings', label: 'Cấu hình hệ thống' },
         ],
     },
 ];
@@ -61,8 +90,13 @@ const mentorGroups = [
 ];
 
 const pageTitles = {
+    '/dashboard/users': 'Tài khoản & phân quyền',
+    '/dashboard/monitoring': 'Giám sát hệ thống',
+    '/dashboard/backups': 'Sao lưu & khôi phục',
+    '/dashboard/settings': 'Cấu hình hệ thống',
     '/dashboard': 'Tổng quan',
-    '/dashboard/events': 'Cấu hình sự kiện',
+    '/dashboard/events': 'Quản lý sự kiện',
+    '/dashboard/scoring-config': 'Cấu hình chấm điểm',
     '/dashboard/teams': 'Đội thi',
     '/dashboard/submissions': 'Bài nộp',
     '/dashboard/student-approval': 'Phê duyệt thí sinh',
@@ -77,16 +111,62 @@ const pageTitles = {
 };
 
 function getGroups(role) {
-    if (role === 'COORDINATOR' || role === 'ADMIN') return coordinatorGroups;
+    if (role === 'ADMIN') return adminGroups;
+    if (role === 'COORDINATOR') return coordinatorGroups;
     if (role === 'JUDGE') return judgeGroups;
-    return mentorGroups;
+    if (role === 'MENTOR') return mentorGroups;
+    return [];
+}
+
+function getStaffGroups(assignments) {
+    const groups = [{
+        title: 'Staff',
+        items: [
+            { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
+            { to: '/dashboard/notifications', label: 'Thông báo' },
+        ],
+    }];
+    if (assignments.mentor) {
+        groups.push({
+            title: 'Nhiệm vụ Mentor',
+            items: [
+                { to: '/dashboard/teams', label: 'Đội được hướng dẫn' },
+                { to: '/dashboard/chat', label: 'Chat với đội' },
+            ],
+        });
+    }
+    if (assignments.judge) {
+        groups.push({
+            title: 'Nhiệm vụ Judge',
+            items: [
+                { to: '/dashboard/grading', label: 'Bài cần chấm' },
+                { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
+            ],
+        });
+    }
+    return groups;
 }
 
 export default function DashboardLayout() {
     const navigate = useNavigate();
     const location = useLocation();
-    const role = localStorage.getItem('role');
+    const storedRole = localStorage.getItem('role');
+    const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const email = localStorage.getItem('email');
+    const [assignments, setAssignments] = useState({ mentor: role === 'MENTOR', judge: role === 'JUDGE' });
+
+    useEffect(() => {
+        if (!['STAFF', 'MENTOR', 'JUDGE'].includes(role)) return;
+        let active = true;
+        axiosClient.get('/users/me/assignments')
+            .then((response) => {
+                if (active) setAssignments(response.result || { mentor: false, judge: false });
+            })
+            .catch(() => {
+                if (active) setAssignments({ mentor: role === 'MENTOR', judge: role === 'JUDGE' });
+            });
+        return () => { active = false; };
+    }, [role]);
 
     if (!managerRoles.has(role)) {
         return <Navigate to="/my-team" replace />;
@@ -111,6 +191,9 @@ export default function DashboardLayout() {
             ? 'dashboard-nav-link is-active'
             : 'dashboard-nav-link'
     );
+    const currentPageTitle = location.pathname === '/dashboard' && role === 'ADMIN'
+        ? 'Tổng quan hệ thống'
+        : pageTitles[location.pathname] || 'Dashboard';
 
     return (
         <div className="dashboard-shell">
@@ -126,7 +209,7 @@ export default function DashboardLayout() {
                 </div>
 
                 <nav className="flex-1 space-y-5 overflow-y-auto p-4">
-                    {getGroups(role).map((group) => (
+                    {(['STAFF', 'MENTOR', 'JUDGE'].includes(role) ? getStaffGroups(assignments) : getGroups(role)).map((group) => (
                         <section key={group.title}>
                             <p className="sidebar-label mb-2 px-3 text-[11px] font-black uppercase tracking-[0.14em] text-[#748195]">
                                 {group.title}
@@ -154,9 +237,12 @@ export default function DashboardLayout() {
                 <header className="dashboard-topbar">
                     <div>
                         <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">SEAL Hackathon</p>
-                        <h1 className="mt-1 text-xl font-black text-[#071936]">{pageTitles[location.pathname] || 'Dashboard'}</h1>
+                        <h1 className="mt-1 text-xl font-black text-[#071936]">{currentPageTitle}</h1>
                     </div>
-                    <p className="account-email max-w-sm truncate text-sm font-semibold text-[#5c6d83]">{email}</p>
+                    <div className="flex items-center gap-3">
+                        <NotificationBell />
+                        <p className="account-email max-w-sm truncate text-sm font-semibold text-[#5c6d83]">{email}</p>
+                    </div>
                 </header>
 
                 <main className="dashboard-content">

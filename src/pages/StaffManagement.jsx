@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 
-const staffRoles = new Set(['MENTOR', 'JUDGE', 'COORDINATOR', 'ADMIN']);
+const staffRoles = new Set(['STAFF', 'MENTOR', 'JUDGE', 'COORDINATOR', 'ADMIN']);
 
 export default function StaffManagement() {
     const [users, setUsers] = useState([]);
     const [roleFilter, setRoleFilter] = useState('ALL');
-    const [staffForm, setStaffForm] = useState({ fullName: '', email: '', password: '1', role: 'JUDGE' });
+    const [staffForm, setStaffForm] = useState({ fullName: '', email: '', password: '1', role: 'STAFF' });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -39,7 +39,7 @@ export default function StaffManagement() {
         try {
             setSaving(true);
             await axiosClient.post('/users/staff', staffForm);
-            setStaffForm({ fullName: '', email: '', password: '1', role: 'JUDGE' });
+            setStaffForm({ fullName: '', email: '', password: '1', role: 'STAFF' });
             await fetchUsers();
         } catch (err) {
             setError(err.message || 'Không thể tạo tài khoản staff.');
@@ -59,16 +59,15 @@ export default function StaffManagement() {
 
             <section className="rounded-lg border border-blue-100 bg-white p-8 shadow-sm">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Staff account</p>
-                <h2 className="mt-2 text-2xl font-black uppercase tracking-wide text-slate-900">Tạo tài khoản Mentor/Judge</h2>
-                <p className="mt-2 text-sm text-slate-600">Staff được tạo tại đây sẽ xuất hiện trong màn hình phân công Mentor/Judge của từng ô ma trận.</p>
+                <h2 className="mt-2 text-2xl font-black uppercase tracking-wide text-slate-900">Tạo tài khoản Staff</h2>
+                <p className="mt-2 text-sm text-slate-600">Một Staff có thể được phân công làm Mentor ở bảng này và Judge ở vòng đấu khác.</p>
 
                 <form onSubmit={handleCreateStaff} className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_160px_160px_auto]">
                     <input required className="input-custom" value={staffForm.fullName} onChange={(e) => setStaffForm({ ...staffForm, fullName: e.target.value })} placeholder="Họ tên" />
                     <input required type="email" className="input-custom" value={staffForm.email} onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })} placeholder="email@fpt.edu.vn" />
                     <input required className="input-custom" value={staffForm.password} onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })} placeholder="Mật khẩu" />
                     <select className="input-custom" value={staffForm.role} onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}>
-                        <option value="JUDGE">Judge</option>
-                        <option value="MENTOR">Mentor</option>
+                        <option value="STAFF">Staff</option>
                         <option value="COORDINATOR">Coordinator</option>
                     </select>
                     <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Đang tạo...' : 'Tạo'}</button>
@@ -79,12 +78,11 @@ export default function StaffManagement() {
                 <div className="flex flex-col justify-between gap-4 border-b border-blue-100 bg-blue-50 px-6 py-4 sm:flex-row sm:items-end">
                     <div>
                         <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Danh sách Staff</h2>
-                        <p className="mt-1 text-sm text-slate-600">Quản lý Mentor, Judge và tài khoản điều phối.</p>
+                        <p className="mt-1 text-sm text-slate-600">Mentor/Judge là nhiệm vụ phân công, không phải role tài khoản.</p>
                     </div>
                     <select className="input-custom max-w-xs" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
                         <option value="ALL">Tất cả vai trò</option>
-                        <option value="MENTOR">Mentor</option>
-                        <option value="JUDGE">Judge</option>
+                        <option value="STAFF">Staff</option>
                         <option value="COORDINATOR">Coordinator</option>
                         <option value="ADMIN">Admin</option>
                     </select>

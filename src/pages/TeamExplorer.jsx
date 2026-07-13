@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 
-const staffRoles = new Set(['ADMIN', 'COORDINATOR', 'JUDGE', 'MENTOR']);
+const staffRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
 function Pill({ children, tone = 'blue' }) {
     const tones = {
@@ -111,7 +111,8 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
 }
 
 export default function TeamExplorer() {
-    const role = localStorage.getItem('role');
+    const storedRole = localStorage.getItem('role');
+    const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const email = localStorage.getItem('email');
     const [teams, setTeams] = useState([]);
     const [events, setEvents] = useState([]);
@@ -123,7 +124,7 @@ export default function TeamExplorer() {
     const [joinPassword, setJoinPassword] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const isMentor = role === 'MENTOR';
+    const isMentor = role === 'STAFF' || role === 'MENTOR';
     const canJoin = !staffRoles.has(role);
 
     const fetchData = async () => {

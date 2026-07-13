@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
 
-const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'JUDGE', 'MENTOR']);
+const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
 function getInitial(email) {
     return (email || 'U').trim().charAt(0).toUpperCase();
@@ -70,6 +71,8 @@ export default function Header() {
                         <span aria-hidden="true" className="text-xl leading-none">☰</span>
                     </button>
                     {token ? (
+                        <>
+                        <NotificationBell />
                         <div className="relative">
                             <button
                                 type="button"
@@ -99,6 +102,7 @@ export default function Header() {
                                 </div>
                             )}
                         </div>
+                        </>
                     ) : (
                         <>
                             <Link to="/login" className="btn-secondary">Đăng nhập</Link>

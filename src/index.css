@@ -373,6 +373,28 @@ button {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.notification-bell {
+    position: relative;
+    display: inline-flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--app-border);
+    border-radius: 999px;
+    background: white;
+    color: #52647a;
+    cursor: pointer;
+    transition: background .18s ease, border-color .18s ease, color .18s ease;
+}
+.notification-bell:hover { border-color: #8ec5ff; background: var(--app-surface-soft); color: var(--app-primary); }
+.notification-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border: 2px solid white; border-radius: 999px; background: #e5484d; padding: 0 4px; color: white; font-size: 9px; font-weight: 900; line-height: 1; }
+.notification-dropdown { position: absolute; top: calc(100% + 10px); right: 0; z-index: 80; width: min(380px, calc(100vw - 24px)); overflow: hidden; border: 1px solid var(--app-border); border-radius: 16px; background: white; box-shadow: 0 24px 60px rgba(11,31,63,.16); }
+.notification-item { display: flex; width: 100%; gap: 12px; border: 0; border-bottom: 1px solid #edf3fa; background: white; padding: 14px 16px; cursor: pointer; }
+.notification-item:hover { background: #f4f8ff; }
+.notification-item.is-unread { background: #f0f7ff; }
+.notification-item.is-unread:hover { background: #e6f2ff; }
+
 /* Shared HSF-inspired application surfaces */
 .app-card {
     border: 1px solid var(--app-border);

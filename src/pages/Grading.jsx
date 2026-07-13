@@ -52,8 +52,10 @@ export default function Grading() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
-    const role = localStorage.getItem('role');
-    const canGrade = role === 'JUDGE';
+    const storedRole = localStorage.getItem('role');
+    const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
+    const email = localStorage.getItem('email');
+    const canGrade = ['STAFF', 'JUDGE', 'ADMIN', 'COORDINATOR'].includes(role);
 
     const matrixById = useMemo(() => {
         const map = new Map();
@@ -63,11 +65,19 @@ export default function Grading() {
         return map;
     }, [events]);
 
+    const visibleSubmissions = useMemo(() => {
+        if (role === 'ADMIN' || role === 'COORDINATOR') return submissions;
+        return submissions.filter((submission) => {
+            const matrix = matrixById.get(String(submission.matrixId));
+            return (matrix?.judges || []).some((judge) => judge.email === email);
+        });
+    }, [email, matrixById, role, submissions]);
+
     const summary = useMemo(() => ({
-        total: submissions.length,
-        graded: submissions.filter((submission) => submission.graded).length,
-        pending: submissions.filter((submission) => !submission.graded).length,
-    }), [submissions]);
+        total: visibleSubmissions.length,
+        graded: visibleSubmissions.filter((submission) => submission.graded).length,
+        pending: visibleSubmissions.filter((submission) => !submission.graded).length,
+    }), [visibleSubmissions]);
 
     const finalScore = useMemo(() => weightedAverage(criteriaScores), [criteriaScores]);
 
@@ -171,11 +181,11 @@ export default function Grading() {
                         <h2 className="mt-1 text-lg font-black uppercase tracking-wide text-slate-900">Bai nop can cham</h2>
                     </div>
 
-                    {submissions.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">Chua co bai nop nao.</div>
+                    {visibleSubmissions.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">Bạn chưa có bài nào được phân công chấm.</div>
                     ) : (
                         <div className="divide-y divide-blue-50">
-                            {submissions.map((submission) => {
+                            {visibleSubmissions.map((submission) => {
                                 const matrix = matrixById.get(String(submission.matrixId));
                                 return (
                                     <button

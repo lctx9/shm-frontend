@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import AdminOverview from './AdminOverview';
 
 const roleCopy = {
     ADMIN: 'Quản trị hệ thống',
     COORDINATOR: 'Điều phối sự kiện',
+    STAFF: 'Nhân sự cuộc thi',
     JUDGE: 'Giám khảo',
     MENTOR: 'Mentor hướng dẫn đội thi',
 };
 
-export default function Dashboard() {
-    const role = localStorage.getItem('role');
+function OperationalDashboard() {
+    const storedRole = localStorage.getItem('role');
+    const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const [stats, setStats] = useState({
         activeEvents: 0,
         totalTeams: 0,
@@ -89,10 +92,10 @@ export default function Dashboard() {
                         Coordinator: tạo/cấu hình event, duyệt thí sinh, phân công mentor/judge, kiểm tra submission.
                     </div>
                     <div className="rounded-lg bg-blue-50 p-4 text-sm text-slate-700">
-                        Mentor: vào Đội thi để xem đội được phân công, mở chi tiết, xem bài nộp và trao đổi với đội.
+                        Staff được giao nhiệm vụ Mentor: xem đội thuộc bảng phụ trách và trao đổi qua chat.
                     </div>
                     <div className="rounded-lg bg-blue-50 p-4 text-sm text-slate-700">
-                        Judge: vào Chấm bài, chọn submission, nhập điểm theo rubric nhiều cột và lưu nhận xét.
+                        Staff được giao nhiệm vụ Judge: chấm các submission thuộc đúng vòng được phân công.
                     </div>
                     <div className="rounded-lg bg-blue-50 p-4 text-sm text-slate-700">
                         User/Leader: đăng ký, tạo đội, nộp bài, chat với mentor và theo dõi trạng thái.
@@ -101,4 +104,8 @@ export default function Dashboard() {
             </section>
         </div>
     );
+}
+
+export default function Dashboard() {
+    return localStorage.getItem('role') === 'ADMIN' ? <AdminOverview /> : <OperationalDashboard />;
 }

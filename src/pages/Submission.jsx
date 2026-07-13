@@ -6,7 +6,7 @@ function matrixLabel(matrix) {
 }
 
 export default function Submission() {
-    const role = localStorage.getItem('role');
+    const currentEmail = localStorage.getItem('email');
     const [team, setTeam] = useState(null);
     const [matrices, setMatrices] = useState([]);
     const [submission, setSubmission] = useState(null);
@@ -57,12 +57,15 @@ export default function Submission() {
         () => matrices.find((matrix) => String(matrix.id) === String(formData.matrixId)),
         [matrices, formData.matrixId]
     );
+    const isLeader = team?.members?.some(
+        (member) => member.email === currentEmail && member.role === 'LEADER'
+    ) || false;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage({ text: '', type: '' });
 
-        if (role !== 'LEADER') {
+        if (!isLeader) {
             setMessage({ text: 'Chỉ Team Leader mới có quyền nộp hoặc cập nhật bài.', type: 'error' });
             return;
         }
@@ -154,7 +157,7 @@ export default function Submission() {
                                 className="input-custom"
                                 value={formData.matrixId}
                                 onChange={(e) => setFormData({ ...formData, matrixId: e.target.value })}
-                                disabled={role !== 'LEADER'}
+                                disabled={!isLeader}
                             >
                                 {matrices.map((matrix) => (
                                     <option key={matrix.id} value={matrix.id}>{matrixLabel(matrix)}</option>
@@ -176,11 +179,11 @@ export default function Submission() {
                                 value={formData.fileUrl}
                                 onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
                                 placeholder="https://github.com/... hoặc link Drive"
-                                disabled={role !== 'LEADER'}
+                                disabled={!isLeader}
                             />
                         </div>
 
-                        <button type="submit" disabled={saving || role !== 'LEADER'} className="btn-primary w-full">
+                        <button type="submit" disabled={saving || !isLeader} className="btn-primary w-full">
                             {saving ? 'Đang lưu...' : submission ? 'Cập nhật bài nộp' : 'Gửi bài nộp'}
                         </button>
                     </form>

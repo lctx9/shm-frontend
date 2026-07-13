@@ -7,8 +7,7 @@ import TeamChat from './TeamChat';
 export default function MyTeam() {
     const [searchParams] = useSearchParams();
     const preselectedEventId = searchParams.get('eventId');
-    const role = localStorage.getItem('role');
-    const isLeader = role === 'LEADER';
+    const currentEmail = localStorage.getItem('email');
 
     const [team, setTeam] = useState(null);
     const [events, setEvents] = useState([]);
@@ -36,6 +35,9 @@ export default function MyTeam() {
         fileUrl: '',
         matrixId: '',
     });
+    const isLeader = team?.members?.some(
+        (member) => member.email === currentEmail && member.role === 'LEADER'
+    ) || false;
 
     const fetchData = async () => {
         try {
@@ -63,7 +65,7 @@ export default function MyTeam() {
                 const [matrixRes, submissionRes, requestRes] = await Promise.allSettled([
                     axiosClient.get(`/events/${loadedTeam.eventId}/matrices`),
                     axiosClient.get('/submissions/my-submission'),
-                    localStorage.getItem('role') === 'LEADER'
+                    loadedTeam?.members?.some((member) => member.email === currentEmail && member.role === 'LEADER')
                         ? axiosClient.get(`/teams/${loadedTeam.id}/join-requests`)
                         : Promise.resolve({ result: [] }),
                 ]);
@@ -125,7 +127,6 @@ export default function MyTeam() {
                 eventId: Number(formData.eventId),
                 trackId: Number(formData.trackId),
             });
-            localStorage.setItem('role', 'LEADER');
             setTeam(response.result);
             setMessage({ text: 'Tạo đội thành công.', type: 'success' });
             await fetchData();
@@ -171,7 +172,6 @@ export default function MyTeam() {
 
     const handleTransfer = async (memberId) => {
         const response = await axiosClient.put(`/teams/${team.id}/leader/${memberId}`);
-        localStorage.setItem('role', 'MEMBER');
         setTeam(response.result);
     };
 

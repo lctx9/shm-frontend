@@ -24,11 +24,20 @@ import ScoringStats from './pages/ScoringStats';
 import SubmissionManagement from './pages/SubmissionManagement';
 import StudentApproval from './pages/StudentApproval';
 import StaffManagement from './pages/StaffManagement';
+import AdminMonitoring from './pages/AdminMonitoring';
+import AdminSettings from './pages/AdminSettings';
+import BackupRestore from './pages/BackupRestore';
+import ScoringConfiguration from './pages/ScoringConfiguration';
 
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('token');
     if (!token) return <Navigate to="/login" replace />;
     return children;
+};
+
+const RoleRoute = ({ roles, children }) => {
+    const role = localStorage.getItem('role');
+    return roles.includes(role) ? children : <Navigate to="/dashboard" replace />;
 };
 
 function App() {
@@ -61,7 +70,11 @@ function App() {
                         <Route path="my-team" element={<Navigate to="/my-team" replace />} />
                         <Route path="submissions" element={<SubmissionManagement />} />
                         <Route path="events" element={<EventManagement />} />
-                        <Route path="users" element={<UserManagement />} />
+                        <Route path="scoring-config" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><ScoringConfiguration /></RoleRoute>} />
+                        <Route path="users" element={<RoleRoute roles={['ADMIN']}><UserManagement /></RoleRoute>} />
+                        <Route path="monitoring" element={<RoleRoute roles={['ADMIN']}><AdminMonitoring /></RoleRoute>} />
+                        <Route path="backups" element={<RoleRoute roles={['ADMIN']}><BackupRestore /></RoleRoute>} />
+                        <Route path="settings" element={<RoleRoute roles={['ADMIN']}><AdminSettings /></RoleRoute>} />
                         <Route path="student-approval" element={<StudentApproval />} />
                         <Route path="staff" element={<StaffManagement />} />
                         <Route path="audit-logs" element={<AuditLogs />} />
