@@ -114,13 +114,19 @@ export default function Register() {
     };
 
     return (
-        <main className="auth-page">
-            <section className="auth-card auth-card-wide" aria-labelledby="register-title">
-                <div className="auth-brand">
-                    <Link to="/" className="auth-logo" aria-label="Về trang chủ SEAL">SEAL</Link>
-                    <h1 id="register-title" className="auth-title">Tạo tài khoản thí sinh</h1>
-                    <p className="auth-copy">Một bước nữa để bạn tham gia và chinh phục SEAL Hackathon.</p>
-                </div>
+        <main className="devpost-auth devpost-auth--register">
+            <section className="devpost-auth__story">
+                <Link to="/" className="devpost-auth__wordmark"><span>SEAL</span><strong>SEAL Hackathon</strong></Link>
+                <div><p>Gia nhập cộng đồng SEAL</p><h1>Tạo hồ sơ.<br />Tìm đồng đội.<br />Bắt đầu xây dựng.</h1><span>Tài khoản sinh viên giúp thành tích, giải thưởng và chứng nhận của bạn được lưu lại xuyên suốt các mùa giải.</span></div>
+                <ul><li><strong>01</strong>Xác thực email</li><li><strong>02</strong>Cung cấp thông tin sinh viên</li><li><strong>03</strong>Chờ coordinator phê duyệt</li></ul>
+            </section>
+
+            <section className="devpost-auth__form-panel" aria-labelledby="register-title">
+                <div className="devpost-auth__form-wrap devpost-auth__form-wrap--wide">
+                    <Link to="/" className="devpost-auth__back">← Về trang chủ</Link>
+                    <p className="devpost-auth__eyebrow">Tạo tài khoản</p>
+                    <h1 id="register-title">Đăng ký thí sinh</h1>
+                    <span className="devpost-auth__copy">Hoàn thành thông tin dưới đây để tham gia SEAL Hackathon.</span>
 
                 {error && <div className="form-alert" role="alert">{error}</div>}
 
@@ -263,9 +269,10 @@ export default function Register() {
                     </button>
                 </form>
 
-                <p className="auth-footer">
+                <p className="devpost-auth__switch">
                     Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
                 </p>
+                </div>
             </section>
         </main>
     );

@@ -224,10 +224,6 @@ export default function StudentApproval() {
                                         <dt className="font-black uppercase tracking-wide text-slate-500">Loại sinh viên</dt>
                                         <dd className="mt-1 font-semibold text-slate-900">{selectedUser.fptStudent ? 'Sinh viên FPT' : 'Sinh viên ngoài FPT'}</dd>
                                     </div>
-                                    <div>
-                                        <dt className="font-black uppercase tracking-wide text-slate-500">Role</dt>
-                                        <dd className="mt-1 font-semibold text-slate-900">{selectedUser.role}</dd>
-                                    </div>
                                     {selectedUser.rejectionReason && (
                                         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                                             <dt className="font-black uppercase tracking-wide text-red-600">Lý do từ chối</dt>

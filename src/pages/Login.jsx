@@ -33,57 +33,32 @@ export default function Login() {
     };
 
     return (
-        <main className="auth-page">
-            <section className="auth-card" aria-labelledby="login-title">
-                <div className="auth-brand">
-                    <Link to="/" className="auth-logo" aria-label="Về trang chủ SEAL">SEAL</Link>
-                    <h1 id="login-title" className="auth-title">Chào mừng trở lại</h1>
-                    <p className="auth-copy">Đăng nhập để tiếp tục hành trình cùng SEAL Hackathon.</p>
+        <main className="devpost-auth devpost-auth--login">
+            <section className="devpost-auth__story">
+                <Link to="/" className="devpost-auth__wordmark"><span>SEAL</span><strong>SEAL Hackathon</strong></Link>
+                <div><p>Nền tảng hackathon dành cho sinh viên</p><h1>Xây dựng cùng đội.<br />Trưởng thành qua từng vòng thi.</h1><span>Quản lý đội, theo dõi deadline, nộp sản phẩm và lưu giữ thành tích của bạn tại một nơi.</span></div>
+                <ul><li><strong>01</strong>Tìm sự kiện phù hợp</li><li><strong>02</strong>Lập đội cùng cộng đồng</li><li><strong>03</strong>Biến ý tưởng thành sản phẩm</li></ul>
+            </section>
+
+            <section className="devpost-auth__form-panel" aria-labelledby="login-title">
+                <div className="devpost-auth__form-wrap">
+                    <Link to="/" className="devpost-auth__back">← Về trang chủ</Link>
+                    <p className="devpost-auth__eyebrow">Đăng nhập</p>
+                    <h1 id="login-title">Chào mừng trở lại</h1>
+                    <span className="devpost-auth__copy">Tiếp tục hành trình của bạn cùng SEAL Hackathon.</span>
+
+                    {error && <div className="form-alert" role="alert">{error}</div>}
+
+                    <form onSubmit={handleSubmit}>
+                        <label htmlFor="login-email">Email</label>
+                        <input id="login-email" type="email" required placeholder="example@fpt.edu.vn" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                        <label htmlFor="login-password">Mật khẩu</label>
+                        <input id="login-password" type="password" required placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+                        <button type="submit" disabled={loading}>{loading ? 'Đang xử lý...' : 'Đăng nhập'}</button>
+                    </form>
+
+                    <p className="devpost-auth__switch">Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link></p>
                 </div>
-
-                {error && (
-                    <div className="form-alert" role="alert">
-                        {error}
-                    </div>
-                )}
-
-                <form className="space-y-5" onSubmit={handleSubmit}>
-                    <div>
-                        <label htmlFor="login-email" className="form-label">Email</label>
-                        <input
-                            id="login-email"
-                            type="email"
-                            required
-                            className="input-custom"
-                            placeholder="example@fpt.edu.vn"
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="login-password" className="form-label">Mật khẩu</label>
-                        <input
-                            id="login-password"
-                            type="password"
-                            required
-                            className="input-custom"
-                            placeholder="••••••••"
-                            value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        />
-                    </div>
-
-                    <button type="submit" disabled={loading} className="btn-primary w-full">
-                        {loading ? 'Đang xử lý...' : 'Đăng nhập'}
-                    </button>
-                </form>
-
-                <p className="auth-footer">
-                    Chưa có tài khoản?{' '}
-                    <Link to="/register" className="font-bold text-[#0f63c9] hover:underline">
-                        Đăng ký ngay
-                    </Link>
-                </p>
             </section>
         </main>
     );

@@ -1,46 +1,74 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
-import { classifyEvents, demoEvent, formatDateTime, getCountdownParts, getEventPhase, pickFeaturedEvent } from '../utils/hackathon';
+import { demoEvent, getEventPhase } from '../utils/hackathon';
 
-function EventCard({ event }) {
+const PHASE_OPTIONS = [
+    { key: 'upcoming', label: 'Sắp mở đăng ký', dot: 'orange' },
+    { key: 'registration', label: 'Đang mở đăng ký', dot: 'green' },
+    { key: 'running', label: 'Đang diễn ra', dot: 'blue' },
+    { key: 'ended', label: 'Đã kết thúc', dot: 'gray' },
+];
+
+function formatShortDate(value) {
+    if (!value) return 'Chưa cập nhật';
+    return new Date(value).toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
+}
+
+function getTimeLabel(event, phase) {
+    const target = phase.key === 'registration' ? event.regEndDate : event.eventStartDate;
+    if (!target || phase.key === 'ended') return phase.label;
+
+    const days = Math.ceil((new Date(target).getTime() - Date.now()) / 86400000);
+    if (days <= 0) return phase.label;
+    if (phase.key === 'registration') return `Còn ${days} ngày đăng ký`;
+    return `Bắt đầu sau ${days} ngày`;
+}
+
+function MarketplaceEventCard({ event }) {
     const phase = getEventPhase(event);
+    const tracks = event.tracks || [];
 
     return (
-        <article className={`event-card event-card--${phase.key}`}>
-            <div className="event-card__header">
-                <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">{event.season} {event.year}</p>
-                    <h3 className="mt-2 text-xl font-black uppercase tracking-[0.06em] text-[#071936]">{event.name}</h3>
+        <article className={`market-event-card market-event-card--${phase.key}`}>
+            <Link to={`/events/${event.id}`} className="market-event-card__visual" aria-label={`Xem ${event.name}`}>
+                <span>SEAL</span>
+                <strong>{event.season || 'HACKATHON'}</strong>
+                <small>{event.year}</small>
+            </Link>
+
+            <div className="market-event-card__main">
+                <Link to={`/events/${event.id}`}><h2>{event.name}</h2></Link>
+                <div className="market-event-card__quick-info">
+                    <span className={`market-phase market-phase--${phase.key}`}>{getTimeLabel(event, phase)}</span>
+                    <span className="market-location"><span aria-hidden="true">⌖</span> Sự kiện SEAL</span>
                 </div>
-                <span className="event-card__status">
-                    {phase.label}
-                </span>
+                <div className="market-event-card__numbers">
+                    <span><strong>{event.teamCount || 0}</strong> đội tham gia</span>
+                    <span><strong>{tracks.length}</strong> hạng mục thi</span>
+                </div>
+                <div className="market-event-card__actions">
+                    <Link to={`/events/${event.id}`} className="btn-primary">Xem chi tiết</Link>
+                    {phase.key === 'ended'
+                        ? <Link to={`/events/${event.id}/results`} className="btn-secondary">Xem kết quả</Link>
+                        : phase.key === 'registration' && <Link to={`/my-team?eventId=${event.id}`} className="btn-secondary">Đăng ký đội</Link>}
+                </div>
             </div>
-            <dl className="event-card__facts">
-                <div>
-                    <dt className="font-bold text-[#0b1f3f]">Đăng ký</dt>
-                    <dd>{formatDateTime(event.regStartDate)} - {formatDateTime(event.regEndDate)}</dd>
-                </div>
-                <div>
-                    <dt className="font-bold text-[#0b1f3f]">Thi đấu</dt>
-                    <dd>{formatDateTime(event.eventStartDate)} - {formatDateTime(event.eventEndDate)}</dd>
-                </div>
-                <div>
-                    <dt className="font-bold text-[#0b1f3f]">Hạng mục</dt>
-                    <dd>{event.tracks?.length || 0}</dd>
-                </div>
-                <div>
-                    <dt className="font-bold text-[#0b1f3f]">Đội đăng ký</dt>
-                    <dd>{event.teamCount || 0}</dd>
-                </div>
-            </dl>
-            <div className="event-card__actions">
-                <Link to={`/events/${event.id}`} className="btn-primary">Xem chi tiết</Link>
-                {phase.key === 'ended'
-                    ? <Link to={`/events/${event.id}/results`} className="btn-secondary">Xem kết quả</Link>
-                    : phase.key === 'registration' && <Link to={`/my-team?eventId=${event.id}`} className="btn-secondary">Đăng ký đội</Link>}
-            </div>
+
+            <aside className="market-event-card__meta">
+                <p className="market-season"><span aria-hidden="true">⚑</span><span>{event.season} {event.year}</span></p>
+                <p><span aria-hidden="true">▣</span><span>{formatShortDate(event.eventStartDate)} – {formatShortDate(event.eventEndDate)}</span></p>
+                <p><span className="market-seal-mark">S</span><span>Được tổ chức bởi SEAL</span></p>
+                {tracks.length > 0 && (
+                    <div className="market-tags">
+                        {tracks.slice(0, 3).map((track) => <span key={track.id || track.name}>{track.name}</span>)}
+                    </div>
+                )}
+            </aside>
         </article>
     );
 }
@@ -49,6 +77,11 @@ export default function Events() {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [searchInput, setSearchInput] = useState('');
+    const [query, setQuery] = useState('');
+    const [phaseFilters, setPhaseFilters] = useState([]);
+    const [seasonFilters, setSeasonFilters] = useState([]);
+    const [sortBy, setSortBy] = useState('relevant');
 
     const fetchEvents = async () => {
         try {
@@ -68,74 +101,116 @@ export default function Events() {
     }, []);
 
     const displayEvents = useMemo(() => (events.length ? events : [demoEvent]), [events]);
-    const featured = useMemo(() => pickFeaturedEvent(displayEvents), [displayEvents]);
-    const phase = getEventPhase(featured);
-    const countdown = getCountdownParts(phase.key === 'registration' ? featured.regEndDate : featured.eventStartDate);
-    const { upcoming, past } = classifyEvents(displayEvents.filter((event) => String(event.id) !== String(featured.id)));
+    const seasons = useMemo(() => [...new Set(displayEvents.map((event) => event.season).filter(Boolean))].sort(), [displayEvents]);
+    const activeFilterCount = phaseFilters.length + seasonFilters.length;
+
+    const filteredEvents = useMemo(() => {
+        const keyword = query.trim().toLowerCase();
+        const result = displayEvents.filter((event) => {
+            const matchesSearch = !keyword || `${event.name} ${event.season} ${event.year} ${(event.tracks || []).map((track) => track.name).join(' ')}`.toLowerCase().includes(keyword);
+            const matchesPhase = !phaseFilters.length || phaseFilters.includes(getEventPhase(event).key);
+            const matchesSeason = !seasonFilters.length || seasonFilters.includes(event.season);
+            return matchesSearch && matchesPhase && matchesSeason;
+        });
+
+        return [...result].sort((a, b) => {
+            if (sortBy === 'deadline') return new Date(a.regEndDate || 0) - new Date(b.regEndDate || 0);
+            if (sortBy === 'newest') return Number(b.year || 0) - Number(a.year || 0) || Number(b.id || 0) - Number(a.id || 0);
+            if (sortBy === 'teams') return Number(b.teamCount || 0) - Number(a.teamCount || 0);
+            const phaseOrder = { registration: 0, running: 1, upcoming: 2, ended: 3 };
+            return phaseOrder[getEventPhase(a).key] - phaseOrder[getEventPhase(b).key];
+        });
+    }, [displayEvents, phaseFilters, query, seasonFilters, sortBy]);
+
+    const toggleFilter = (setter, value) => {
+        setter((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
+    };
+
+    const clearFilters = () => {
+        setPhaseFilters([]);
+        setSeasonFilters([]);
+    };
+
+    const submitSearch = (event) => {
+        event.preventDefault();
+        setQuery(searchInput);
+    };
 
     return (
-        <main className="section-shell">
-            <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                <div>
-                    <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f63c9]">Sự kiện</p>
-                    <h1 className="section-title">Mùa giải SEAL</h1>
-                    <p className="section-copy">Theo dõi giải gần nhất, các sự kiện sắp tới và những mùa đã khép lại.</p>
-                </div>
-                <button type="button" onClick={fetchEvents} className="btn-secondary">Làm mới</button>
-            </div>
+        <main className="events-marketplace">
+            <header className="events-marketplace__hero">
+                <h1>Tham gia những hackathon nổi bật của SEAL</h1>
+                <p>Khám phá cuộc thi phù hợp, lập đội và biến ý tưởng thành sản phẩm thực tế.</p>
+            </header>
 
-            {error && <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
-
-            <section className="event-featured">
-                <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-                    <div>
-                        <span className="badge-status-pill">{phase.label}</span>
-                        <h2 className="mt-5 text-3xl font-black uppercase tracking-[0.06em] text-[#071936]">{featured.name}</h2>
-                        <p className="mt-3 text-sm leading-7 text-[#5c6d83]">
-                            Đăng ký: {formatDateTime(featured.regStartDate)} - {formatDateTime(featured.regEndDate)}
-                        </p>
-                    </div>
-                    {countdown && (
-                        <div className="grid grid-cols-3 gap-3">
-                            {countdown.map((item) => (
-                                <div key={item.label} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] px-4 py-3 text-center">
-                                    <p className="text-2xl font-black text-[#071936]">{item.value}</p>
-                                    <p className="text-xs font-black uppercase text-[#5c6d83]">{item.label}</p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-                <div className="mt-6 flex flex-wrap gap-3">
-                    <Link to={`/events/${featured.id}`} className="btn-primary">Xem chi tiết</Link>
-                    {phase.key === 'ended'
-                        ? <Link to={`/events/${featured.id}/results`} className="btn-secondary">Xem kết quả</Link>
-                        : phase.key === 'registration' && <Link to={`/my-team?eventId=${featured.id}`} className="btn-secondary">Đăng ký</Link>}
-                </div>
+            <section className="events-marketplace__search-wrap">
+                <form className="events-marketplace__search" onSubmit={submitSearch}>
+                    <label>
+                        <span aria-hidden="true">⌕</span>
+                        <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Tìm theo tên hackathon, mùa giải hoặc hạng mục" />
+                    </label>
+                    <button type="submit">Tìm kiếm</button>
+                </form>
             </section>
 
-            {loading ? (
-                <div className="rounded-lg border border-[#d7e6f8] bg-white p-8 text-center text-[#5c6d83]">Đang tải sự kiện...</div>
-            ) : (
-                <div className="grid gap-8 lg:grid-cols-2">
-                    <section>
-                        <h2 className="mb-4 text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Sắp tới / đang diễn ra</h2>
-                        <div className="space-y-5">
-                            {(upcoming.length ? upcoming : [featured]).map((event) => <EventCard event={event} key={event.id} />)}
+            <div className="events-marketplace__body">
+                <aside className="market-filters" aria-label="Bộ lọc sự kiện">
+                    <button type="button" className="market-filters__clear" onClick={clearFilters} disabled={!activeFilterCount}>
+                        Xóa bộ lọc <span>{activeFilterCount}</span>
+                    </button>
+
+                    <fieldset>
+                        <legend>Trạng thái</legend>
+                        {PHASE_OPTIONS.map((option) => (
+                            <label key={option.key}>
+                                <input type="checkbox" checked={phaseFilters.includes(option.key)} onChange={() => toggleFilter(setPhaseFilters, option.key)} />
+                                <span>{option.label}</span><i className={`filter-dot filter-dot--${option.dot}`} />
+                            </label>
+                        ))}
+                    </fieldset>
+
+                    <fieldset>
+                        <legend>Mùa giải</legend>
+                        {seasons.map((season) => (
+                            <label key={season}>
+                                <input type="checkbox" checked={seasonFilters.includes(season)} onChange={() => toggleFilter(setSeasonFilters, season)} />
+                                <span>{season}</span>
+                            </label>
+                        ))}
+                    </fieldset>
+
+                    <button type="button" className="market-filters__refresh" onClick={fetchEvents}>↻ Làm mới dữ liệu</button>
+                </aside>
+
+                <section className="market-results">
+                    <div className="market-results__toolbar">
+                        <p>Hiển thị <strong>{filteredEvents.length}</strong> hackathon</p>
+                        <div className="market-sort" aria-label="Sắp xếp sự kiện">
+                            <strong>Sắp xếp:</strong>
+                            {[
+                                ['relevant', 'Phù hợp nhất'],
+                                ['deadline', 'Hạn đăng ký'],
+                                ['newest', 'Mới thêm'],
+                                ['teams', 'Đội tham gia'],
+                            ].map(([value, label]) => <button type="button" key={value} className={sortBy === value ? 'is-active' : ''} onClick={() => setSortBy(value)}>{label}</button>)}
                         </div>
-                    </section>
-                    <section>
-                        <h2 className="mb-4 text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Đã qua</h2>
-                        <div className="space-y-5">
-                            {past.length ? past.map((event) => <EventCard event={event} key={event.id} />) : (
-                                <div className="rounded-lg border border-[#d7e6f8] bg-white p-8 text-center text-[#5c6d83]">
-                                    Chưa có sự kiện đã kết thúc.
-                                </div>
-                            )}
-                        </div>
-                    </section>
-                </div>
-            )}
+                    </div>
+
+                    <div className="market-community-banner">
+                        <span>Sẵn sàng xây dựng, kết nối và chinh phục hackathon?</span>
+                        <Link to="/teams">Tìm đồng đội ngay</Link>
+                    </div>
+
+                    {error && <div className="market-results__message market-results__message--error">{error}</div>}
+                    {loading ? (
+                        <div className="market-results__message">Đang tải danh sách sự kiện...</div>
+                    ) : filteredEvents.length ? (
+                        <div className="market-event-list">{filteredEvents.map((event) => <MarketplaceEventCard event={event} key={event.id} />)}</div>
+                    ) : (
+                        <div className="market-results__message">Không tìm thấy hackathon phù hợp với bộ lọc hiện tại.</div>
+                    )}
+                </section>
+            </div>
         </main>
     );
 }

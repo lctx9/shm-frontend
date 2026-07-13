@@ -14,11 +14,20 @@ const coordinatorGroups = [
         ],
     },
     {
-        title: 'Sự kiện',
+        title: 'Quản lý Giải đấu',
         items: [
             { to: '/dashboard/events', label: 'Quản lý sự kiện' },
+            { to: '/dashboard/scoring-config', label: 'Cấu hình chấm điểm' },
             { to: '/dashboard/teams', label: 'Đội thi' },
             { to: '/dashboard/submissions', label: 'Bài nộp' },
+        ],
+    },
+    {
+        title: 'Chấm điểm & Kết quả',
+        items: [
+            { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
+            { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
+            { to: '/dashboard/audit-logs', label: 'Audit điểm' },
         ],
     },
     {
@@ -26,16 +35,6 @@ const coordinatorGroups = [
         items: [
             { to: '/dashboard/student-approval', label: 'Phê duyệt thí sinh' },
             { to: '/dashboard/staff', label: 'Quản lý staff' },
-        ],
-    },
-    {
-        title: 'Chấm điểm',
-        items: [
-            { to: '/dashboard/scoring-config', label: 'Cấu hình chấm điểm' },
-            { to: '/dashboard/grading', label: 'Chấm bài' },
-            { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
-            { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
-            { to: '/dashboard/audit-logs', label: 'Audit điểm' },
         ],
     },
 ];
@@ -54,6 +53,22 @@ const adminGroups = [
         items: [
             { to: '/dashboard/events', label: 'Quản lý sự kiện' },
             { to: '/dashboard/scoring-config', label: 'Cấu hình chấm điểm' },
+            { to: '/dashboard/submissions', label: 'Bài nộp' },
+        ],
+    },
+    {
+        title: 'Chấm điểm & kết quả',
+        items: [
+            { to: '/dashboard/grading', label: 'Chấm bài' },
+            { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
+            { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
+            { to: '/dashboard/audit-logs', label: 'Audit điểm' },
+        ],
+    },
+    {
+        title: 'Truyền thông',
+        items: [
+            { to: '/dashboard/notifications', label: 'Gửi thông báo' },
         ],
     },
     {
@@ -72,7 +87,6 @@ const judgeGroups = [
             { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
             { to: '/dashboard/grading', label: 'Chấm bài' },
             { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
-            { to: '/dashboard/notifications', label: 'Thông báo' },
         ],
     },
 ];
@@ -84,7 +98,6 @@ const mentorGroups = [
             { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
             { to: '/dashboard/teams', label: 'Đội phụ trách' },
             { to: '/dashboard/chat', label: 'Trao đổi với đội' },
-            { to: '/dashboard/notifications', label: 'Thông báo' },
         ],
     },
 ];
@@ -123,7 +136,6 @@ function getStaffGroups(assignments) {
         title: 'Staff',
         items: [
             { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
-            { to: '/dashboard/notifications', label: 'Thông báo' },
         ],
     }];
     if (assignments.mentor) {
@@ -154,6 +166,112 @@ export default function DashboardLayout() {
     const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const email = localStorage.getItem('email');
     const [assignments, setAssignments] = useState({ mentor: role === 'MENTOR', judge: role === 'JUDGE' });
+    const [pendingCount, setPendingCount] = useState(0);
+    const [pendingGradingCount, setPendingGradingCount] = useState(0);
+    const [pendingChatCount, setPendingChatCount] = useState(0);
+
+    useEffect(() => {
+        let active = true;
+
+        const fetchData = async () => {
+            // 1. Fetch pending students (Coordinator only)
+            if (storedRole === 'COORDINATOR') {
+                axiosClient.get('/users')
+                    .then((response) => {
+                        if (active) {
+                            const list = response.result || [];
+                            const count = list.filter(user => user.role === 'USER' && user.status === 'PENDING').length;
+                            setPendingCount(count);
+                        }
+                    })
+                    .catch(() => {});
+            }
+
+            // 2. Fetch pending grading (Judge assignment only)
+            if (assignments.judge) {
+                try {
+                    const [submissionRes, eventRes] = await Promise.all([
+                        axiosClient.get('/submissions'),
+                        axiosClient.get('/events').catch(() => ({ result: [] })),
+                    ]);
+                    
+                    if (active) {
+                        const subs = submissionRes.result || [];
+                        const evts = eventRes.result || [];
+                        
+                        const matrixMap = new Map();
+                        evts.forEach((event) => 
+                            (event.matrices || []).forEach((matrix) => 
+                                matrixMap.set(String(matrix.id), matrix)
+                            )
+                        );
+                        
+                        const visible = subs.filter((sub) => {
+                            const matrix = matrixMap.get(String(sub.matrixId));
+                            return (matrix?.judges || []).some((judge) => judge.email === email);
+                        });
+                        
+                        const count = visible.filter((sub) => !sub.graded).length;
+                        setPendingGradingCount(count);
+                    }
+                } catch (err) {
+                    // Ignore
+                }
+            }
+
+            // 3. Fetch pending chat messages (Mentor assignment only)
+            if (assignments.mentor) {
+                try {
+                    const [teamRes, eventRes] = await Promise.all([
+                        axiosClient.get('/teams'),
+                        axiosClient.get('/events'),
+                    ]);
+                    
+                    if (active) {
+                        const allTeams = teamRes.result || [];
+                        const allEvents = eventRes.result || [];
+                        
+                        const trackIds = new Set(
+                            allEvents
+                                .flatMap((event) => event.matrices || [])
+                                .filter((matrix) => (matrix.mentors || []).some((mentor) => mentor.email === email))
+                                .map((matrix) => String(matrix.trackId))
+                        );
+                        
+                        const myTeams = allTeams.filter((team) => trackIds.has(String(team.trackId)));
+                        
+                        // Fetch chat messages for each team
+                        const chatPromises = myTeams.map(team => 
+                            axiosClient.get(`/chat/teams/${team.id}`)
+                                .then(res => ({ teamId: team.id, messages: res.result || [] }))
+                                .catch(() => ({ teamId: team.id, messages: [] }))
+                        );
+                        
+                        const chatResults = await Promise.all(chatPromises);
+                        
+                        if (active) {
+                            let unreadCount = 0;
+                            chatResults.forEach(res => {
+                                const msgList = res.messages;
+                                if (msgList.length > 0) {
+                                    const lastMsg = msgList[msgList.length - 1];
+                                    if (lastMsg.senderEmail !== email) {
+                                        unreadCount += 1;
+                                    }
+                                }
+                            });
+                            setPendingChatCount(unreadCount);
+                        }
+                    }
+                } catch (err) {
+                    // Ignore
+                }
+            }
+        };
+
+        fetchData();
+        return () => { active = false; };
+    }, [storedRole, assignments.judge, assignments.mentor, email, location.pathname]);
 
     useEffect(() => {
         if (!['STAFF', 'MENTOR', 'JUDGE'].includes(role)) return;
@@ -216,8 +334,29 @@ export default function DashboardLayout() {
                             </p>
                             <div className="space-y-1">
                                 {group.items.map((item) => (
-                                    <Link key={item.to} to={item.to} className={navClass(item)} title={item.label}>
-                                        {item.label}
+                                    <Link 
+                                        key={item.to} 
+                                        to={item.to} 
+                                        className={navClass(item)} 
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} 
+                                        title={item.label}
+                                    >
+                                        <span>{item.label}</span>
+                                        {item.to === '/dashboard/student-approval' && pendingCount > 0 && (
+                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
+                                                {pendingCount}
+                                            </span>
+                                        )}
+                                        {item.to === '/dashboard/grading' && pendingGradingCount > 0 && (
+                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
+                                                {pendingGradingCount}
+                                            </span>
+                                        )}
+                                        {item.to === '/dashboard/chat' && pendingChatCount > 0 && (
+                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
+                                                {pendingChatCount}
+                                            </span>
+                                        )}
                                     </Link>
                                 ))}
                             </div>

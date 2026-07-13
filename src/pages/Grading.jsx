@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 
 const fallbackCriteria = [
-    { id: 'presentation', label: 'Presentation', description: 'Cach trinh bay va tra loi cau hoi', maxScore: 100, weight: 25 },
-    { id: 'innovation', label: 'Tinh sang tao', description: 'Muc do moi va khac biet', maxScore: 100, weight: 25 },
-    { id: 'technical', label: 'Ky thuat', description: 'Chat luong thuc thi va do hoan thien', maxScore: 100, weight: 30 },
-    { id: 'impact', label: 'Tinh ung dung', description: 'Gia tri thuc te va kha nang mo rong', maxScore: 100, weight: 20 },
+    { id: 'presentation', label: 'Trình bày', description: 'Cách trình bày và trả lời câu hỏi', maxScore: 100, weight: 25 },
+    { id: 'innovation', label: 'Tính sáng tạo', description: 'Mức độ mới và khác biệt', maxScore: 100, weight: 25 },
+    { id: 'technical', label: 'Kỹ thuật', description: 'Chất lượng thực thi và độ hoàn thiện', maxScore: 100, weight: 30 },
+    { id: 'impact', label: 'Tính ứng dụng', description: 'Giá trị thực tế và khả năng mở rộng', maxScore: 100, weight: 20 },
 ];
 
 function parseJson(value, fallback) {
@@ -22,11 +22,7 @@ function normalizeScores(criteria, savedJson) {
     const saved = parseJson(savedJson, []);
     return criteria.map((criterion) => {
         const match = saved.find((item) => item.id === criterion.id || item.label === criterion.label);
-        return {
-            ...criterion,
-            score: match?.score ?? '',
-            note: match?.note ?? '',
-        };
+        return { ...criterion, score: match?.score ?? '', note: match?.note ?? '' };
     });
 }
 
@@ -51,6 +47,8 @@ export default function Grading() {
     const [editReason, setEditReason] = useState('');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [query, setQuery] = useState('');
+    const [queueFilter, setQueueFilter] = useState('pending');
 
     const storedRole = localStorage.getItem('role');
     const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
@@ -59,9 +57,7 @@ export default function Grading() {
 
     const matrixById = useMemo(() => {
         const map = new Map();
-        events.forEach((event) => {
-            (event.matrices || []).forEach((matrix) => map.set(String(matrix.id), { ...matrix, eventName: event.name }));
-        });
+        events.forEach((event) => (event.matrices || []).forEach((matrix) => map.set(String(matrix.id), { ...matrix, eventName: event.name })));
         return map;
     }, [events]);
 
@@ -79,7 +75,19 @@ export default function Grading() {
         pending: visibleSubmissions.filter((submission) => !submission.graded).length,
     }), [visibleSubmissions]);
 
+    const filteredSubmissions = useMemo(() => {
+        const keyword = query.trim().toLowerCase();
+        return visibleSubmissions.filter((submission) => {
+            const matrix = matrixById.get(String(submission.matrixId));
+            const matchesStatus = queueFilter === 'all' || (queueFilter === 'graded' ? submission.graded : !submission.graded);
+            const matchesSearch = !keyword || `${submission.teamName} ${submission.roundName} ${submission.trackName} ${matrix?.eventName || ''}`.toLowerCase().includes(keyword);
+            return matchesStatus && matchesSearch;
+        });
+    }, [matrixById, query, queueFilter, visibleSubmissions]);
+
     const finalScore = useMemo(() => weightedAverage(criteriaScores), [criteriaScores]);
+    const completedCriteria = criteriaScores.filter((item) => item.score !== '').length;
+    const totalWeight = criteriaScores.reduce((sum, item) => sum + Number(item.weight || 0), 0);
 
     const fetchData = async () => {
         try {
@@ -92,23 +100,17 @@ export default function Grading() {
             setEvents(eventRes.result || []);
             setError('');
         } catch (err) {
-            setError(err.message || 'Khong tai duoc danh sach bai nop.');
+            setError(err.message || 'Không tải được danh sách bài nộp.');
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const getCriteriaForSubmission = (submission) => {
-        const matrix = matrixById.get(String(submission.matrixId));
-        return parseJson(matrix?.scoringCriteriaJson, fallbackCriteria);
-    };
+    useEffect(() => { fetchData(); }, []);
 
     const handleSelect = (submission) => {
-        const criteria = getCriteriaForSubmission(submission);
+        const matrix = matrixById.get(String(submission.matrixId));
+        const criteria = parseJson(matrix?.scoringCriteriaJson, fallbackCriteria);
         setSelectedSub(submission);
         setCriteriaScores(normalizeScores(criteria, submission.criteriaScoresJson));
         setFeedback(submission.feedback || '');
@@ -123,13 +125,11 @@ export default function Grading() {
     const handleSubmitGrade = async (e) => {
         e.preventDefault();
         if (!selectedSub || !canGrade) return;
-
         const invalid = criteriaScores.some((item) => item.score === '' || Number(item.score) < 0 || Number(item.score) > Number(item.maxScore || 100));
         if (invalid) {
-            setError('Hay nhap diem hop le cho tat ca tieu chi.');
+            setError('Vui lòng nhập điểm hợp lệ cho tất cả tiêu chí.');
             return;
         }
-
         try {
             setSaving(true);
             await axiosClient.post('/scores/grade', {
@@ -143,181 +143,92 @@ export default function Grading() {
             setCriteriaScores([]);
             await fetchData();
         } catch (err) {
-            setError(err.message || 'Khong luu duoc diem.');
+            setError(err.message || 'Không lưu được điểm.');
         } finally {
             setSaving(false);
         }
     };
 
-    if (loading) {
-        return <div className="rounded-lg bg-white p-8 text-center text-gray-500">Dang tai danh sach bai nop...</div>;
-    }
+    if (loading) return <div className="judge-grading-state">Đang tải không gian chấm điểm...</div>;
+
+    const selectedMatrix = selectedSub ? matrixById.get(String(selectedSub.matrixId)) : null;
 
     return (
-        <div className="mx-auto max-w-7xl space-y-6">
-            <section className="grid gap-4 md:grid-cols-3">
-                {[
-                    ['Tong bai nop', summary.total],
-                    ['Da cham', summary.graded],
-                    ['Cho cham', summary.pending],
-                ].map(([label, value]) => (
-                    <div key={label} className="rounded-lg border border-blue-100 bg-white p-5 shadow-sm">
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">{label}</p>
-                        <p className="mt-2 text-3xl font-black text-slate-900">{value}</p>
-                    </div>
-                ))}
-            </section>
-
-            {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
-                    {error}
+        <div className="judge-grading-page">
+            <header className="judge-grading-hero">
+                <div><p>Judge workspace</p><h1>Chấm điểm bài thi</h1><span>Đánh giá từng tiêu chí theo rubric đã công bố và lưu phản hồi rõ ràng cho đội thi.</span></div>
+                <div className="judge-grading-summary">
+                    <div><span>Tổng bài</span><strong>{summary.total}</strong></div>
+                    <div><span>Đã chấm</span><strong>{summary.graded}</strong></div>
+                    <div><span>Chờ chấm</span><strong>{summary.pending}</strong></div>
                 </div>
-            )}
+            </header>
 
-            <div className="grid gap-6 lg:grid-cols-[1fr_500px]">
-                <section className="rounded-lg border border-blue-100 bg-white shadow-sm">
-                    <div className="border-b border-blue-100 bg-blue-50 px-6 py-4">
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Submission queue</p>
-                        <h2 className="mt-1 text-lg font-black uppercase tracking-wide text-slate-900">Bai nop can cham</h2>
+            {error && <div className="judge-grading-error" role="alert">{error}</div>}
+
+            <div className="judge-grading-workspace">
+                <aside className="judge-queue">
+                    <div className="judge-queue__header"><div><p>Hàng đợi</p><h2>Bài được phân công</h2></div><span>{filteredSubmissions.length}</span></div>
+                    <label className="judge-queue__search"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm đội, vòng hoặc bảng..." /></label>
+                    <div className="judge-queue__tabs">
+                        {[['pending', `Chờ chấm (${summary.pending})`], ['graded', `Đã chấm (${summary.graded})`], ['all', 'Tất cả']].map(([value, label]) => <button type="button" key={value} className={queueFilter === value ? 'is-active' : ''} onClick={() => setQueueFilter(value)}>{label}</button>)}
                     </div>
+                    <div className="judge-queue__list">
+                        {filteredSubmissions.length ? filteredSubmissions.map((submission) => {
+                            const matrix = matrixById.get(String(submission.matrixId));
+                            return (
+                                <button type="button" key={submission.id} onClick={() => handleSelect(submission)} className={selectedSub?.id === submission.id ? 'is-selected' : ''}>
+                                    <div><strong>{submission.teamName || `Đội #${submission.teamId}`}</strong><span>{matrix?.eventName || 'Sự kiện'} · {submission.trackName || 'Bảng chung'}</span></div>
+                                    <p>{submission.roundName || 'Vòng thi'}<span className={submission.graded ? 'is-graded' : 'is-pending'}>{submission.graded ? `${submission.score ?? 0}/100` : 'Chờ chấm'}</span></p>
+                                </button>
+                            );
+                        }) : <div className="judge-queue__empty">Không có bài nộp phù hợp.</div>}
+                    </div>
+                </aside>
 
-                    {visibleSubmissions.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">Bạn chưa có bài nào được phân công chấm.</div>
-                    ) : (
-                        <div className="divide-y divide-blue-50">
-                            {visibleSubmissions.map((submission) => {
-                                const matrix = matrixById.get(String(submission.matrixId));
-                                return (
-                                    <button
-                                        type="button"
-                                        key={submission.id}
-                                        onClick={() => handleSelect(submission)}
-                                        className={`block w-full px-6 py-5 text-left transition hover:bg-blue-50 ${selectedSub?.id === submission.id ? 'bg-blue-50' : ''}`}
-                                    >
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="min-w-0">
-                                                <p className="font-black text-slate-900">{submission.teamName || `Doi #${submission.teamId}`}</p>
-                                                <p className="mt-1 text-sm text-slate-500">
-                                                    {matrix?.eventName || 'Event'} - {submission.roundName || 'Round'} - {submission.trackName || 'Track'}
-                                                </p>
-                                                <p className="mt-1 truncate text-sm font-semibold text-blue-700">{submission.fileUrl}</p>
-                                            </div>
-                                            <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${submission.graded ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                                {submission.graded ? `${submission.score ?? 0}/100` : 'Cho cham'}
-                                            </span>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
-                </section>
-
-                <section className="rounded-lg border border-blue-100 bg-white shadow-sm">
+                <main className="judge-rubric">
                     {selectedSub ? (
                         <form onSubmit={handleSubmitGrade}>
-                            <div className="border-b border-blue-100 p-6">
-                                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">
-                                    {selectedSub.roundName} - {selectedSub.trackName}
-                                </p>
-                                <h2 className="mt-2 text-xl font-black text-slate-900">
-                                    {selectedSub.teamName || `Doi #${selectedSub.teamId}`}
-                                </h2>
-                                <a
-                                    href={selectedSub.fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="mt-4 block break-all rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm font-bold text-blue-700"
-                                >
-                                    {selectedSub.fileUrl}
-                                </a>
-                            </div>
+                            <header className="judge-rubric__header">
+                                <div><p>{selectedMatrix?.eventName || 'SEAL Hackathon'} · {selectedSub.roundName}</p><h2>{selectedSub.teamName || `Đội #${selectedSub.teamId}`}</h2><span>{selectedSub.trackName || 'Bảng chung'}</span></div>
+                                <a href={selectedSub.fileUrl} target="_blank" rel="noreferrer">Mở bài nộp ↗</a>
+                            </header>
 
-                            <div className="space-y-4 p-6">
-                                <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Diem tong</p>
-                                    <p className="mt-1 text-4xl font-black text-slate-900">{finalScore}/100</p>
-                                    <p className="mt-1 text-sm font-semibold text-slate-600">Tinh theo trung binh co trong so cua cac cot diem.</p>
-                                </div>
+                            <section className="judge-rubric__guide">
+                                <div><strong>Rubric chấm điểm</strong><span>{completedCriteria}/{criteriaScores.length} tiêu chí đã nhập · Tổng trọng số {totalWeight}%</span></div>
+                                <div><span style={{ width: `${criteriaScores.length ? completedCriteria / criteriaScores.length * 100 : 0}%` }} /></div>
+                            </section>
 
+                            <div className="judge-rubric__criteria">
                                 {criteriaScores.map((criterion, index) => (
-                                    <div key={criterion.id || index} className="rounded-lg border border-blue-100 p-4">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <p className="font-black text-slate-900">{criterion.label}</p>
-                                                <p className="mt-1 text-sm text-slate-600">{criterion.description}</p>
+                                    <article key={criterion.id || index} className={criterion.score !== '' ? 'is-complete' : ''}>
+                                        <div className="judge-criterion__number">{String(index + 1).padStart(2, '0')}</div>
+                                        <div className="judge-criterion__content">
+                                            <div className="judge-criterion__heading"><div><h3>{criterion.label}</h3><p>{criterion.description}</p></div><span>{criterion.weight}%</span></div>
+                                            <div className="judge-criterion__inputs">
+                                                <label>Điểm <span>0–{criterion.maxScore || 100}</span><input required type="number" step="0.1" min="0" max={criterion.maxScore || 100} value={criterion.score} onChange={(e) => updateCriterionScore(index, { score: e.target.value })} disabled={!canGrade} /></label>
+                                                <label>Nhận xét cho tiêu chí<input value={criterion.note} onChange={(e) => updateCriterionScore(index, { note: e.target.value })} placeholder="Nêu điểm tốt hoặc nội dung cần cải thiện..." disabled={!canGrade} /></label>
                                             </div>
-                                            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-[#0f63c9]">
-                                                {criterion.weight}%
-                                            </span>
                                         </div>
-                                        <div className="mt-4 grid gap-3 md:grid-cols-[140px_1fr]">
-                                            <input
-                                                required
-                                                type="number"
-                                                step="0.1"
-                                                min="0"
-                                                max={criterion.maxScore || 100}
-                                                className="input-custom"
-                                                value={criterion.score}
-                                                onChange={(e) => updateCriterionScore(index, { score: e.target.value })}
-                                                disabled={!canGrade}
-                                            />
-                                            <input
-                                                className="input-custom"
-                                                value={criterion.note}
-                                                onChange={(e) => updateCriterionScore(index, { note: e.target.value })}
-                                                placeholder="Nhan xet rieng cho tieu chi nay"
-                                                disabled={!canGrade}
-                                            />
-                                        </div>
-                                    </div>
+                                    </article>
                                 ))}
-
-                                <div>
-                                    <label className="mb-1 block text-sm font-bold text-slate-700">Nhan xet chung</label>
-                                    <textarea
-                                        required
-                                        rows="5"
-                                        className="input-custom"
-                                        value={feedback}
-                                        onChange={(e) => setFeedback(e.target.value)}
-                                        disabled={!canGrade}
-                                    />
-                                </div>
-
-                                {selectedSub.graded && canGrade && (
-                                    <div>
-                                        <label className="mb-1 block text-sm font-bold text-slate-700">Ly do sua diem</label>
-                                        <input
-                                            required
-                                            className="input-custom"
-                                            value={editReason}
-                                            onChange={(e) => setEditReason(e.target.value)}
-                                            placeholder="Vi du: review lai rubric sau phien Q&A"
-                                        />
-                                    </div>
-                                )}
-
-                                {!canGrade && (
-                                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">
-                                        Tai khoan hien tai chi xem tien do cham diem. Chuc nang luu diem danh cho Judge.
-                                    </div>
-                                )}
-
-                                <button type="submit" disabled={saving || !canGrade} className="btn-primary w-full">
-                                    {saving ? 'Dang luu...' : selectedSub.graded ? 'Cap nhat diem' : 'Luu diem'}
-                                </button>
                             </div>
+
+                            <section className="judge-feedback">
+                                <label>Nhận xét chung <span>Phản hồi này sẽ được lưu cùng kết quả chấm.</span><textarea required rows="5" value={feedback} onChange={(e) => setFeedback(e.target.value)} disabled={!canGrade} placeholder="Tổng kết điểm mạnh, hạn chế và đề xuất cải thiện cho đội thi..." /></label>
+                                {selectedSub.graded && canGrade && <label>Lý do sửa điểm <span>Bắt buộc để đảm bảo audit log minh bạch.</span><input required value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Ví dụ: rà soát lại rubric sau phiên Q&A" /></label>}
+                                {!canGrade && <div className="judge-readonly">Tài khoản hiện tại chỉ được xem tiến độ. Quyền lưu điểm dành cho Judge.</div>}
+                            </section>
+
+                            <footer className="judge-submit-bar">
+                                <div><span>Điểm tổng có trọng số</span><strong>{finalScore}<small>/100</small></strong></div>
+                                <button type="submit" disabled={saving || !canGrade || completedCriteria !== criteriaScores.length}>{saving ? 'Đang lưu...' : selectedSub.graded ? 'Cập nhật điểm' : 'Lưu kết quả chấm'}</button>
+                            </footer>
                         </form>
                     ) : (
-                        <div className="p-6">
-                            <div className="rounded-lg border border-blue-100 bg-blue-50 p-6 text-sm font-semibold text-blue-900">
-                                Chon mot bai nop ben trai de xem rubric va cham diem theo tung tieu chi.
-                            </div>
-                        </div>
+                        <div className="judge-rubric__empty"><span>01</span><h2>Chọn một bài cần chấm</h2><p>Thông tin bài nộp, rubric và vùng nhập điểm sẽ xuất hiện tại đây.</p></div>
                     )}
-                </section>
+                </main>
             </div>
         </div>
     );
