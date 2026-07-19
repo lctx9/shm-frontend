@@ -14,8 +14,16 @@ export default function Notifications() {
         try {
             setLoading(true);
             const response = await axiosClient.get('/notifications');
-            setNotifications(response.result || []);
+            const data = response.result || [];
+            setNotifications(data);
             setError('');
+
+            const hasUnread = data.some((item) => !item.read);
+            if (hasUnread) {
+                await axiosClient.patch('/notifications/read-all');
+                setNotifications(data.map((item) => ({ ...item, read: true })));
+                window.dispatchEvent(new Event('notifications:refresh'));
+            }
         } catch (err) {
             setError(err.message || 'Không thể tải thông báo.');
         } finally {

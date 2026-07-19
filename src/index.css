@@ -1760,6 +1760,47 @@ body { background: var(--dp-canvas); color: var(--dp-ink); }
 .about-devpost__cta h2 { margin: 8px 0 0; font-size: clamp(27px,3vw,38px); }
 .about-devpost__cta > div:last-child { display: flex; gap: 12px; }
 
+/* Custom changes to about page for white theme backgrounds */
+.about-devpost__visual {
+    background: white !important;
+}
+.about-devpost__visual img {
+    opacity: 1 !important;
+    filter: none !important;
+}
+.about-devpost__visual::after {
+    display: none !important;
+}
+.about-devpost__visual > div {
+    color: #17313a !important;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+}
+.about-devpost__mission {
+    background: white !important;
+    color: #17313a !important;
+    border-top: 1px solid #d4dee1;
+    border-bottom: 1px solid #d4dee1;
+}
+.about-devpost__mission > p {
+    color: var(--seal-600) !important;
+}
+.about-devpost__mission > div {
+    color: #586f77 !important;
+}
+.about-devpost__actions a:first-child, .about-devpost__cta a:first-child {
+    background: white !important;
+    color: var(--seal-600) !important;
+    border-color: var(--seal-600) !important;
+    box-shadow: none !important;
+}
+.about-devpost__actions a:first-child:hover, .about-devpost__cta a:first-child:hover {
+    background: var(--seal-50) !important;
+    color: var(--seal-700) !important;
+    border-color: var(--seal-700) !important;
+    box-shadow: none !important;
+}
+
+
 /* Devpost-style authentication */
 .devpost-auth { display: grid; min-height: 100vh; grid-template-columns: minmax(420px,.9fr) minmax(520px,1.1fr); background: white; color: #17313a; }
 .devpost-auth__story { position: sticky; top: 0; display: flex; height: 100vh; overflow: hidden; flex-direction: column; justify-content: space-between; background: linear-gradient(145deg,#083f50,#0c6978); padding: 42px 54px; color: white; }
