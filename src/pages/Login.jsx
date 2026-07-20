@@ -1,11 +1,17 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
 export default function Login() {
     const navigate = useNavigate();
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+
+    if (token && managerRoles.has(role)) {
+        return <Navigate to="/dashboard" replace />;
+    }
     const [formData, setFormData] = useState({ email: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);

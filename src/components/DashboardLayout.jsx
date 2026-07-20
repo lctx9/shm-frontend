@@ -342,7 +342,7 @@ export default function DashboardLayout() {
         <div className="dashboard-shell">
             <aside className="dashboard-sidebar">
                 <div className="flex h-20 items-center gap-3 border-b border-[#d7e6f8] px-5">
-                    <Link to="/" className="brand-mark" aria-label="SEAL trang chủ">
+                    <Link to="/dashboard" className="brand-mark" aria-label="SEAL Dashboard">
                         <span className="brand-mark-text">SEAL</span>
                     </Link>
                     <div className="sidebar-copy min-w-0">
