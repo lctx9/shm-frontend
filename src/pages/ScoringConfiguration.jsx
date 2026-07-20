@@ -162,10 +162,19 @@ export default function ScoringConfiguration() {
 
     return (
         <div className="mx-auto max-w-7xl space-y-6">
-            <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#092e66] to-[#0f63c9] p-6 text-white shadow-lg md:p-8">
+            <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] p-6 text-white shadow-lg md:p-8">
                 <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-                    <div><p className="text-xs font-black uppercase tracking-[0.2em] !text-blue-200">Scoring workspace</p><h2 className="mt-2 text-2xl font-black !text-white">Cấu hình chấm điểm</h2><p className="mt-2 max-w-2xl text-sm leading-6 !text-blue-100">Quản lý rubric, deadline, Top N và phân công Judge riêng cho từng vòng đấu.</p></div>
-                    <label className="min-w-72 text-xs font-black uppercase tracking-wide text-blue-100">Sự kiện<select className="input-custom mt-2 !border-white/30 !bg-white !text-slate-900" value={selectedEventId} onChange={(event) => changeEvent(event.target.value)}>{events.map((event) => <option key={event.id} value={event.id}>{event.name} · {event.season} {event.year}</option>)}</select></label>
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-200">Scoring workspace</p>
+                        <h2 className="mt-2 text-2xl font-black text-white">Cấu hình chấm điểm</h2>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-teal-100/90">Quản lý rubric, deadline, Top N và phân công Judge riêng cho từng vòng đấu.</p>
+                    </div>
+                    <label className="min-w-72 text-xs font-black uppercase tracking-wide text-teal-200">
+                        Sự kiện
+                        <select className="input-custom mt-2 !border-white/30 !bg-white !text-slate-900 shadow-sm" value={selectedEventId} onChange={(event) => changeEvent(event.target.value)}>
+                            {events.map((event) => <option key={event.id} value={event.id}>{event.name} · {event.season} {event.year}</option>)}
+                        </select>
+                    </label>
                 </div>
             </section>
 

@@ -45,7 +45,7 @@ function PodiumCard({ entry, mode }) {
     };
 
     return (
-        <div className={`bg-white rounded-2xl border border-slate-200 p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${config.border} ${config.scale}`}>
+        <div className={`bg-white rounded-2xl border border-blue-100 p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${config.border} ${config.scale}`}>
             <div>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -101,10 +101,10 @@ function RankedList({ rows, mode }) {
     if (!rows.length) return null;
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">Thứ hạng tiếp theo</h2>
-                <span className="bg-slate-200 text-slate-700 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+        <div className="bg-white rounded-2xl border border-blue-100 overflow-hidden shadow-sm">
+            <div className="px-6 py-4 bg-[#f0f7ff] border-b border-blue-100 flex items-center justify-between">
+                <h2 className="text-xs font-black text-[#0f63c9] uppercase tracking-wider">Thứ hạng tiếp theo</h2>
+                <span className="bg-blue-100 text-[#0f63c9] text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
                     Từ hạng 4 trở xuống
                 </span>
             </div>
@@ -112,7 +112,7 @@ function RankedList({ rows, mode }) {
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50/50 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                        <tr className="border-b border-blue-100 bg-slate-50 text-[10px] font-black uppercase text-slate-500 tracking-wider">
                             <th className="py-3 px-6 w-20 text-center">Hạng</th>
                             <th className="py-3 px-6">
                                 {mode === 'TEAM' ? 'Đội thi & Thành viên' : 'Sinh viên'}
@@ -276,19 +276,19 @@ export default function Leaderboard() {
     return (
         <main className="mx-auto max-w-7xl space-y-6">
             {/* Hero Section */}
-            <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-950 p-8 text-white shadow-sm">
-                <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
+            <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] p-6 sm:p-8 text-white shadow-lg">
+                <div className="absolute -right-8 -top-8 h-44 w-44 rounded-full bg-white/10 blur-2xl pointer-events-none" />
                 <div className="relative z-10 max-w-2xl">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-400">SEAL Dashboard</p>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-200">SEAL Dashboard</p>
                     <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-white">Bảng Xếp Hạng</h1>
-                    <p className="text-xs sm:text-sm text-slate-300 mt-2 font-medium">
+                    <p className="text-xs sm:text-sm text-teal-100/90 mt-2 font-medium">
                         Vinh danh thành tích các đội thi và cá nhân xuất sắc nhất trong các mùa giải SEAL Hackathon.
                     </p>
                 </div>
             </header>
 
             {/* Filter & Controls section */}
-            <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <section className="bg-white border border-blue-100 rounded-2xl p-5 shadow-sm flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1">
                     {mode === 'TEAM' ? (
                         <div className="w-full sm:max-w-xs">
@@ -297,14 +297,14 @@ export default function Leaderboard() {
                                 id="leaderboard-season" 
                                 value={selectedEventId} 
                                 onChange={(e) => setSelectedEventId(e.target.value)}
-                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                             >
                                 <option value="LATEST">Giải đấu mới nhất</option>
                                 {eventOptions.map((evt) => <option key={evt.id} value={evt.id}>{evt.name}</option>)}
                             </select>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200/60 rounded-xl px-4 py-2.5">
+                        <div className="flex items-center gap-2 text-xs font-bold text-[#0f63c9] bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5">
                             <span>🏆</span>
                             <span>BXH Cá nhân tự động tích lũy điểm qua tất cả giải đấu</span>
                         </div>
@@ -312,18 +312,18 @@ export default function Leaderboard() {
                 </div>
 
                 <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                    <div className="bg-slate-100 p-1 rounded-xl flex gap-1 border border-slate-200/50">
+                    <div className="bg-[#f0f7ff] p-1 rounded-xl flex gap-1 border border-blue-100">
                         <button 
                             type="button" 
                             onClick={() => setMode('TEAM')} 
-                            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${mode === 'TEAM' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            className={`px-4 py-2 text-xs font-black rounded-lg transition-all ${mode === 'TEAM' ? 'bg-[#0f63c9] text-white shadow-sm' : 'text-slate-600 hover:text-[#0f63c9]'}`}
                         >
                             Đội thi
                         </button>
                         <button 
                             type="button" 
                             onClick={() => setMode('PERSONAL')} 
-                            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${mode === 'PERSONAL' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+                            className={`px-4 py-2 text-xs font-black rounded-lg transition-all ${mode === 'PERSONAL' ? 'bg-[#0f63c9] text-white shadow-sm' : 'text-slate-600 hover:text-[#0f63c9]'}`}
                         >
                             Cá nhân
                         </button>

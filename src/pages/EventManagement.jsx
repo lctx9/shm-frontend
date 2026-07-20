@@ -565,14 +565,14 @@ export default function EventManagement() {
     if (!form.id && !showCreate) {
         return (
             <div className="mx-auto max-w-7xl space-y-6">
-                <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#092e66] to-[#0f63c9] p-6 text-white shadow-lg md:p-8">
+                <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] p-6 text-white shadow-lg md:p-8">
                     <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                         <div>
-                            <p className="text-xs font-black uppercase tracking-[0.2em] !text-blue-200">Event operations</p>
-                            <h2 className="mt-2 text-2xl font-black !text-white md:text-3xl">Tổng quan sự kiện</h2>
-                            <p className="mt-2 max-w-2xl text-sm leading-6 !text-blue-100">Theo dõi toàn bộ mùa giải, tiến độ cấu hình và trạng thái vận hành tại một nơi.</p>
+                            <p className="text-xs font-black uppercase tracking-[0.2em] text-[#a5f3fc]">Event operations</p>
+                            <h2 className="mt-2 text-2xl font-black text-white md:text-3xl">Tổng quan sự kiện</h2>
+                            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-100 font-medium">Theo dõi toàn bộ mùa giải, tiến độ cấu hình và trạng thái vận hành tại một nơi.</p>
                         </div>
-                        <button type="button" className="rounded-xl bg-white px-5 py-3 text-sm font-black text-[#0f63c9] shadow-sm transition hover:bg-blue-50" onClick={() => { setForm(emptyEvent()); setShowCreate(true); setCreateStep(0); setMessage(null); }}>+ Tạo sự kiện mới</button>
+                        <button type="button" className="rounded-xl bg-white px-5 py-3 text-sm font-black shadow-sm transition hover:bg-teal-50" style={{ color: '#0b3d49', backgroundColor: '#ffffff' }} onClick={() => { setForm(emptyEvent()); setShowCreate(true); setCreateStep(0); setMessage(null); }}>+ Tạo sự kiện mới</button>
                     </div>
                 </section>
 
@@ -641,17 +641,17 @@ export default function EventManagement() {
                     )}
 
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-300/60">
-                    <header className="bg-gradient-to-r from-[#092e66] to-[#0f63c9] px-6 py-7 text-white md:px-10">
+                    <header className="bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] px-6 py-7 text-white md:px-10">
                         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <p className="text-xs font-black uppercase tracking-[0.22em] !text-blue-200">Coordinator · Tạo cuộc thi</p>
-                                <h1 className="mt-2 text-2xl font-black !text-white md:text-3xl">Thiết lập cuộc thi mới</h1>
-                                <p className="mt-2 max-w-2xl text-sm !text-blue-100">Đi từng bước. Hệ thống sẽ tự sinh bảng, vòng loại và một trận chung kết.</p>
+                                <p className="text-xs font-black uppercase tracking-[0.22em] text-[#a5f3fc]">Coordinator · Tạo cuộc thi</p>
+                                <h1 className="mt-1.5 text-2xl font-black text-white md:text-3xl">Thiết lập cuộc thi mới</h1>
+                                <p className="mt-1.5 max-w-2xl text-sm font-medium text-slate-100">Đi từng bước. Hệ thống sẽ tự sinh bảng, vòng loại và một trận chung kết.</p>
                             </div>
                             <button
                                 type="button"
-                                className="rounded-lg border px-4 py-2 text-sm font-bold"
-                                style={{ color: '#ffffff', background: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.35)' }}
+                                className="rounded-xl bg-white px-5 py-2.5 text-sm font-black shadow-md transition hover:bg-teal-50"
+                                style={{ color: '#0b3d49', backgroundColor: '#ffffff' }}
                                 onClick={() => { setShowCreate(false); setForm(emptyEvent()); }}
                             >
                                 Hủy tạo mới
@@ -707,7 +707,7 @@ export default function EventManagement() {
                                     <h2 className="mt-2 text-2xl font-black text-slate-900">Mốc thời gian</h2>
                                     <p className="mt-2 text-sm text-slate-500">Nhập theo thứ tự từ đăng ký đến kết thúc cuộc thi.</p>
                                 </div>
-                                <div className="grid gap-5 rounded-xl border border-blue-100 bg-blue-50/60 p-5 md:grid-cols-2">
+                                <div className="grid gap-5 rounded-xl border border-[#d7e6f8] bg-[#f8fbff] p-5 md:grid-cols-2">
                                     <WizardField label="1. Mở đăng ký"><input type="datetime-local" className="input-custom bg-white" value={form.regStartDate} onChange={(e) => setForm({ ...form, regStartDate: e.target.value })} /></WizardField>
                                     <WizardField label="2. Đóng đăng ký"><input type="datetime-local" className="input-custom bg-white" value={form.regEndDate} onChange={(e) => setForm({ ...form, regEndDate: e.target.value })} /></WizardField>
                                     <WizardField label="3. Bắt đầu cuộc thi"><input type="datetime-local" className="input-custom bg-white" value={form.eventStartDate} onChange={(e) => setForm({ ...form, eventStartDate: e.target.value })} /></WizardField>
@@ -755,10 +755,13 @@ export default function EventManagement() {
                                         </div>
                                     ))}
                                 </div>
-                                <div className="rounded-xl bg-[#092e66] p-5 text-white">
-                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">Xem trước cấu trúc</p>
-                                    <p className="mt-2 text-xl font-black">{form.tracks.length} bảng × {Number(form.roundCount) - 1} vòng loại + 1 chung kết = {matchCount} vòng đấu</p>
-                                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-blue-100">{form.tracks.map((track) => <span key={track.name} className="rounded-full bg-white/10 px-3 py-1.5">{track.name || 'Chưa đặt tên'}</span>)}<span className="rounded-full bg-emerald-400/20 px-3 py-1.5 text-emerald-100">Chung kết</span></div>
+                                <div className="rounded-xl bg-gradient-to-r from-[#0b3d49] to-[#0e5362] p-5 text-white shadow-sm">
+                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-200">Xem trước cấu trúc</p>
+                                    <p className="mt-2 text-xl font-black text-white">{form.tracks.length} bảng × {Number(form.roundCount) - 1} vòng loại + 1 chung kết = {matchCount} vòng đấu</p>
+                                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-teal-100">
+                                        {form.tracks.map((track) => <span key={track.name} className="rounded-full bg-white/15 px-3 py-1.5">{track.name || 'Chưa đặt tên'}</span>)}
+                                        <span className="rounded-full bg-emerald-400/20 px-3 py-1.5 text-emerald-100">Chung kết</span>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -815,15 +818,21 @@ export default function EventManagement() {
             )}
 
             <div className="space-y-6">
-                <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#092e66] to-[#0f63c9] p-6 text-white shadow-lg md:p-8">
-                    <button type="button" className="text-xs font-black !text-blue-100 hover:underline" onClick={() => { setForm(emptyEvent()); setSelectedEventId(''); setShowCreate(false); setMessage(null); }}>← Quay lại danh sách sự kiện</button>
+                <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] p-6 text-white shadow-lg md:p-8">
+                    <button type="button" className="text-xs font-black text-teal-200 hover:underline" onClick={() => { setForm(emptyEvent()); setSelectedEventId(''); setShowCreate(false); setMessage(null); }}>← Quay lại danh sách sự kiện</button>
                     <div className="mt-5 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                         <div>
-                            <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black !text-white">{selectedEvent?.season} {selectedEvent?.year}</span><span className={`rounded-full border px-3 py-1 text-xs font-black ${eventLifecycle(selectedEvent).className}`}>{eventLifecycle(selectedEvent).label}</span></div>
-                            <h2 className="mt-3 text-2xl font-black !text-white md:text-3xl">{selectedEvent?.name}</h2>
-                            <p className="mt-2 text-sm !text-blue-100">{selectedEvent?.teamCount || 0} đội thi · {selectedEvent?.tracks?.length || 0} bảng đấu · {selectedEvent?.roundCount || 0} vòng</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black text-white">{selectedEvent?.season} {selectedEvent?.year}</span>
+                                <span className={`rounded-full border px-3 py-1 text-xs font-black ${eventLifecycle(selectedEvent).className}`}>{eventLifecycle(selectedEvent).label}</span>
+                            </div>
+                            <h2 className="mt-3 text-2xl font-black text-white md:text-3xl">{selectedEvent?.name}</h2>
+                            <p className="mt-2 text-sm text-teal-100/90">{selectedEvent?.teamCount || 0} đội thi · {selectedEvent?.tracks?.length || 0} bảng đấu · {selectedEvent?.roundCount || 0} vòng</p>
                         </div>
-                        <div className="flex flex-wrap gap-2"><Link to={`/events/${selectedEventId}`} className="rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-black hover:opacity-90" style={{ background: '#174f93', color: '#ffffff' }}>Xem trang công khai</Link><Link to="/dashboard/scoring-config" className="rounded-xl bg-white px-4 py-2.5 text-sm font-black !text-[#0f63c9] hover:bg-blue-50">Cấu hình chấm điểm</Link></div>
+                        <div className="flex flex-wrap gap-2">
+                            <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-black text-white hover:bg-white/20 transition">Xem trang công khai</Link>
+                            <Link to="/dashboard/scoring-config" className="rounded-xl bg-white px-4 py-2.5 text-sm font-black text-[#0b3d49] hover:bg-teal-50 transition">Cấu hình chấm điểm</Link>
+                        </div>
                     </div>
                 </section>
 
