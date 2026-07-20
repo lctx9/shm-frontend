@@ -275,12 +275,20 @@ export default function DashboardLayout() {
         const handleChatRead = () => {
             fetchData();
         };
+        const handleStatusChanged = (e) => {
+            // Đọc trực tiếp từ CustomEvent.detail — không cần gọi thêm API
+            if (e.detail && e.detail.pendingCount !== undefined) {
+                setPendingCount(e.detail.pendingCount);
+            }
+        };
         window.addEventListener('chatRead', handleChatRead);
+        window.addEventListener('studentStatusChanged', handleStatusChanged);
 
         fetchData();
         return () => {
             active = false;
             window.removeEventListener('chatRead', handleChatRead);
+            window.removeEventListener('studentStatusChanged', handleStatusChanged);
         };
     }, [storedRole, assignments.judge, assignments.mentor, email, location.pathname]);
 
