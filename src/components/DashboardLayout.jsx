@@ -341,9 +341,9 @@ export default function DashboardLayout() {
 
     return (
         <div className="dashboard-shell">
-            <aside className="dashboard-sidebar bg-gradient-to-b from-[#0b3d49] via-[#0e5362] to-[#082f37] text-white border-r border-[#155e75]/60 shadow-xl">
-                <div className="flex h-20 items-center gap-3 border-b border-[#155e75]/60 bg-[#07252d]/60 px-5 backdrop-blur-sm">
-                    <Link to="/dashboard" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#22d3ee]/40 bg-gradient-to-br from-[#0e5362] to-[#0f6b7e] shadow-md transition-transform hover:scale-105" aria-label="SEAL Dashboard">
+            <aside className="dashboard-sidebar text-white shadow-xl" style={{ background: '#0e5362', borderRight: '1px solid rgba(21,94,117,0.5)' }}>
+                <div className="flex h-20 items-center gap-3 px-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <Link to="/dashboard" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform hover:scale-105" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(165,243,252,0.35)' }} aria-label="SEAL Dashboard">
                         <span className="text-xs font-black tracking-widest text-[#a5f3fc]">SEAL</span>
                     </Link>
                     <div className="sidebar-copy min-w-0">
@@ -389,9 +389,9 @@ export default function DashboardLayout() {
                     ))}
                 </nav>
 
-                <div className="border-t border-[#155e75]/60 bg-[#07252d]/60 p-4 space-y-3">
-                    <div className="flex items-center gap-2.5 rounded-xl border border-[#155e75]/70 bg-[#082f37]/90 p-2.5 shadow-inner">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0f6b7e] to-[#0e5362] border border-[#22d3ee]/40 text-xs font-black text-[#a5f3fc] shadow-sm">
+                <div className="p-4 space-y-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div className="flex items-center gap-2.5 rounded-xl p-2.5" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-[#a5f3fc]" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(165,243,252,0.3)' }}>
                             {(email || 'U').charAt(0).toUpperCase()}
                         </span>
                         <div className="min-w-0 flex-1">
