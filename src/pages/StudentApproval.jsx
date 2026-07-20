@@ -96,6 +96,7 @@ export default function StudentApproval() {
             setRejectingUser(null);
             setReason('');
             setError('');
+            window.dispatchEvent(new Event('studentStatusChanged'));
         } catch (err) {
             setError(err.message || 'Không thể cập nhật trạng thái tài khoản.');
         }

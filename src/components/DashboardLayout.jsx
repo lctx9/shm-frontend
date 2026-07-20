@@ -275,12 +275,17 @@ export default function DashboardLayout() {
         const handleChatRead = () => {
             fetchData();
         };
+        const handleStatusChange = () => {
+            fetchData();
+        };
         window.addEventListener('chatRead', handleChatRead);
+        window.addEventListener('studentStatusChanged', handleStatusChange);
 
         fetchData();
         return () => {
             active = false;
             window.removeEventListener('chatRead', handleChatRead);
+            window.removeEventListener('studentStatusChanged', handleStatusChange);
         };
     }, [storedRole, assignments.judge, assignments.mentor, email, location.pathname]);
 
