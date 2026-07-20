@@ -96,7 +96,13 @@ export default function StudentApproval() {
             setRejectingUser(null);
             setReason('');
             setError('');
-            window.dispatchEvent(new Event('studentStatusChanged'));
+            // Tính trực tiếp từ dữ liệu fresh đã có, truyền vào event để DashboardLayout cập nhật ngay
+            const newPendingCount = nextUsers.filter(
+                (u) => u.role === 'USER' && u.status === 'PENDING'
+            ).length;
+            window.dispatchEvent(
+                new CustomEvent('studentStatusChanged', { detail: { pendingCount: newPendingCount } })
+            );
         } catch (err) {
             setError(err.message || 'Không thể cập nhật trạng thái tài khoản.');
         }
