@@ -341,21 +341,21 @@ export default function DashboardLayout() {
 
     return (
         <div className="dashboard-shell">
-            <aside className="dashboard-sidebar">
-                <div className="flex h-20 items-center gap-3 border-b border-[#d7e6f8] px-5">
-                    <Link to="/dashboard" className="brand-mark" aria-label="SEAL Dashboard">
-                        <span className="brand-mark-text">SEAL</span>
+            <aside className="dashboard-sidebar bg-gradient-to-b from-[#0b3d49] via-[#0e5362] to-[#082f37] text-white border-r border-[#155e75]/60 shadow-xl">
+                <div className="flex h-20 items-center gap-3 border-b border-[#155e75]/60 bg-[#07252d]/60 px-5 backdrop-blur-sm">
+                    <Link to="/dashboard" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#22d3ee]/40 bg-gradient-to-br from-[#0e5362] to-[#0f6b7e] shadow-md transition-transform hover:scale-105" aria-label="SEAL Dashboard">
+                        <span className="text-xs font-black tracking-widest text-[#a5f3fc]">SEAL</span>
                     </Link>
                     <div className="sidebar-copy min-w-0">
-                        <p className="truncate text-sm font-black text-[#071936]">SEAL Dashboard</p>
-                        <p className="text-xs font-semibold text-[#5c6d83]">{role}</p>
+                        <p className="truncate text-sm font-black text-white tracking-wide">SEAL Dashboard</p>
+                        <p className="text-xs font-extrabold text-[#a5f3fc] uppercase tracking-wider">{role}</p>
                     </div>
                 </div>
 
                 <nav className="flex-1 space-y-5 overflow-y-auto p-4">
                     {(['STAFF', 'MENTOR', 'JUDGE'].includes(role) ? getStaffGroups(assignments) : getGroups(role)).map((group) => (
                         <section key={group.title}>
-                            <p className="sidebar-label mb-2 px-3 text-[11px] font-black uppercase tracking-[0.14em] text-[#748195]">
+                            <p className="sidebar-label mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-[#a5f3fc]/90">
                                 {group.title}
                             </p>
                             <div className="space-y-1">
@@ -364,22 +364,21 @@ export default function DashboardLayout() {
                                         key={item.to} 
                                         to={item.to} 
                                         className={navClass(item)} 
-                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} 
                                         title={item.label}
                                     >
                                         <span>{item.label}</span>
                                         {item.to === '/dashboard/student-approval' && pendingCount > 0 && (
-                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
+                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-sm">
                                                 {pendingCount}
                                             </span>
                                         )}
                                         {item.to === '/dashboard/grading' && pendingGradingCount > 0 && (
-                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
+                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-sm">
                                                 {pendingGradingCount}
                                             </span>
                                         )}
                                         {item.to === '/dashboard/chat' && pendingChatCount > 0 && (
-                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
+                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-sm">
                                                 {pendingChatCount}
                                             </span>
                                         )}
@@ -390,21 +389,21 @@ export default function DashboardLayout() {
                     ))}
                 </nav>
 
-                <div className="border-t border-[#d7e6f8] p-4 space-y-3">
-                    <div className="flex items-center gap-2.5 rounded-xl border border-[#d7e6f8] bg-[#f0f7ff] p-2.5">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0f63c9] text-xs font-black text-white shadow-sm">
+                <div className="border-t border-[#155e75]/60 bg-[#07252d]/60 p-4 space-y-3">
+                    <div className="flex items-center gap-2.5 rounded-xl border border-[#155e75]/70 bg-[#082f37]/90 p-2.5 shadow-inner">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0f6b7e] to-[#0e5362] border border-[#22d3ee]/40 text-xs font-black text-[#a5f3fc] shadow-sm">
                             {(email || 'U').charAt(0).toUpperCase()}
                         </span>
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-bold text-[#071936]" title={email}>{email}</p>
-                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#5c6d83]">{role}</p>
+                            <p className="truncate text-xs font-bold text-white" title={email}>{email}</p>
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#a5f3fc]">{role}</p>
                         </div>
                     </div>
 
                     <Link to="/dashboard/profile" className={`block rounded-lg px-3 py-2 text-sm font-bold ${navClass({ to: '/dashboard/profile' })}`}>
                         Hồ sơ
                     </Link>
-                    <button type="button" onClick={logout} className="btn-secondary w-full">Đăng xuất</button>
+                    <button type="button" onClick={logout} className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-rose-600 hover:border-rose-500 transition-all shadow-sm">Đăng xuất</button>
                 </div>
             </aside>
 
