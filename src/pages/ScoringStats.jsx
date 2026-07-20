@@ -19,21 +19,24 @@ export default function ScoringStats() {
     const [submissions, setSubmissions] = useState([]);
     const [logs, setLogs] = useState([]);
     const [interRater, setInterRater] = useState(null);
+    const [cohenKappa, setCohenKappa] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [submissionRes, logRes, interRaterRes] = await Promise.allSettled([
+            const [submissionRes, logRes, interRaterRes, cohenKappaRes] = await Promise.allSettled([
                 axiosClient.get('/submissions'),
                 axiosClient.get('/audit-logs'),
                 axiosClient.get('/stats/inter-rater'),
+                axiosClient.get('/stats/cohen-kappa'),
             ]);
 
             if (submissionRes.status === 'fulfilled') setSubmissions(submissionRes.value.result || []);
             if (logRes.status === 'fulfilled') setLogs(logRes.value.result || []);
             if (interRaterRes.status === 'fulfilled') setInterRater(interRaterRes.value.result || null);
+            if (cohenKappaRes.status === 'fulfilled') setCohenKappa(cohenKappaRes.value.result || null);
             if (submissionRes.status === 'rejected') throw submissionRes.reason;
             setError('');
         } catch (err) {
@@ -95,6 +98,14 @@ export default function ScoringStats() {
         return { text: 'Khách quan (Rất sát trung bình)', color: 'bg-green-50 text-green-700 border-green-100' };
     };
 
+    // Hàm phân loại mức độ Cohen's Kappa (kappa)
+    const getKappaBadge = (kappa) => {
+        if (kappa >= 0.61) return { bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', text: 'Đồng thuận cao / Rất tốt' };
+        if (kappa >= 0.41) return { bg: 'bg-blue-50 text-blue-700 border-blue-200', text: 'Đồng thuận vừa phải' };
+        if (kappa >= 0.21) return { bg: 'bg-amber-50 text-amber-700 border-amber-200', text: 'Đồng thuận trung bình nhẹ' };
+        return { bg: 'bg-rose-50 text-rose-700 border-rose-200', text: 'Đồng thuận thấp / Cần đối thoại' };
+    };
+
     return (
         <div className="mx-auto max-w-7xl space-y-6">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -102,7 +113,7 @@ export default function ScoringStats() {
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Inter-rater overview</p>
                     <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Thống kê chấm điểm & Đồng thuận</h2>
                     <p className="mt-2 text-sm text-slate-600">
-                        Theo dõi tiến độ chấm, điểm trung bình, và độ đồng thuận khoa học (Inter-rater Reliability) giữa các Giám khảo.
+                        Theo dõi tiến độ chấm, điểm trung bình, độ đồng thuận khoa học (Inter-rater Reliability) và chỉ số Cohen's Kappa ($\kappa$).
                     </p>
                 </div>
                 <button type="button" onClick={fetchData} className="btn-secondary">Làm mới</button>
@@ -123,6 +134,112 @@ export default function ScoringStats() {
                         <p className="mt-3 text-3xl font-black text-[#0f63c9]">{loading ? '...' : value}</p>
                     </article>
                 ))}
+            </section>
+
+            {/* Section: Phân Tích Chỉ Số Cohen's Kappa (kappa = (Po - Pe) / (1 - Pe)) */}
+            <section className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/40 via-white to-blue-50/30 p-6 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-100 pb-4">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">📊</span>
+                            <h3 className="text-base font-black uppercase tracking-wide text-indigo-950">Chỉ Số Cohen's Kappa ($\kappa$)</h3>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500 font-medium">
+                            Đo lường độ đồng thuận thực tế ($P_o$) loại trừ sự đồng thuận kỳ vọng ngẫu nhiên ($P_e$) giữa các giám khảo: $\kappa = \frac{P_o - P_e}{1 - P_e}$.
+                        </p>
+                    </div>
+                    {cohenKappa && (
+                        <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-black self-start sm:self-auto ${getKappaBadge(cohenKappa.overallKappa).bg}`}>
+                            {cohenKappa.agreementLevel}
+                        </span>
+                    )}
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                    <article className="rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Hệ số Cohen's Kappa ($\kappa$)</p>
+                        <p className="mt-2 text-3xl font-black text-indigo-700">
+                            {loading ? '...' : (cohenKappa ? cohenKappa.overallKappa.toFixed(2) : '0.00')}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-500 font-medium">Toàn hệ thống (4 Tiers)</p>
+                    </article>
+
+                    <article className="rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Đồng thuận thực tế ($P_o$)</p>
+                        <p className="mt-2 text-3xl font-black text-emerald-600">
+                            {loading ? '...' : (cohenKappa ? `${cohenKappa.observedAgreement.toFixed(1)}%` : '0.0%')}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-500 font-medium">Tỷ lệ đồng hạng giữa các GK</p>
+                    </article>
+
+                    <article className="rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Kỳ vọng ngẫu nhiên ($P_e$)</p>
+                        <p className="mt-2 text-3xl font-black text-amber-600">
+                            {loading ? '...' : (cohenKappa ? `${cohenKappa.expectedAgreement.toFixed(1)}%` : '0.0%')}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-500 font-medium">Tỷ lệ trùng hợp ngẫu nhiên</p>
+                    </article>
+
+                    <article className="rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Số lượt chấm chéo cặp</p>
+                        <p className="mt-2 text-3xl font-black text-blue-600">
+                            {loading ? '...' : (cohenKappa ? cohenKappa.evaluatedPairsCount : '0')}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-500 font-medium">Tổng cặp bài được co-graded</p>
+                    </article>
+                </div>
+
+                {/* Bảng Ma trận Đồng thuận cặp Giám khảo */}
+                <div className="rounded-lg border border-indigo-100 bg-white overflow-hidden shadow-sm">
+                    <div className="border-b border-indigo-100 bg-indigo-50/50 px-5 py-3 flex items-center justify-between">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-indigo-900">Ma trận Đồng thuận Cặp Giám Khảo (Judge-Pair Agreement Matrix)</h4>
+                        <span className="text-[10px] font-extrabold text-indigo-600 uppercase">Chi tiết $\kappa$ từng cặp</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr className="border-b border-indigo-50 bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                    <th className="px-5 py-3">Cặp Giám Khảo Chấm Chung</th>
+                                    <th className="px-5 py-3 text-center">Số bài chấm chung</th>
+                                    <th className="px-5 py-3 text-center">Thực tế $P_o$</th>
+                                    <th className="px-5 py-3 text-center">May rủi $P_e$</th>
+                                    <th className="px-5 py-3 text-center">Hệ số $\kappa$</th>
+                                    <th className="px-5 py-3">Đánh giá độ nhất quán</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                                {cohenKappa && cohenKappa.judgePairKappas && cohenKappa.judgePairKappas.length > 0 ? (
+                                    cohenKappa.judgePairKappas.map((pair, idx) => {
+                                        const badge = getKappaBadge(pair.pairKappa);
+                                        return (
+                                            <tr key={pair.judge1Email + '_' + pair.judge2Email + '_' + idx} className="hover:bg-slate-50/60">
+                                                <td className="px-5 py-3.5">
+                                                    <div className="font-bold text-slate-900">{pair.judge1Name} <span className="text-slate-400 font-normal">vs</span> {pair.judge2Name}</div>
+                                                    <div className="text-[10px] text-slate-400 font-normal mt-0.5">{pair.judge1Email} | {pair.judge2Email}</div>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-center font-extrabold text-slate-800">{pair.sharedSubmissionsCount} bài</td>
+                                                <td className="px-5 py-3.5 text-center text-emerald-600 font-black">{pair.observedAgreement.toFixed(1)}%</td>
+                                                <td className="px-5 py-3.5 text-center text-amber-600 font-bold">{pair.expectedAgreement.toFixed(1)}%</td>
+                                                <td className="px-5 py-3.5 text-center text-sm font-black text-indigo-700">{pair.pairKappa.toFixed(2)}</td>
+                                                <td className="px-5 py-3.5">
+                                                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-black ${badge.bg}`}>
+                                                        {pair.agreementLevel}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="p-5 text-center text-slate-400 font-medium">
+                                            Chưa có dữ liệu bài nộp được chấm bởi từ 2 giám khảo trở lên để tính Cohen's Kappa.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </section>
 
             {/* Grid 2: Thống kê Độ Đồng thuận Giám khảo (Inter-rater Reliability) */}
