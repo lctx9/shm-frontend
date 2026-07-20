@@ -114,6 +114,7 @@ export default function TeamExplorer() {
     const storedRole = localStorage.getItem('role');
     const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const email = localStorage.getItem('email');
+    const userId = localStorage.getItem('userId');
     const [teams, setTeams] = useState([]);
     const [events, setEvents] = useState([]);
     const [submissions, setSubmissions] = useState([]);
@@ -165,7 +166,7 @@ export default function TeamExplorer() {
         return teams.filter((team) => {
             const eventMatched = eventFilter === 'ALL' || String(team.eventId) === String(eventFilter);
             const mentorMatched = !isMentor || assignedTrackIds.has(String(team.trackId));
-            const isMember = (team.members || []).some((member) => member.email === email);
+            const isMember = (team.members || []).some((member) => String(member.userId) === String(userId));
             
             if (canJoin && isMember) {
                 return false;
@@ -173,7 +174,7 @@ export default function TeamExplorer() {
             
             return eventMatched && mentorMatched;
         });
-    }, [assignedTrackIds, eventFilter, isMentor, teams, email, canJoin]);
+    }, [assignedTrackIds, eventFilter, isMentor, teams, userId, canJoin]);
 
     const stats = useMemo(() => {
         const teamIds = new Set(filteredTeams.map((team) => String(team.id)));
