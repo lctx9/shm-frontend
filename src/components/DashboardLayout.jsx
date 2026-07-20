@@ -389,8 +389,18 @@ export default function DashboardLayout() {
                     ))}
                 </nav>
 
-                <div className="border-t border-[#d7e6f8] p-4">
-                    <Link to="/dashboard/profile" className={`mb-3 block rounded-lg px-3 py-2.5 text-sm font-bold ${navClass({ to: '/dashboard/profile' })}`}>
+                <div className="border-t border-[#d7e6f8] p-4 space-y-3">
+                    <div className="flex items-center gap-2.5 rounded-xl border border-[#d7e6f8] bg-[#f0f7ff] p-2.5">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0f63c9] text-xs font-black text-white shadow-sm">
+                            {(email || 'U').charAt(0).toUpperCase()}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-bold text-[#071936]" title={email}>{email}</p>
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#5c6d83]">{role}</p>
+                        </div>
+                    </div>
+
+                    <Link to="/dashboard/profile" className={`block rounded-lg px-3 py-2 text-sm font-bold ${navClass({ to: '/dashboard/profile' })}`}>
                         Hồ sơ
                     </Link>
                     <button type="button" onClick={logout} className="btn-secondary w-full">Đăng xuất</button>
@@ -405,7 +415,6 @@ export default function DashboardLayout() {
                     </div>
                     <div className="flex items-center gap-3">
                         <NotificationBell />
-                        <p className="account-email max-w-sm truncate text-sm font-semibold text-[#5c6d83]">{email}</p>
                     </div>
                 </header>
 
