@@ -568,11 +568,11 @@ export default function EventManagement() {
                 <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] p-6 text-white shadow-lg md:p-8">
                     <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
                         <div>
-                            <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-200">Event operations</p>
+                            <p className="text-xs font-black uppercase tracking-[0.2em] text-[#a5f3fc]">Event operations</p>
                             <h2 className="mt-2 text-2xl font-black text-white md:text-3xl">Tổng quan sự kiện</h2>
-                            <p className="mt-2 max-w-2xl text-sm leading-6 text-teal-100/90">Theo dõi toàn bộ mùa giải, tiến độ cấu hình và trạng thái vận hành tại một nơi.</p>
+                            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-100 font-medium">Theo dõi toàn bộ mùa giải, tiến độ cấu hình và trạng thái vận hành tại một nơi.</p>
                         </div>
-                        <button type="button" className="rounded-xl bg-white px-5 py-3 text-sm font-black text-[#0b3d49] shadow-sm transition hover:bg-teal-50" onClick={() => { setForm(emptyEvent()); setShowCreate(true); setCreateStep(0); setMessage(null); }}>+ Tạo sự kiện mới</button>
+                        <button type="button" className="rounded-xl bg-white px-5 py-3 text-sm font-black shadow-sm transition hover:bg-teal-50" style={{ color: '#0b3d49', backgroundColor: '#ffffff' }} onClick={() => { setForm(emptyEvent()); setShowCreate(true); setCreateStep(0); setMessage(null); }}>+ Tạo sự kiện mới</button>
                     </div>
                 </section>
 
@@ -644,13 +644,14 @@ export default function EventManagement() {
                     <header className="bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] px-6 py-7 text-white md:px-10">
                         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <p className="text-xs font-black uppercase tracking-[0.22em] text-teal-200">Coordinator · Tạo cuộc thi</p>
-                                <h1 className="mt-2 text-2xl font-black text-white md:text-3xl">Thiết lập cuộc thi mới</h1>
-                                <p className="mt-2 max-w-2xl text-sm text-teal-100/90">Đi từng bước. Hệ thống sẽ tự sinh bảng, vòng loại và một trận chung kết.</p>
+                                <p className="text-xs font-black uppercase tracking-[0.22em] text-[#a5f3fc]">Coordinator · Tạo cuộc thi</p>
+                                <h1 className="mt-1.5 text-2xl font-black text-white md:text-3xl">Thiết lập cuộc thi mới</h1>
+                                <p className="mt-1.5 max-w-2xl text-sm font-medium text-slate-100">Đi từng bước. Hệ thống sẽ tự sinh bảng, vòng loại và một trận chung kết.</p>
                             </div>
                             <button
                                 type="button"
-                                className="rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-bold text-white hover:bg-white/20 transition"
+                                className="rounded-xl bg-white px-5 py-2.5 text-sm font-black shadow-md transition hover:bg-teal-50"
+                                style={{ color: '#0b3d49', backgroundColor: '#ffffff' }}
                                 onClick={() => { setShowCreate(false); setForm(emptyEvent()); }}
                             >
                                 Hủy tạo mới
