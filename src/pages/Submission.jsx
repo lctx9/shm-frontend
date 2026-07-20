@@ -26,7 +26,7 @@ export default function Submission() {
                 if (loadedTeam?.eventId) {
                     const matrixRes = await axiosClient.get(`/events/${loadedTeam.eventId}/matrices`);
                     const teamMatrices = (matrixRes.result || []).filter(
-                        (matrix) => String(matrix.trackId) === String(loadedTeam.trackId)
+                        (matrix) => matrix.trackId == null || String(matrix.trackId) === String(loadedTeam.trackId)
                     );
                     setMatrices(teamMatrices);
                     setFormData((current) => ({

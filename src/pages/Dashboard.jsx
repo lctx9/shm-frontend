@@ -345,7 +345,10 @@ function StaffDashboard() {
                                     if (msgList.length > 0) {
                                         const lastMsg = msgList[msgList.length - 1];
                                         if (lastMsg.senderEmail !== email) {
-                                            unreadCount += 1;
+                                            const lastReadId = localStorage.getItem(`lastReadChat_${res.teamId}`);
+                                            if (String(lastReadId) !== String(lastMsg.id)) {
+                                                unreadCount += 1;
+                                            }
                                         }
                                     }
                                 });
@@ -365,8 +368,16 @@ function StaffDashboard() {
             }
         };
 
+        const handleChatRead = () => {
+            loadAssignmentsAndStats();
+        };
+        window.addEventListener('chatRead', handleChatRead);
+
         loadAssignmentsAndStats();
-        return () => { active = false; };
+        return () => {
+            active = false;
+            window.removeEventListener('chatRead', handleChatRead);
+        };
     }, [email]);
 
     return (

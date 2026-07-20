@@ -70,7 +70,7 @@ export default function MyTeam() {
                         : Promise.resolve({ result: [] }),
                 ]);
                 const teamMatrices = matrixRes.status === 'fulfilled'
-                    ? (matrixRes.value.result || []).filter((matrix) => String(matrix.trackId) === String(loadedTeam.trackId))
+                    ? (matrixRes.value.result || []).filter((matrix) => matrix.trackId == null || String(matrix.trackId) === String(loadedTeam.trackId))
                     : [];
                 setMatrices(teamMatrices);
                 const loadedSubmission = submissionRes.status === 'fulfilled' ? submissionRes.value.result : null;

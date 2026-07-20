@@ -344,7 +344,7 @@ function MentorChatModal({ team, onClose }) {
     const [messages, setMessages] = useState([]);
     const [content, setContent] = useState('');
     const [error, setError] = useState('');
-    const messagesEndRef = useRef(null);
+    const messagesContainerRef = useRef(null);
 
     const fetchMessages = useCallback(async () => {
         try {
@@ -367,8 +367,18 @@ function MentorChatModal({ team, onClose }) {
     }, [fetchMessages]);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
     }, [messages]);
+
+    useEffect(() => {
+        if (team.id && messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            localStorage.setItem(`lastReadChat_${team.id}`, String(lastMsg.id));
+            window.dispatchEvent(new Event('chatRead'));
+        }
+    }, [team.id, messages]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -397,7 +407,7 @@ function MentorChatModal({ team, onClose }) {
                     <button type="button" onClick={onClose} className="btn-secondary">Đóng</button>
                 </div>
                 {error && <div className="m-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}
-                <div className="flex-1 space-y-3 overflow-y-auto p-5">
+                <div ref={messagesContainerRef} className="flex-1 space-y-3 overflow-y-auto p-5">
                     {messages.length === 0 ? (
                         <p className="text-center text-sm text-slate-500">Chưa có tin nhắn.</p>
                     ) : messages.map((message) => (
@@ -409,7 +419,6 @@ function MentorChatModal({ team, onClose }) {
                             <p className="mt-2 text-sm leading-6 text-slate-700">{message.content}</p>
                         </div>
                     ))}
-                    <div ref={messagesEndRef} />
                 </div>
                 <form onSubmit={handleSubmit} className="flex gap-3 border-t border-blue-100 p-4">
                     <input className="input-custom" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Nhập tin nhắn cho đội..." />
