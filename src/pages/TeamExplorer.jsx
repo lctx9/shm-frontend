@@ -165,9 +165,15 @@ export default function TeamExplorer() {
         return teams.filter((team) => {
             const eventMatched = eventFilter === 'ALL' || String(team.eventId) === String(eventFilter);
             const mentorMatched = !isMentor || assignedTrackIds.has(String(team.trackId));
+            const isMember = (team.members || []).some((member) => member.email === email);
+            
+            if (canJoin && isMember) {
+                return false;
+            }
+            
             return eventMatched && mentorMatched;
         });
-    }, [assignedTrackIds, eventFilter, isMentor, teams]);
+    }, [assignedTrackIds, eventFilter, isMentor, teams, email, canJoin]);
 
     const stats = useMemo(() => {
         const teamIds = new Set(filteredTeams.map((team) => String(team.id)));
