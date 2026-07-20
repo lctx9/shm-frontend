@@ -53,6 +53,7 @@ export default function Grading() {
     const storedRole = localStorage.getItem('role');
     const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const email = localStorage.getItem('email');
+    const [resolvedUserId, setResolvedUserId] = useState(localStorage.getItem('userId') || null);
     const canGrade = ['STAFF', 'JUDGE', 'ADMIN', 'COORDINATOR'].includes(role);
 
     const matrixById = useMemo(() => {
@@ -63,11 +64,15 @@ export default function Grading() {
 
     const visibleSubmissions = useMemo(() => {
         if (role === 'ADMIN' || role === 'COORDINATOR') return submissions;
+        if (!resolvedUserId) return [];
         return submissions.filter((submission) => {
             const matrix = matrixById.get(String(submission.matrixId));
-            return (matrix?.judges || []).some((judge) => judge.email === email);
+            // Match by userId (judge.id from PublicStaffResponse) — email is not exposed on public endpoints
+            return (matrix?.judges || []).some(
+                (judge) => String(judge.id) === resolvedUserId
+            );
         });
-    }, [email, matrixById, role, submissions]);
+    }, [resolvedUserId, matrixById, role, submissions]);
 
     const summary = useMemo(() => ({
         total: visibleSubmissions.length,
@@ -92,6 +97,19 @@ export default function Grading() {
     const fetchData = async () => {
         try {
             setLoading(true);
+            // If userId is missing from localStorage (logged in before fix), resolve it from /users/me
+            let uid = localStorage.getItem('userId');
+            if (!uid) {
+                try {
+                    const meRes = await axiosClient.get('/users/me');
+                    uid = String(meRes.result?.id || '');
+                    if (uid) localStorage.setItem('userId', uid);
+                } catch {
+                    // ignore — will show empty queue
+                }
+            }
+            setResolvedUserId(uid);
+
             const [submissionRes, eventRes] = await Promise.all([
                 axiosClient.get('/submissions'),
                 axiosClient.get('/events').catch(() => ({ result: [] })),

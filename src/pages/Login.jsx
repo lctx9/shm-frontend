@@ -23,11 +23,12 @@ export default function Login() {
 
         try {
             const response = await axiosClient.post('/auth/login', formData);
-            const { token, role, email } = response.result;
+            const { token, role, email, userId } = response.result;
 
             localStorage.setItem('token', token);
             localStorage.setItem('role', role);
             localStorage.setItem('email', email);
+            localStorage.setItem('userId', String(userId));
             localStorage.setItem('user', JSON.stringify({ email, fullName: email }));
 
             navigate(managerRoles.has(role) ? '/dashboard' : '/my-team', { replace: true });
