@@ -276,12 +276,11 @@ export default function Leaderboard() {
     return (
         <main className="mx-auto max-w-7xl space-y-6">
             {/* Hero Section */}
-            <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#071936] to-[#0f63c9] p-6 sm:p-8 text-white shadow-md">
-                <div className="absolute -right-8 -top-8 h-44 w-44 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-                <div className="relative z-10 max-w-2xl">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] !text-blue-200">SEAL Dashboard</p>
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-1 !text-white">Bảng Xếp Hạng</h1>
-                    <p className="text-xs sm:text-sm !text-blue-100 mt-2 font-medium">
+            <header className="rounded-2xl border border-[#d7e6f8] bg-white p-6 sm:p-8 shadow-sm">
+                <div className="max-w-2xl">
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-[#0f63c9]">SEAL Dashboard</p>
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-1 text-[#071936]">Bảng Xếp Hạng</h1>
+                    <p className="text-xs sm:text-sm text-[#5c6d83] mt-2 font-medium">
                         Vinh danh thành tích các đội thi và cá nhân xuất sắc nhất trong các mùa giải SEAL Hackathon.
                     </p>
                 </div>
