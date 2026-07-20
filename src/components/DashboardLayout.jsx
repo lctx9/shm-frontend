@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import NotificationBell from './NotificationBell';
@@ -170,22 +170,27 @@ export default function DashboardLayout() {
     const [pendingGradingCount, setPendingGradingCount] = useState(0);
     const [pendingChatCount, setPendingChatCount] = useState(0);
 
+    const fetchPendingStudentsRef = useRef(null);
+
     useEffect(() => {
         let active = true;
 
+        const fetchPendingStudents = () => {
+            if (storedRole !== 'COORDINATOR') return;
+            axiosClient.get('/users')
+                .then((response) => {
+                    const list = response.result || [];
+                    const count = list.filter(user => user.role === 'USER' && user.status === 'PENDING').length;
+                    setPendingCount(count);
+                })
+                .catch(() => {});
+        };
+
+        fetchPendingStudentsRef.current = fetchPendingStudents;
+
         const fetchData = async () => {
             // 1. Fetch pending students (Coordinator only)
-            if (storedRole === 'COORDINATOR') {
-                axiosClient.get('/users')
-                    .then((response) => {
-                        if (active) {
-                            const list = response.result || [];
-                            const count = list.filter(user => user.role === 'USER' && user.status === 'PENDING').length;
-                            setPendingCount(count);
-                        }
-                    })
-                    .catch(() => {});
-            }
+            fetchPendingStudents();
 
             // 2. Fetch pending grading (Judge assignment only)
             if (assignments.judge) {
@@ -290,6 +295,7 @@ export default function DashboardLayout() {
             window.removeEventListener('chatRead', handleChatRead);
             window.removeEventListener('studentStatusChanged', handleStatusChanged);
         };
+
     }, [storedRole, assignments.judge, assignments.mentor, email, location.pathname]);
 
     useEffect(() => {
