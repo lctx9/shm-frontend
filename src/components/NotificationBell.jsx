@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
@@ -16,13 +16,15 @@ function formatTime(value) {
 
 export default function NotificationBell() {
     const navigate = useNavigate();
+    const location = useLocation();
     const rootRef = useRef(null);
     const [open, setOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const role = localStorage.getItem('role');
     const allNotificationsUrl = managerRoles.has(role) ? '/dashboard/notifications' : '/notifications';
-    const unreadCount = notifications.filter((item) => !item.read).length;
+    const isNotificationPage = location.pathname === allNotificationsUrl;
+    const unreadCount = isNotificationPage ? 0 : notifications.filter((item) => !item.read).length;
 
     const loadNotifications = async (quiet = false) => {
         if (!quiet) setLoading(true);

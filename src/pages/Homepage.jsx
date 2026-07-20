@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
-import heroCourt from '../assets/blue-hero-reference.png';
+import heroCourt from '../assets/1.jpg';
+import logoFpt from '../assets/fpt.jpg';
+import logoFptSoftware from '../assets/fpt_software.jpg';
+import logoVpBank from '../assets/VPBank_logo.svg.webp';
+import logoTechcombank from '../assets/Techcombank_logo.png';
+import logo197 from '../assets/197.png';
 import { demoWinners, formatDateTime, getCountdownParts, getEventPhase, pickFeaturedEvent } from '../utils/hackathon';
 
 function Stat({ value, label }) {
@@ -18,7 +23,7 @@ function Stat({ value, label }) {
 function EditorialEventTitle({ name }) {
     const words = String(name || '').trim().split(/\s+/);
     const accent = words.pop();
-    return <>{words.join(' ')}{words.length > 0 && <br />}<span className="bg-gradient-to-r from-[var(--shield-blue)] to-indigo-600 bg-clip-text text-transparent italic">{accent}</span></>;
+    return <>{words.join(' ')}{words.length > 0 && <br />}<span className="bg-gradient-to-r from-[var(--shield-blue)] to-indigo-600 bg-clip-text text-transparent italic pr-2">{accent}</span></>;
 }
 
 export default function Homepage() {
@@ -108,7 +113,7 @@ export default function Homepage() {
                     )}
 
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                        <Link to={isEnded ? '/leaderboard' : `/my-team?eventId=${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-white bg-[var(--shield-blue)] hover:bg-[var(--shield-blue-dark)] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                        <Link to={isEnded ? '/leaderboard' : `/my-team?eventId=${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-[var(--shield-blue)] bg-white border border-[var(--shield-blue)] hover:bg-[var(--shield-blue-soft)] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                             {isEnded ? 'Xem bảng xếp hạng' : 'Đăng ký tham gia ngay'}
                         </Link>
                         <Link to={`/events/${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-[var(--shield-blue)] bg-white border border-[var(--shield-line)] shadow-sm hover:bg-[var(--shield-blue-soft)] transition-all duration-200">
@@ -334,10 +339,25 @@ export default function Homepage() {
                         Đồng hành & Đối tác liên kết
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 opacity-60">
-                        {["Đại học FPT", "Bộ phận PDP", "FPT Software", "AI Research Lab", "Software Engineering Dept"].map((partner, i) => (
-                            <span key={i} className="text-sm sm:text-base font-black tracking-widest text-[var(--shield-copy)] hover:text-[var(--shield-blue)] hover:scale-105 transition-all cursor-default">
-                                {partner.toUpperCase()}
-                            </span>
+                        {[
+                            { name: "Đại học FPT", logo: logoFpt },
+                            { name: "FPT Software", logo: logoFptSoftware },
+                            { name: "VPBank", logo: logoVpBank },
+                            { name: "Techcombank", logo: logoTechcombank },
+                            { name: "197", logo: logo197 }
+                        ].map((partner, i) => (
+                            partner.logo ? (
+                                <img 
+                                    key={i} 
+                                    src={partner.logo} 
+                                    alt={partner.name} 
+                                    className="h-10 w-auto object-contain hover:scale-105 transition-all cursor-default" 
+                                />
+                            ) : (
+                                <span key={i} className="text-sm sm:text-base font-black tracking-widest text-[var(--shield-copy)] hover:text-[var(--shield-blue)] hover:scale-105 transition-all cursor-default">
+                                    {partner.name.toUpperCase()}
+                                </span>
+                            )
                         ))}
                     </div>
                 </div>

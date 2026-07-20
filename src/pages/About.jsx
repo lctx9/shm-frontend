@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import heroCourt from '../assets/hero.png';
+import heroCourt from '../assets/OIP.png';
 
 const ecosystem = [
     ['01', 'Thí sinh', 'Lập đội, chọn hạng mục và phát triển sản phẩm qua từng vòng thi.'],
