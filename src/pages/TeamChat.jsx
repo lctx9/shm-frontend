@@ -85,13 +85,57 @@ export default function TeamChat({ embedded = false }) {
         bootstrap();
     }, []);
 
+    const wsRef = useRef(null);
+
+    const connectWebSocket = useCallback(() => {
+        if (!selectedTeamId) return;
+        if (wsRef.current) {
+            wsRef.current.close();
+        }
+
+        const token = localStorage.getItem('token');
+        const wsUrl = `ws://localhost:8080/ws-chat?teamId=${selectedTeamId}&token=${token}`;
+        const socket = new WebSocket(wsUrl);
+
+        socket.onopen = () => {
+            console.log("WebSocket connected to team", selectedTeamId);
+            setError('');
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                setMessages((current) => {
+                    if (current.some(m => m.id === message.id)) {
+                        return current;
+                    }
+                    return [...current, message];
+                });
+            } catch (err) {
+                console.error("Lỗi khi đọc tin nhắn WebSocket: ", err);
+            }
+        };
+
+        socket.onclose = () => {
+            console.log("WebSocket disconnected for team", selectedTeamId);
+        };
+
+        socket.onerror = (err) => {
+            console.error("WebSocket error:", err);
+        };
+
+        wsRef.current = socket;
+    }, [selectedTeamId]);
+
     useEffect(() => {
         if (!selectedTeamId) return undefined;
-        const intervalId = window.setInterval(() => {
-            fetchMessages(selectedTeamId, { silent: true }).catch(() => {});
-        }, 2500);
-        return () => window.clearInterval(intervalId);
-    }, [fetchMessages, selectedTeamId]);
+        connectWebSocket();
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
+        };
+    }, [connectWebSocket, selectedTeamId]);
 
     useEffect(() => {
         if (messagesContainerRef.current) {
@@ -112,19 +156,15 @@ export default function TeamChat({ embedded = false }) {
         if (teamId) await fetchMessages(teamId);
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         if (!selectedTeamId || !content.trim()) return;
-        try {
-            const response = await axiosClient.post(`/chat/teams/${selectedTeamId}`, { teamId: Number(selectedTeamId), content });
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ content }));
             setContent('');
-            if (response.result) {
-                setMessages((current) => [...current, response.result]);
-            } else {
-                await fetchMessages(selectedTeamId);
-            }
-        } catch (err) {
-            setError(err.message || 'Không thể gửi tin nhắn.');
+        } else {
+            setError('Mất kết nối với phòng chat. Đang cố gắng kết nối lại...');
+            connectWebSocket();
         }
     };
 
