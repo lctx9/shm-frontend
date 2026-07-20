@@ -113,7 +113,7 @@ export default function ScoringStats() {
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Inter-rater overview</p>
                     <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Thống kê chấm điểm & Đồng thuận</h2>
                     <p className="mt-2 text-sm text-slate-600">
-                        Theo dõi tiến độ chấm, điểm trung bình, độ đồng thuận khoa học (Inter-rater Reliability) và chỉ số Cohen's Kappa ($\kappa$).
+                        Theo dõi tiến độ chấm, điểm trung bình, độ đồng thuận khoa học (Inter-rater Reliability) và chỉ số Cohen's Kappa (κ).
                     </p>
                 </div>
                 <button type="button" onClick={fetchData} className="btn-secondary">Làm mới</button>
@@ -136,16 +136,16 @@ export default function ScoringStats() {
                 ))}
             </section>
 
-            {/* Section: Phân Tích Chỉ Số Cohen's Kappa (kappa = (Po - Pe) / (1 - Pe)) */}
+            {/* Section: Phân Tích Chỉ Số Cohen's Kappa: κ = (Pₒ - Pₑ) / (1 - Pₑ) */}
             <section className="rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/40 via-white to-blue-50/30 p-6 shadow-sm space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-100 pb-4">
                     <div>
                         <div className="flex items-center gap-2">
                             <span className="text-lg">📊</span>
-                            <h3 className="text-base font-black uppercase tracking-wide text-indigo-950">Chỉ Số Cohen's Kappa ($\kappa$)</h3>
+                            <h3 className="text-base font-black uppercase tracking-wide text-indigo-950">Chỉ Số Cohen's Kappa (κ)</h3>
                         </div>
                         <p className="mt-1 text-xs text-slate-500 font-medium">
-                            Đo lường độ đồng thuận thực tế ($P_o$) loại trừ sự đồng thuận kỳ vọng ngẫu nhiên ($P_e$) giữa các giám khảo: $\kappa = \frac{P_o - P_e}{1 - P_e}$.
+                            Đo lường độ đồng thuận thực tế (Pₒ) loại trừ sự đồng thuận kỳ vọng ngẫu nhiên (Pₑ) giữa các giám khảo: κ = (Pₒ - Pₑ) / (1 - Pₑ).
                         </p>
                     </div>
                     {cohenKappa && (
@@ -157,7 +157,7 @@ export default function ScoringStats() {
 
                 <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
                     <article className="rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Hệ số Cohen's Kappa ($\kappa$)</p>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Hệ số Cohen's Kappa (κ)</p>
                         <p className="mt-2 text-3xl font-black text-indigo-700">
                             {loading ? '...' : (cohenKappa ? (cohenKappa.overallKappa ?? 0).toFixed(2) : '0.00')}
                         </p>
@@ -165,7 +165,7 @@ export default function ScoringStats() {
                     </article>
 
                     <article className="rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Đồng thuận thực tế ($P_o$)</p>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Đồng thuận thực tế (Pₒ)</p>
                         <p className="mt-2 text-3xl font-black text-emerald-600">
                             {loading ? '...' : (cohenKappa ? `${(cohenKappa.observedAgreement ?? 0).toFixed(1)}%` : '0.0%')}
                         </p>
@@ -173,7 +173,7 @@ export default function ScoringStats() {
                     </article>
 
                     <article className="rounded-lg border border-indigo-100 bg-white p-4 shadow-sm">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Kỳ vọng ngẫu nhiên ($P_e$)</p>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Kỳ vọng ngẫu nhiên (Pₑ)</p>
                         <p className="mt-2 text-3xl font-black text-amber-600">
                             {loading ? '...' : (cohenKappa ? `${(cohenKappa.expectedAgreement ?? 0).toFixed(1)}%` : '0.0%')}
                         </p>
@@ -193,7 +193,7 @@ export default function ScoringStats() {
                 <div className="rounded-lg border border-indigo-100 bg-white overflow-hidden shadow-sm">
                     <div className="border-b border-indigo-100 bg-indigo-50/50 px-5 py-3 flex items-center justify-between">
                         <h4 className="text-xs font-black uppercase tracking-wider text-indigo-900">Ma trận Đồng thuận Cặp Giám Khảo (Judge-Pair Agreement Matrix)</h4>
-                        <span className="text-[10px] font-extrabold text-indigo-600 uppercase">Chi tiết $\kappa$ từng cặp</span>
+                        <span className="text-[10px] font-extrabold text-indigo-600 uppercase">Chi tiết κ từng cặp</span>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs border-collapse">
@@ -201,9 +201,9 @@ export default function ScoringStats() {
                                 <tr className="border-b border-indigo-50 bg-slate-50 text-[10px] font-black uppercase tracking-wider text-slate-400">
                                     <th className="px-5 py-3">Cặp Giám Khảo Chấm Chung</th>
                                     <th className="px-5 py-3 text-center">Số bài chấm chung</th>
-                                    <th className="px-5 py-3 text-center">Thực tế $P_o$</th>
-                                    <th className="px-5 py-3 text-center">May rủi $P_e$</th>
-                                    <th className="px-5 py-3 text-center">Hệ số $\kappa$</th>
+                                    <th className="px-5 py-3 text-center">Thực tế Pₒ</th>
+                                    <th className="px-5 py-3 text-center">May rủi Pₑ</th>
+                                    <th className="px-5 py-3 text-center">Hệ số κ</th>
                                     <th className="px-5 py-3">Đánh giá độ nhất quán</th>
                                 </tr>
                             </thead>
