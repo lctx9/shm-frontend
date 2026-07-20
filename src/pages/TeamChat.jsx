@@ -156,15 +156,28 @@ export default function TeamChat({ embedded = false }) {
         if (teamId) await fetchMessages(teamId);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedTeamId || !content.trim()) return;
+        const text = content.trim();
+        if (!selectedTeamId || !text) return;
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ content }));
+            wsRef.current.send(JSON.stringify({ content: text }));
             setContent('');
+            setError('');
         } else {
-            setError('Mất kết nối với phòng chat. Đang cố gắng kết nối lại...');
-            connectWebSocket();
+            try {
+                const response = await axiosClient.post(`/chat/teams/${selectedTeamId}`, { content: text });
+                if (response.result) {
+                    setMessages((current) => {
+                        if (current.some((m) => m.id === response.result.id)) return current;
+                        return [...current, response.result];
+                    });
+                }
+                setContent('');
+                setError('');
+            } catch (err) {
+                setError(err.message || 'Không thể gửi tin nhắn.');
+            }
         }
     };
 
