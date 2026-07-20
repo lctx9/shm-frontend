@@ -86,6 +86,7 @@ const judgeGroups = [
         items: [
             { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
             { to: '/dashboard/grading', label: 'Chấm bài' },
+            { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
             { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
         ],
     },
