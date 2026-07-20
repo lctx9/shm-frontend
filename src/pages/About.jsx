@@ -22,7 +22,7 @@ export default function About() {
                     <p>Về SEAL Hackathon</p>
                     <h1>Nơi sinh viên biến ý tưởng thành sản phẩm thật</h1>
                     <span>SEAL kết nối thí sinh, mentor, giám khảo và ban tổ chức trong một hành trình xây dựng sản phẩm công nghệ có định hướng rõ ràng.</span>
-                    <div className="about-devpost__actions"><Link to="/events">Khám phá hackathon</Link><Link to="/register">Tham gia cộng đồng</Link></div>
+                    <div className="about-devpost__actions"><Link to="/events">Khám phá hackathon</Link><a href="https://www.facebook.com/FPTU.HCM" target="_blank" rel="noopener noreferrer">Tham gia cộng đồng</a></div>
                 </div>
                 <div className="about-devpost__visual"><img src={heroCourt} alt="Không gian tổ chức SEAL Hackathon" /><div><strong>SEAL</strong><span>IDEATE · BUILD · SHIP</span></div></div>
             </section>
