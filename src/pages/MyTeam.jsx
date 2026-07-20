@@ -56,7 +56,16 @@ export default function MyTeam() {
             setEvents(loadedEvents);
             setTeams(teamsRes.status === 'fulfilled' ? teamsRes.value.result || [] : []);
 
-            const firstEvent = loadedEvents.find((item) => String(item.id) === String(preselectedEventId)) || loadedEvents[0];
+            const activeOrUpcoming = loadedEvents.filter((event) => {
+                if (!event.active) return false;
+                if (event.eventEndDate) {
+                    const endDate = new Date(event.eventEndDate);
+                    const now = new Date();
+                    if (endDate < now) return false;
+                }
+                return true;
+            });
+            const firstEvent = activeOrUpcoming.find((item) => String(item.id) === String(preselectedEventId)) || activeOrUpcoming[0] || loadedEvents[0];
             setFormData((current) => ({
                 ...current,
                 eventId: loadedTeam?.eventId || firstEvent?.id || '',
@@ -94,6 +103,18 @@ export default function MyTeam() {
     useEffect(() => {
         fetchData();
     }, [preselectedEventId]);
+
+    const activeOrUpcomingEvents = useMemo(() => {
+        return events.filter((event) => {
+            if (!event.active) return false;
+            if (event.eventEndDate) {
+                const endDate = new Date(event.eventEndDate);
+                const now = new Date();
+                if (endDate < now) return false;
+            }
+            return true;
+        });
+    }, [events]);
 
     const selectedEvent = useMemo(() => events.find((event) => String(event.id) === String(formData.eventId)), [events, formData.eventId]);
     const currentEvent = useMemo(() => events.find((event) => String(event.id) === String(team?.eventId)), [events, team]);
@@ -348,9 +369,9 @@ export default function MyTeam() {
                         </section>
                     ) : (
                         <section className="rounded-lg border border-[#d7e6f8] bg-white p-6">
-                            {events.length === 0 ? (
+                            {activeOrUpcomingEvents.length === 0 ? (
                                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
-                                    Chưa có giải đấu trong database. Coordinator cần tạo giải trước.
+                                    Không có giải đấu nào đang hoặc sắp diễn ra để tạo đội thi.
                                 </div>
                             ) : (
                                 <form onSubmit={handleCreateTeam} className="space-y-5">
@@ -362,7 +383,7 @@ export default function MyTeam() {
                                         <div>
                                             <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Giải đấu</label>
                                             <select required className="input-custom" value={formData.eventId} onChange={(e) => handleEventChange(e.target.value)}>
-                                                {events.map((event) => <option key={event.id} value={event.id}>{event.name} - {event.year}</option>)}
+                                                {activeOrUpcomingEvents.map((event) => <option key={event.id} value={event.id}>{event.name} - {event.year}</option>)}
                                             </select>
                                         </div>
                                     </div>
