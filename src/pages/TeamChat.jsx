@@ -13,7 +13,7 @@ export default function TeamChat({ embedded = false }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [refreshing, setRefreshing] = useState(false);
-    const messagesEndRef = useRef(null);
+    const messagesContainerRef = useRef(null);
     const isMentor = role === 'STAFF' || role === 'MENTOR';
 
     const assignedTrackIds = useMemo(() => {
@@ -94,8 +94,18 @@ export default function TeamChat({ embedded = false }) {
     }, [fetchMessages, selectedTeamId]);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
     }, [messages]);
+
+    useEffect(() => {
+        if (selectedTeamId && messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            localStorage.setItem(`lastReadChat_${selectedTeamId}`, String(lastMsg.id));
+            window.dispatchEvent(new Event('chatRead'));
+        }
+    }, [selectedTeamId, messages]);
 
     const handleSelectTeam = async (teamId) => {
         setSelectedTeamId(teamId);
@@ -161,7 +171,7 @@ export default function TeamChat({ embedded = false }) {
                     <p className="mt-1 text-sm text-slate-600">Trao đổi trực tiếp giữa mentor và đội thi.</p>
                 </div>
                 {error && <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
-                <div className="team-chat__messages flex-1 space-y-4 overflow-y-auto p-6">
+                <div ref={messagesContainerRef} className="team-chat__messages flex-1 space-y-4 overflow-y-auto p-6">
                     {messages.length === 0 ? (
                         <p className="text-center text-sm text-slate-500">Chưa có tin nhắn.</p>
                     ) : messages.map((message) => {
@@ -176,7 +186,6 @@ export default function TeamChat({ embedded = false }) {
                         </div>
                     );
                     })}
-                    <div ref={messagesEndRef} />
                 </div>
                 <form onSubmit={handleSubmit} className="team-chat__composer flex gap-3 border-t border-blue-100 p-4">
                     <input className="input-custom" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Nhập tin nhắn..." />

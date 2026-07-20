@@ -256,7 +256,10 @@ export default function DashboardLayout() {
                                 if (msgList.length > 0) {
                                     const lastMsg = msgList[msgList.length - 1];
                                     if (lastMsg.senderEmail !== email) {
-                                        unreadCount += 1;
+                                        const lastReadId = localStorage.getItem(`lastReadChat_${res.teamId}`);
+                                        if (String(lastReadId) !== String(lastMsg.id)) {
+                                            unreadCount += 1;
+                                        }
                                     }
                                 }
                             });
@@ -269,8 +272,16 @@ export default function DashboardLayout() {
             }
         };
 
+        const handleChatRead = () => {
+            fetchData();
+        };
+        window.addEventListener('chatRead', handleChatRead);
+
         fetchData();
-        return () => { active = false; };
+        return () => {
+            active = false;
+            window.removeEventListener('chatRead', handleChatRead);
+        };
     }, [storedRole, assignments.judge, assignments.mentor, email, location.pathname]);
 
     useEffect(() => {
