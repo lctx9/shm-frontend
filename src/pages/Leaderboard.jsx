@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 import { demoWinners } from '../utils/hackathon';
 
 function PodiumCard({ entry, mode }) {
@@ -339,11 +340,7 @@ export default function Leaderboard() {
 
             {/* Main Content Body - Synchronized with Events Page Body */}
             <div className="events-marketplace__body flex-col space-y-5" style={{ gridTemplateColumns: '1fr' }}>
-                {error && (
-                    <div className="market-results__message market-results__message--error">
-                        {error}
-                    </div>
-                )}
+                <Toast error={error} onClose={() => setError('')} />
 
                 {loading ? (
                     <div className="market-results__message">

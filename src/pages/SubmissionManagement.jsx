@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 export default function SubmissionManagement() {
     const [submissions, setSubmissions] = useState([]);
@@ -63,7 +64,7 @@ export default function SubmissionManagement() {
                 </div>
             </section>
 
-            {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+            <Toast error={error} onClose={() => setError('')} />
 
             <section className="overflow-hidden rounded-lg border border-blue-100 bg-white shadow-sm">
                 <div className="overflow-x-auto">

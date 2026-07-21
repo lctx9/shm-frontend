@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
@@ -55,7 +56,7 @@ export default function Login() {
                     <h1 id="login-title">Chào mừng trở lại</h1>
                     <span className="devpost-auth__copy">Tiếp tục hành trình của bạn cùng SEAL Hackathon.</span>
 
-                    {error && <div className="form-alert" role="alert">{error}</div>}
+                    <Toast error={error} onClose={() => setError('')} />
 
                     <form onSubmit={handleSubmit}>
                         <label htmlFor="login-email">Email</label>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const fallbackCriteria = [
     { id: 'presentation', label: 'Trình bày', description: 'Cách trình bày và trả lời câu hỏi', maxScore: 100, weight: 25 },
@@ -191,35 +192,7 @@ export default function Grading() {
 
     return (
         <div className="judge-grading-page">
-            {/* Top-Right Floating Toast Notifications */}
-            {(error || successMsg) && (
-                <aside className="judge-toast-container" aria-live="polite">
-                    {error && (
-                        <div className="judge-toast judge-toast--error" role="alert">
-                            <div className="flex items-start gap-2.5">
-                                <span className="text-base">⚠️</span>
-                                <div>
-                                    <strong className="block text-[11px] uppercase tracking-wider font-extrabold opacity-90">Thao tác không thành công</strong>
-                                    <p className="font-semibold mt-0.5">{error}</p>
-                                </div>
-                            </div>
-                            <button type="button" onClick={() => setError('')} className="judge-toast__close" title="Đóng">✕</button>
-                        </div>
-                    )}
-                    {successMsg && (
-                        <div className="judge-toast judge-toast--success" role="status">
-                            <div className="flex items-start gap-2.5">
-                                <span className="text-base">✓</span>
-                                <div>
-                                    <strong className="block text-[11px] uppercase tracking-wider font-extrabold opacity-90">Thông báo hệ thống</strong>
-                                    <p className="font-semibold mt-0.5">{successMsg}</p>
-                                </div>
-                            </div>
-                            <button type="button" onClick={() => setSuccessMsg('')} className="judge-toast__close" title="Đóng">✕</button>
-                        </div>
-                    )}
-                </aside>
-            )}
+            <Toast error={error} success={successMsg} onClose={() => { setError(''); setSuccessMsg(''); }} />
 
             <header className="judge-grading-hero">
                 <div><p>Judge workspace</p><h1>Chấm điểm bài thi</h1><span>Đánh giá từng tiêu chí theo rubric đã công bố và lưu phản hồi rõ ràng cho đội thi.</span></div>

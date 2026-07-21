@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 // Upload file ảnh riêng — không set Content-Type thủ công, để axios tự thêm boundary
 async function uploadImageFile(file) {
@@ -373,8 +374,7 @@ export default function Register() {
                         {step === 3 && 'Tạo mật khẩu an toàn cho tài khoản.'}
                     </span>
 
-                    {error && <div className="form-alert" role="alert">{error}</div>}
-                    {successMessage && <div className="form-alert form-alert--success" style={{ borderColor: '#bbf7d0', backgroundColor: '#f0fdf4', color: '#166534' }} role="alert">{successMessage}</div>}
+                    <Toast error={error} success={successMessage} onClose={() => { setError(''); setSuccessMessage(''); }} />
 
                     <form onSubmit={step === 3 ? handleSubmit : (e) => e.preventDefault()}>
                         

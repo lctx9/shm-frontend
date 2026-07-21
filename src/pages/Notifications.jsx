@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 export default function Notifications() {
     const role = localStorage.getItem('role');
@@ -94,7 +95,7 @@ export default function Notifications() {
                         <button type="button" onClick={fetchNotifications} title="Làm mới thông báo" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
                     </div>
                 </div>
-                {error && <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+                <Toast error={error} onClose={() => setError('')} />
                 <div className="divide-y divide-blue-50">
                     {loading ? (
                         <div className="p-8 text-center text-slate-500">Đang tải...</div>

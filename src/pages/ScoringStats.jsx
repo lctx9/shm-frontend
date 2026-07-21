@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 function average(values) {
     const valid = values.filter((value) => typeof value === 'number' && !Number.isNaN(value));
@@ -119,7 +120,7 @@ export default function ScoringStats() {
                 <button type="button" onClick={fetchData} title="Làm mới dữ liệu" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
-            {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+            <Toast error={error} onClose={() => setError('')} />
 
             {/* Grid 1: Thống kê Tiến độ cơ bản */}
             <section className="grid gap-4 md:grid-cols-4">

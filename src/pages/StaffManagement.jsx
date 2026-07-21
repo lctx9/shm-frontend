@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const staffRoles = new Set(['STAFF', 'MENTOR', 'JUDGE', 'COORDINATOR', 'ADMIN']);
 
@@ -10,6 +11,7 @@ export default function StaffManagement() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [message, setMessage] = useState(null);
 
     const fetchUsers = async () => {
         try {
@@ -40,9 +42,11 @@ export default function StaffManagement() {
             setSaving(true);
             await axiosClient.post('/users/staff', staffForm);
             setStaffForm({ fullName: '', email: '', password: '1', role: 'STAFF' });
+            setMessage({ text: 'Tạo tài khoản Staff thành công!', type: 'success' });
+            setError('');
             await fetchUsers();
         } catch (err) {
-            setError(err.message || 'Không thể tạo tài khoản staff.');
+            setError(err.message || 'Không tạo được tài khoản staff.');
         } finally {
             setSaving(false);
         }
@@ -55,7 +59,7 @@ export default function StaffManagement() {
 
     return (
         <div className="mx-auto max-w-7xl space-y-6">
-            {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+            <Toast message={message || (error ? { text: error, type: 'error' } : null)} onClose={() => { setMessage(null); setError(''); }} />
 
             <section className="rounded-lg border border-blue-100 bg-white p-8 shadow-sm">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Staff account</p>
