@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 export default function TeamChat({ embedded = false }) {
     const storedRole = localStorage.getItem('role');
@@ -223,7 +224,7 @@ export default function TeamChat({ embedded = false }) {
                     <h2 className="text-xl font-black text-slate-900">{selectedTeam?.name || 'Đội thi'}</h2>
                     <p className="mt-1 text-sm text-slate-600">Trao đổi trực tiếp giữa mentor và đội thi.</p>
                 </div>
-                {error && <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+                <Toast error={error} onClose={() => setError('')} />
                 <div ref={messagesContainerRef} className="team-chat__messages flex-1 space-y-4 overflow-y-auto p-6">
                     {messages.length === 0 ? (
                         <p className="text-center text-sm text-slate-500">Chưa có tin nhắn.</p>

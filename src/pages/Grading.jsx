@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const fallbackCriteria = [
     { id: 'presentation', label: 'Trình bày', description: 'Cách trình bày và trả lời câu hỏi', maxScore: 100, weight: 25 },
@@ -47,8 +48,23 @@ export default function Grading() {
     const [editReason, setEditReason] = useState('');
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
     const [query, setQuery] = useState('');
     const [queueFilter, setQueueFilter] = useState('pending');
+
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(''), 6000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
+    useEffect(() => {
+        if (successMsg) {
+            const timer = setTimeout(() => setSuccessMsg(''), 6000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMsg]);
 
     const storedRole = localStorage.getItem('role');
     const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
@@ -67,7 +83,6 @@ export default function Grading() {
         if (!resolvedUserId) return [];
         return submissions.filter((submission) => {
             const matrix = matrixById.get(String(submission.matrixId));
-            // Match by userId (judge.id from PublicStaffResponse) — email is not exposed on public endpoints
             return (matrix?.judges || []).some(
                 (judge) => String(judge.id) === resolvedUserId
             );
@@ -97,7 +112,6 @@ export default function Grading() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            // If userId is missing from localStorage (logged in before fix), resolve it from /users/me
             let uid = localStorage.getItem('userId');
             if (!uid) {
                 try {
@@ -105,7 +119,7 @@ export default function Grading() {
                     uid = String(meRes.result?.id || '');
                     if (uid) localStorage.setItem('userId', uid);
                 } catch {
-                    // ignore — will show empty queue
+                    // ignore
                 }
             }
             setResolvedUserId(uid);
@@ -134,6 +148,7 @@ export default function Grading() {
         setFeedback(submission.feedback || '');
         setEditReason('');
         setError('');
+        setSuccessMsg('');
     };
 
     const updateCriterionScore = (index, patch) => {
@@ -157,11 +172,15 @@ export default function Grading() {
                 comment: feedback,
                 editReason: selectedSub.graded ? editReason : '',
             });
+            const teamName = selectedSub.teamName || `Đội #${selectedSub.teamId}`;
+            setSuccessMsg(`Lưu kết quả chấm thành công cho ${teamName}!`);
+            setError('');
             setSelectedSub(null);
             setCriteriaScores([]);
             await fetchData();
         } catch (err) {
             setError(err.message || 'Không lưu được điểm.');
+            setSuccessMsg('');
         } finally {
             setSaving(false);
         }
@@ -173,6 +192,8 @@ export default function Grading() {
 
     return (
         <div className="judge-grading-page">
+            <Toast error={error} success={successMsg} onClose={() => { setError(''); setSuccessMsg(''); }} />
+
             <header className="judge-grading-hero">
                 <div><p>Judge workspace</p><h1>Chấm điểm bài thi</h1><span>Đánh giá từng tiêu chí theo rubric đã công bố và lưu phản hồi rõ ràng cho đội thi.</span></div>
                 <div className="judge-grading-summary">
@@ -181,8 +202,6 @@ export default function Grading() {
                     <div><span>Chờ chấm</span><strong>{summary.pending}</strong></div>
                 </div>
             </header>
-
-            {error && <div className="judge-grading-error" role="alert">{error}</div>}
 
             <div className="judge-grading-workspace">
                 <aside className="judge-queue">

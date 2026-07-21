@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 export default function AuditLogs() {
     const [logs, setLogs] = useState([]);
@@ -30,10 +31,10 @@ export default function AuditLogs() {
                     <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Audit log điểm số</h2>
                     <p className="mt-1 text-sm text-slate-600">Truy vết mọi lần judge sửa điểm đã chấm.</p>
                 </div>
-                <button type="button" onClick={fetchLogs} className="btn-secondary">Làm mới</button>
+                <button type="button" onClick={fetchLogs} title="Làm mới log" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
-            {error && <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+            <Toast error={error} onClose={() => setError('')} />
 
             <div className="overflow-x-auto">
                 <table className="w-full text-left">

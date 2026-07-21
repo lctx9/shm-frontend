@@ -77,13 +77,10 @@ export default function Header() {
                             <button
                                 type="button"
                                 onClick={() => setShowDropdown((current) => !current)}
-                                className="flex items-center gap-2 rounded-full border border-[#d7e6f8] bg-white px-2 py-1.5 text-sm font-bold text-[#0b1f3f] transition hover:bg-[#eaf3ff]"
+                                className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-[#d7e6f8] bg-[#0f63c9] text-xs font-black text-white hover:opacity-90 transition-all cursor-pointer"
                                 aria-label="Mở menu tài khoản"
                             >
-                                <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[#0f63c9] text-xs font-black text-white">
-                                    {avatarUrl ? <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" /> : getInitial(displayName)}
-                                </span>
-                                <span className="hidden max-w-36 truncate sm:inline">{displayName}</span>
+                                {avatarUrl ? <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" /> : getInitial(displayName)}
                             </button>
  
                             {showDropdown && (

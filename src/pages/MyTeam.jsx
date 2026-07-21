@@ -18,6 +18,8 @@ export default function MyTeam() {
     const [teams, setTeams] = useState([]);
     const [matrices, setMatrices] = useState([]);
     const [joinRequests, setJoinRequests] = useState([]);
+    const [myInvitations, setMyInvitations] = useState([]);
+    const [sentInvitations, setSentInvitations] = useState([]);
     const [submission, setSubmission] = useState(null);
     const [mode, setMode] = useState('CREATE');
     const [teamFilter, setTeamFilter] = useState('ALL');
@@ -60,10 +62,11 @@ export default function MyTeam() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [teamRes, eventsRes, teamsRes] = await Promise.allSettled([
-                axiosClient.get('/teams/my-team'),
+            const [teamRes, eventsRes, teamsRes, invRes] = await Promise.allSettled([
+                axiosClient.get(preselectedEventId ? `/teams/my-team?eventId=${preselectedEventId}` : '/teams/my-team'),
                 axiosClient.get('/events'),
                 axiosClient.get('/teams'),
+                axiosClient.get('/teams/my-invitations'),
             ]);
 
             const loadedTeamsList = teamRes.status === 'fulfilled' ? teamRes.value.result || [] : [];
@@ -71,6 +74,7 @@ export default function MyTeam() {
             setMyTeams(loadedTeamsList);
             setEvents(loadedEvents);
             setTeams(teamsRes.status === 'fulfilled' ? teamsRes.value.result || [] : []);
+            setMyInvitations(invRes.status === 'fulfilled' ? invRes.value.result || [] : []);
 
             const activeOrUpcoming = loadedEvents.filter((event) => {
                 if (!event.active) return false;
@@ -111,6 +115,7 @@ export default function MyTeam() {
                 eventId: initialEventId,
                 trackId: initialTeam?.trackId || (loadedEvents.find(e => String(e.id) === String(initialEventId))?.tracks?.[0]?.id || ''),
             }));
+
         } catch (err) {
             setMessage({ text: err.message || 'Không thể tải dữ liệu.', type: 'error' });
         } finally {
@@ -160,11 +165,15 @@ export default function MyTeam() {
 
             if (currentEventTeam) {
                 try {
-                    const [matrixRes, submissionRes, requestRes] = await Promise.allSettled([
+                    const isLeaderRole = currentEventTeam?.members?.some((member) => member.email === currentEmail && member.role === 'LEADER');
+                    const [matrixRes, submissionRes, requestRes, sentInvRes] = await Promise.allSettled([
                         axiosClient.get(`/events/${currentEventTeam.eventId}/matrices`),
                         axiosClient.get('/submissions/my-submission'),
-                        currentEventTeam.members?.some((member) => member.email === currentEmail && member.role === 'LEADER')
+                        isLeaderRole
                             ? axiosClient.get(`/teams/${currentEventTeam.id}/join-requests`)
+                            : Promise.resolve({ result: [] }),
+                        isLeaderRole
+                            ? axiosClient.get(`/teams/${currentEventTeam.id}/sent-invitations`)
                             : Promise.resolve({ result: [] }),
                     ]);
                     const teamMatrices = matrixRes.status === 'fulfilled'
@@ -177,6 +186,7 @@ export default function MyTeam() {
                     setSubmission(loadedSubmission);
                     
                     setJoinRequests(requestRes.status === 'fulfilled' ? requestRes.value.result || [] : []);
+                    setSentInvitations(sentInvRes.status === 'fulfilled' ? sentInvRes.value.result || [] : []);
                     setFormData((current) => ({
                         ...current,
                         matrixId: loadedSubmission?.matrixId || teamMatrices[0]?.id || '',
@@ -211,6 +221,34 @@ export default function MyTeam() {
     const selectedEvent = useMemo(() => events.find((event) => String(event.id) === String(formData.eventId)), [events, formData.eventId]);
     const currentEvent = useMemo(() => events.find((event) => String(event.id) === String(team?.eventId)), [events, team]);
     const selectedMatrix = useMemo(() => matrices.find((matrix) => String(matrix.id) === String(formData.matrixId)), [matrices, formData.matrixId]);
+    const isEventStarted = useMemo(() => {
+        if (!currentEvent?.eventStartDate) return true;
+        return new Date() >= new Date(currentEvent.eventStartDate);
+    }, [currentEvent]);
+
+    const isPreviousRoundEnded = useMemo(() => {
+        if (!selectedMatrix || !matrices.length) return true;
+        const currentOrder = selectedMatrix.roundOrder;
+        if (currentOrder <= 1) return true;
+
+        const prevMatrix = matrices.find(other => {
+            if (other.roundOrder !== currentOrder - 1) return false;
+            if (selectedMatrix.finalRound) return true;
+            return !other.finalRound && String(other.trackId) === String(selectedMatrix.trackId);
+        });
+
+        if (!prevMatrix || !prevMatrix.submissionDeadline) return true;
+        return new Date() >= new Date(prevMatrix.submissionDeadline);
+    }, [selectedMatrix, matrices]);
+
+    const isSubmissionStarted = useMemo(() => {
+        if (!selectedMatrix?.submissionStartDate) return true;
+        return new Date() >= new Date(selectedMatrix.submissionStartDate);
+    }, [selectedMatrix]);
+    const isSubmissionEnded = useMemo(() => {
+        if (!selectedMatrix?.submissionDeadline) return false;
+        return new Date() > new Date(selectedMatrix.submissionDeadline);
+    }, [selectedMatrix]);
     const eventPhase = currentEvent ? getEventPhase(currentEvent) : null;
     const startCountdown = getCountdownParts(currentEvent?.eventStartDate);
 
@@ -290,7 +328,7 @@ export default function MyTeam() {
                 memberEmails: nonNullEmails,
             });
             setTeam(response.result);
-            setCreateSuccess('Tạo đội thành công!');
+            setCreateSuccess('Tạo đội thành công! Lời mời gia nhập đã được gửi tới các thành viên được mời.');
             setSearchParams({ teamId: response.result.id });
             await fetchData();
         } catch (err) {
@@ -353,9 +391,32 @@ export default function MyTeam() {
             const response = await axiosClient.post(`/teams/${team.id}/invite`, { email: inviteEmail });
             setTeam(response.result);
             setInviteEmail('');
-            setInviteSuccess('Mời thành viên thành công!');
+            setInviteSuccess('Đã gửi lời mời đến thành viên! Đang chờ thành viên đồng ý.');
+            await fetchData();
         } catch (err) {
             setInviteError(err.message || 'Không thể mời thành viên.');
+        }
+    };
+
+    const handleAcceptInvitation = async (requestId) => {
+        setMessage({ text: '', type: '' });
+        try {
+            await axiosClient.post(`/teams/invitations/${requestId}/accept`);
+            setMessage({ text: 'Chấp nhận lời mời gia nhập đội thành công!', type: 'success' });
+            await fetchData();
+        } catch (err) {
+            setMessage({ text: err.message || 'Không thể chấp nhận lời mời.', type: 'error' });
+        }
+    };
+
+    const handleRejectInvitation = async (requestId) => {
+        setMessage({ text: '', type: '' });
+        try {
+            await axiosClient.post(`/teams/invitations/${requestId}/reject`);
+            setMyInvitations((prev) => prev.filter((item) => item.id !== requestId));
+            setMessage({ text: 'Đã từ chối lời mời gia nhập đội.', type: 'success' });
+        } catch (err) {
+            setMessage({ text: err.message || 'Không thể từ chối lời mời.', type: 'error' });
         }
     };
 
@@ -447,7 +508,7 @@ export default function MyTeam() {
             message: confirmMsg,
             onConfirm: async () => {
                 try {
-                    await axiosClient.post(`/teams/${team.id}/leave`);
+                    await axiosClient.post(`/teams/leave?teamId=${team.id}`);
                     setTeam(null);
                     setMessage({ text: 'Rời khỏi đội thành công!', type: 'success' });
                     await fetchData();
@@ -548,10 +609,35 @@ export default function MyTeam() {
                                         </select>
                                     </div>
                                     {selectedMatrix?.guidelineUrl && <a href={selectedMatrix.guidelineUrl} target="_blank" rel="noreferrer" className="btn-secondary">Tải đề thi / quy chế</a>}
-                                    <p className="text-sm font-semibold text-[#5c6d83]">Deadline: {formatDateTime(selectedMatrix?.submissionDeadline)}</p>
-                                    <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={!isLeader} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
-                                    <button type="submit" disabled={savingSubmission || !isLeader} className="btn-primary w-full">
-                                        {!isLeader ? 'Chỉ leader được nộp bài' : savingSubmission ? 'Đang lưu...' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
+                                    <div className="space-y-1">
+                                        {selectedMatrix?.submissionStartDate && (
+                                            <p className="text-sm font-semibold text-[#5c6d83]">Mở nộp: {formatDateTime(selectedMatrix.submissionStartDate)}</p>
+                                        )}
+                                        <p className="text-sm font-semibold text-[#5c6d83]">Deadline: {formatDateTime(selectedMatrix?.submissionDeadline)}</p>
+                                    </div>
+                                    {!isEventStarted && currentEvent?.eventStartDate && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
+                                            Giải đấu chưa chính thức bắt đầu. Thời gian bắt đầu: {formatDateTime(currentEvent.eventStartDate)}.
+                                        </div>
+                                    )}
+                                    {isEventStarted && !isPreviousRoundEnded && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
+                                            Vui lòng đợi vòng thi trước kết thúc mới được nộp bài cho vòng này.
+                                        </div>
+                                    )}
+                                    {isEventStarted && isPreviousRoundEnded && !isSubmissionStarted && selectedMatrix?.submissionStartDate && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
+                                            Cổng nộp bài chưa mở. Vui lòng quay lại sau thời gian mở nộp bài.
+                                        </div>
+                                    )}
+                                    {isSubmissionEnded && (
+                                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800">
+                                            Đã quá hạn nộp bài của vòng thi này.
+                                        </div>
+                                    )}
+                                    <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
+                                    <button type="submit" disabled={savingSubmission || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
+                                        {!isLeader ? 'Chỉ leader được nộp bài' : savingSubmission ? 'Đang lưu...' : !isEventStarted ? 'Giải đấu chưa bắt đầu' : !isPreviousRoundEnded ? 'Vòng trước chưa kết thúc' : !isSubmissionStarted ? 'Cổng nộp bài chưa mở' : isSubmissionEnded ? 'Đã hết hạn nộp bài' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
                                     </button>
                                     {submitError && <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p>}
                                     {submitSuccess && <p className="mt-2 text-sm font-semibold text-green-600">{submitSuccess}</p>}
@@ -620,6 +706,27 @@ export default function MyTeam() {
                                         {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
                                         {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
                                     </div>
+
+                                    {sentInvitations.length > 0 && (
+                                        <div className="border-t border-[#d7e6f8] pt-5">
+                                            <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936] mb-3">
+                                                Lời mời đã gửi (Đang chờ phản hồi)
+                                            </h3>
+                                            <div className="space-y-2">
+                                                {sentInvitations.map((inv) => (
+                                                    <div key={inv.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3 flex items-center justify-between">
+                                                        <div>
+                                                            <p className="font-bold text-[#071936] text-sm">{inv.fullName || inv.email}</p>
+                                                            <p className="text-xs text-[#5c6d83]">{inv.email}</p>
+                                                        </div>
+                                                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                                                            Đang chờ phản hồi
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="border-t border-[#d7e6f8] pt-5">
                                         <div className="flex items-center justify-between">

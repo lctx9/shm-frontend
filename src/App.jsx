@@ -76,11 +76,11 @@ function App() {
                         <Route path="monitoring" element={<RoleRoute roles={['ADMIN']}><AdminMonitoring /></RoleRoute>} />
                         <Route path="backups" element={<RoleRoute roles={['ADMIN']}><BackupRestore /></RoleRoute>} />
                         <Route path="settings" element={<RoleRoute roles={['ADMIN']}><AdminSettings /></RoleRoute>} />
-                        <Route path="student-approval" element={<StudentApproval />} />
-                        <Route path="staff" element={<StaffManagement />} />
-                        <Route path="audit-logs" element={<AuditLogs />} />
-                        <Route path="grading" element={<Grading />} />
-                        <Route path="scoring-stats" element={<ScoringStats />} />
+                        <Route path="student-approval" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><StudentApproval /></RoleRoute>} />
+                        <Route path="staff" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><StaffManagement /></RoleRoute>} />
+                        <Route path="audit-logs" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><AuditLogs /></RoleRoute>} />
+                        <Route path="grading" element={<RoleRoute roles={['JUDGE', 'STAFF', 'COORDINATOR', 'ADMIN']}><Grading /></RoleRoute>} />
+                        <Route path="scoring-stats" element={<RoleRoute roles={['COORDINATOR', 'ADMIN', 'JUDGE']}><ScoringStats /></RoleRoute>} />
                         <Route path="leaderboard" element={<Leaderboard />} />
                         <Route path="notifications" element={<Notifications />} />
                         <Route path="chat" element={<TeamChat />} />

@@ -49,6 +49,12 @@ export default function Profile() {
     const [savingPassword, setSavingPassword] = useState(false);
     const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
+    const [passwordErrors, setPasswordErrors] = useState({
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        general: ''
+    });
 
     const fetchProfile = useCallback(async () => {
         const profilePath = userId ? `/users/${userId}` : '/users/me';
@@ -116,10 +122,26 @@ export default function Profile() {
 
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
+        setPasswordErrors({ oldPassword: '', newPassword: '', confirmPassword: '', general: '' });
+
+        let hasErr = false;
+        const newErrs = { oldPassword: '', newPassword: '', confirmPassword: '', general: '' };
+
+        if (passwords.newPassword === passwords.oldPassword) {
+            newErrs.newPassword = 'Mật khẩu mới không được trùng với mật khẩu hiện tại.';
+            hasErr = true;
+        }
+
         if (passwords.newPassword !== passwords.confirmPassword) {
-            setMessage({ text: 'Mật khẩu mới không khớp.', type: 'error' });
+            newErrs.confirmPassword = 'Mật khẩu xác nhận không khớp với mật khẩu mới.';
+            hasErr = true;
+        }
+
+        if (hasErr) {
+            setPasswordErrors(newErrs);
             return;
         }
+
         try {
             setSavingPassword(true);
             await axiosClient.put('/users/change-password', {
@@ -130,7 +152,14 @@ export default function Profile() {
             setShowPasswordForm(false);
             setMessage({ text: 'Đổi mật khẩu thành công.', type: 'success' });
         } catch (err) {
-            setMessage({ text: err.message || 'Không thể đổi mật khẩu.', type: 'error' });
+            const errMsg = err.message || 'Không thể đổi mật khẩu.';
+            const isOldPwdErr = errMsg.toLowerCase().includes('hiện tại') || errMsg.toLowerCase().includes('old') || errMsg.toLowerCase().includes('current') || errMsg.toLowerCase().includes('mật khẩu cũ');
+            
+            if (isOldPwdErr) {
+                setPasswordErrors(prev => ({ ...prev, oldPassword: errMsg }));
+            } else {
+                setPasswordErrors(prev => ({ ...prev, general: errMsg }));
+            }
         } finally {
             setSavingPassword(false);
         }
@@ -185,13 +214,28 @@ export default function Profile() {
                             </button>
 
                             {showPasswordForm && (
-                                <form onSubmit={handlePasswordSubmit} className="profile-password-form">
-                                    <div><label htmlFor="current-password">Mật khẩu hiện tại</label><input id="current-password" required type="password" className="input-custom" value={passwords.oldPassword} onChange={(e) => setPasswords({ ...passwords, oldPassword: e.target.value })} /></div>
-                                    <div><label htmlFor="new-password">Mật khẩu mới</label><input id="new-password" required minLength={6} type="password" className="input-custom" value={passwords.newPassword} onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })} /></div>
-                                    <div><label htmlFor="confirm-password">Xác nhận mật khẩu mới</label><input id="confirm-password" required minLength={6} type="password" className="input-custom" value={passwords.confirmPassword} onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })} /></div>
+                                <form onSubmit={handlePasswordSubmit} className="profile-password-form space-y-4">
+                                    <div>
+                                        <label htmlFor="current-password">Mật khẩu hiện tại</label>
+                                        <input id="current-password" required type="password" className="input-custom" value={passwords.oldPassword} onChange={(e) => { setPasswords({ ...passwords, oldPassword: e.target.value }); setPasswordErrors(prev => ({ ...prev, oldPassword: '', general: '' })); }} />
+                                        {passwordErrors.oldPassword && <p className="mt-1.5 text-xs font-semibold text-red-600">{passwordErrors.oldPassword}</p>}
+                                    </div>
+                                    <div>
+                                        <label htmlFor="new-password">Mật khẩu mới</label>
+                                        <input id="new-password" required minLength={6} type="password" className="input-custom" value={passwords.newPassword} onChange={(e) => { setPasswords({ ...passwords, newPassword: e.target.value }); setPasswordErrors(prev => ({ ...prev, newPassword: '', general: '' })); }} />
+                                        {passwordErrors.newPassword && <p className="mt-1.5 text-xs font-semibold text-red-600">{passwordErrors.newPassword}</p>}
+                                    </div>
+                                    <div>
+                                        <label htmlFor="confirm-password">Xác nhận mật khẩu mới</label>
+                                        <input id="confirm-password" required minLength={6} type="password" className="input-custom" value={passwords.confirmPassword} onChange={(e) => { setPasswords({ ...passwords, confirmPassword: e.target.value }); setPasswordErrors(prev => ({ ...prev, confirmPassword: '', general: '' })); }} />
+                                        {passwordErrors.confirmPassword && <p className="mt-1.5 text-xs font-semibold text-red-600">{passwordErrors.confirmPassword}</p>}
+                                    </div>
+                                    {passwordErrors.general && (
+                                        <p className="text-sm font-semibold text-red-600">{passwordErrors.general}</p>
+                                    )}
                                     <div className="flex gap-2">
                                         <button type="submit" disabled={savingPassword} className="btn-primary flex-1">{savingPassword ? 'Đang đổi...' : 'Xác nhận đổi'}</button>
-                                        <button type="button" className="btn-secondary" onClick={() => setShowPasswordForm(false)}>Hủy</button>
+                                        <button type="button" className="btn-secondary" onClick={() => { setShowPasswordForm(false); setPasswordErrors({ oldPassword: '', newPassword: '', confirmPassword: '', general: '' }); }}>Hủy</button>
                                     </div>
                                 </form>
                             )}

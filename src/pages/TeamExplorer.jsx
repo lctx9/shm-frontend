@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 import { getEventPhase } from '../utils/hackathon';
+import Toast from '../components/Toast';
 
 const staffRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
@@ -246,7 +247,7 @@ export default function TeamExplorer() {
                             : 'Theo dõi các đội trong sự kiện, thành viên, track và trạng thái tham gia.'}
                     </p>
                 </div>
-                <button type="button" onClick={fetchData} className="btn-secondary">Làm mới</button>
+                <button type="button" onClick={fetchData} title="Làm mới dữ liệu" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             <section className="grid gap-4 md:grid-cols-3">
@@ -274,7 +275,7 @@ export default function TeamExplorer() {
                 </select>
             </div>
 
-            {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+            <Toast error={error} onClose={() => setError('')} />
 
             {loading ? (
                 <div className="rounded-lg bg-white p-8 text-center text-gray-500">Đang tải đội thi...</div>

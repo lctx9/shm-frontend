@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const studentRoles = new Set(['USER']);
 
@@ -22,6 +23,9 @@ function StatusBadge({ status }) {
 }
 
 function StudentCardPreview({ user }) {
+    const [imgError, setImgError] = useState(false);
+    const [imgLoaded, setImgLoaded] = useState(false);
+
     if (!user?.studentCardUrl) {
         return (
             <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm font-semibold text-slate-500">
@@ -30,24 +34,64 @@ function StudentCardPreview({ user }) {
         );
     }
 
+    // Lấy tên file từ URL (ví dụ: "abc123.jpg")
+    const rawFileName = user.studentCardUrl.split('/').pop()?.split('?')[0] || 'student-card';
+    const displayName = rawFileName.length > 40 ? rawFileName.substring(0, 37) + '...' : rawFileName;
+
     return (
         <div className="overflow-hidden rounded-lg border border-blue-100 bg-slate-50">
-            <img
-                src={user.studentCardUrl}
-                alt={`Thẻ sinh viên của ${user.fullName}`}
-                className="max-h-[520px] w-full object-contain"
-            />
-            <a
-                href={user.studentCardUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="block border-t border-blue-100 bg-white px-4 py-3 text-sm font-black text-[#0f63c9]"
-            >
-                Mở ảnh trong tab mới
-            </a>
+            {/* Thanh tên file */}
+            <div className="flex items-center gap-2 border-b border-blue-100 bg-white px-4 py-2">
+                <svg className="h-4 w-4 shrink-0 text-[#0f63c9]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-xs font-bold text-slate-700 break-all">{displayName}</span>
+            </div>
+
+            {/* Ảnh thẻ sinh viên */}
+            {imgError ? (
+                <div className="flex min-h-[300px] flex-col items-center justify-center gap-3 p-6 text-center">
+                    <svg className="h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="text-sm font-bold text-red-600">Không thể tải ảnh</p>
+                    <p className="text-xs text-slate-500">File có thể đã bị xóa hoặc đường dẫn không hợp lệ.</p>
+                </div>
+            ) : (
+                <div className="relative min-h-[200px]">
+                    {!imgLoaded && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
+                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-[#0f63c9]" />
+                        </div>
+                    )}
+                    <img
+                        src={user.studentCardUrl}
+                        alt={`Thẻ sinh viên của ${user.fullName}`}
+                        className="max-h-[520px] w-full object-contain"
+                        onLoad={() => setImgLoaded(true)}
+                        onError={() => setImgError(true)}
+                    />
+                </div>
+            )}
+
+            {/* Nút mở ảnh ra tab mới */}
+            {!imgError && (
+                <a
+                    href={user.studentCardUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 border-t border-blue-100 bg-white px-4 py-3 text-sm font-black text-[#0f63c9] hover:bg-blue-50 transition-colors"
+                >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Mở ảnh gốc trong tab mới ({displayName})
+                </a>
+            )}
         </div>
     );
 }
+
 
 export default function StudentApproval() {
     const [users, setUsers] = useState([]);
@@ -121,10 +165,10 @@ export default function StudentApproval() {
                     <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Phê duyệt thí sinh</h2>
                     <p className="mt-2 text-sm text-slate-600">Bấm chi tiết để đối chiếu thông tin đăng ký và thẻ sinh viên đã upload.</p>
                 </div>
-                <button type="button" onClick={fetchUsers} className="btn-secondary">Làm mới</button>
+                <button type="button" onClick={fetchUsers} title="Làm mới danh sách" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
-            {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+            <Toast error={error} onClose={() => setError('')} />
 
             <section className="rounded-lg border border-blue-100 bg-white p-4">
                 <label className="mb-1 block text-sm font-bold text-slate-700">Trạng thái</label>

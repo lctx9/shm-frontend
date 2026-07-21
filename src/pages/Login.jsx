@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
@@ -8,15 +9,15 @@ export default function Login() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const redirect = searchParams.get('redirect') || '/';
+    const [formData, setFormData] = useState({ email: '', password: '' });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
     if (token && managerRoles.has(role)) {
         return <Navigate to="/dashboard" replace />;
     }
-    const [formData, setFormData] = useState({ email: '', password: '' });
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -55,7 +56,7 @@ export default function Login() {
                     <h1 id="login-title">Chào mừng trở lại</h1>
                     <span className="devpost-auth__copy">Tiếp tục hành trình của bạn cùng SEAL Hackathon.</span>
 
-                    {error && <div className="form-alert" role="alert">{error}</div>}
+                    <Toast error={error} onClose={() => setError('')} />
 
                     <form onSubmit={handleSubmit}>
                         <label htmlFor="login-email">Email</label>

@@ -145,7 +145,7 @@ export default function EventManagement() {
     const [selectedEventId, setSelectedEventId] = useState('');
     const [selectedMatrixId, setSelectedMatrixId] = useState('');
     const [form, setForm] = useState(emptyEvent);
-    const [matrixForm, setMatrixForm] = useState({ guidelineUrl: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
+    const [matrixForm, setMatrixForm] = useState({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
     const [prizeForm, setPrizeForm] = useState(emptyPrize);
     const [activeTab, setActiveTab] = useState('overview');
     const [createStep, setCreateStep] = useState(0);
@@ -249,12 +249,13 @@ export default function EventManagement() {
 
     useEffect(() => {
         if (!selectedMatrix) {
-            setMatrixForm({ guidelineUrl: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
+            setMatrixForm({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
             return;
         }
 
         setMatrixForm({
             guidelineUrl: selectedMatrix.guidelineUrl || '',
+            submissionStartDate: toLocalInput(selectedMatrix.submissionStartDate),
             submissionDeadline: toLocalInput(selectedMatrix.submissionDeadline),
             topN: selectedMatrix.topN || 10,
             judgeIds: selectedMatrix.judges?.map((user) => user.id) || [],
@@ -473,10 +474,56 @@ export default function EventManagement() {
             return;
         }
 
+        if (matrixForm.submissionStartDate && matrixForm.submissionDeadline && new Date(matrixForm.submissionStartDate) > new Date(matrixForm.submissionDeadline)) {
+            setMessage({ type: 'error', text: 'Thời gian mở nộp bài không được sau hạn nộp bài.' });
+            return;
+        }
+
+        const currentOrder = selectedMatrix.roundOrder;
+        const reqStart = matrixForm.submissionStartDate ? new Date(matrixForm.submissionStartDate) : null;
+        const reqEnd = matrixForm.submissionDeadline ? new Date(matrixForm.submissionDeadline) : null;
+
+        for (const other of selectedEvent.matrices || []) {
+            if (String(other.id) === String(selectedMatrixId)) continue;
+
+            if (other.roundOrder === currentOrder - 1) {
+                let isPreceding = false;
+                if (selectedMatrix.finalRound) {
+                    isPreceding = true;
+                } else if (!other.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isPreceding = true;
+                }
+
+                if (isPreceding && other.submissionDeadline && reqStart) {
+                    if (reqStart < new Date(other.submissionDeadline)) {
+                        setMessage({ type: 'error', text: `Thời gian mở nộp không được trước deadline của vòng trước (${other.roundName}).` });
+                        return;
+                    }
+                }
+            }
+
+            if (other.roundOrder === currentOrder + 1) {
+                let isSucceeding = false;
+                if (other.finalRound) {
+                    isSucceeding = true;
+                } else if (!selectedMatrix.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isSucceeding = true;
+                }
+
+                if (isSucceeding && other.submissionStartDate && reqEnd) {
+                    if (reqEnd > new Date(other.submissionStartDate)) {
+                        setMessage({ type: 'error', text: `Deadline không được sau thời gian mở nộp của vòng sau (${other.roundName}).` });
+                        return;
+                    }
+                }
+            }
+        }
+
         setLoading(true);
         try {
             await axiosClient.put(`/events/matrices/${selectedMatrixId}`, {
                 guidelineUrl: matrixForm.guidelineUrl,
+                submissionStartDate: matrixForm.submissionStartDate || null,
                 submissionDeadline: matrixForm.submissionDeadline || null,
                 judgeIds: matrixForm.judgeIds.map(Number),
                 topN: selectedMatrix?.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
@@ -496,6 +543,48 @@ export default function EventManagement() {
             setMessage({ type: 'error', text: 'Hãy chọn từ 2 đến 4 giám khảo trước khi áp dụng hàng loạt.' });
             return;
         }
+        if (matrixForm.submissionStartDate && matrixForm.submissionDeadline && new Date(matrixForm.submissionStartDate) > new Date(matrixForm.submissionDeadline)) {
+            setMessage({ type: 'error', text: 'Thời gian mở nộp bài không được sau hạn nộp bài.' });
+            return;
+        }
+
+        const currentOrder = selectedMatrix.roundOrder;
+        const reqStart = matrixForm.submissionStartDate ? new Date(matrixForm.submissionStartDate) : null;
+        const reqEnd = matrixForm.submissionDeadline ? new Date(matrixForm.submissionDeadline) : null;
+
+        for (const other of selectedEvent.matrices || []) {
+            if (other.roundOrder === currentOrder - 1) {
+                let isPreceding = false;
+                if (selectedMatrix.finalRound) {
+                    isPreceding = true;
+                } else if (!other.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isPreceding = true;
+                }
+
+                if (isPreceding && other.submissionDeadline && reqStart) {
+                    if (reqStart < new Date(other.submissionDeadline)) {
+                        setMessage({ type: 'error', text: `Thời gian mở nộp không được trước deadline của vòng trước (${other.roundName}).` });
+                        return;
+                    }
+                }
+            }
+
+            if (other.roundOrder === currentOrder + 1) {
+                let isSucceeding = false;
+                if (other.finalRound) {
+                    isSucceeding = true;
+                } else if (!selectedMatrix.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isSucceeding = true;
+                }
+
+                if (isSucceeding && other.submissionStartDate && reqEnd) {
+                    if (reqEnd > new Date(other.submissionStartDate)) {
+                        setMessage({ type: 'error', text: `Deadline không được sau thời gian mở nộp của vòng sau (${other.roundName}).` });
+                        return;
+                    }
+                }
+            }
+        }
 
         const sameRoundMatrices = (selectedEvent?.matrices || []).filter(
             (matrix) => matrix.roundOrder === selectedMatrix.roundOrder
@@ -505,6 +594,7 @@ export default function EventManagement() {
         try {
             await Promise.all(sameRoundMatrices.map((matrix) => axiosClient.put(`/events/matrices/${matrix.id}`, {
                 guidelineUrl: matrixForm.guidelineUrl,
+                submissionStartDate: matrixForm.submissionStartDate || null,
                 submissionDeadline: matrixForm.submissionDeadline || null,
                 judgeIds: matrixForm.judgeIds.map(Number),
                 topN: matrix.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
@@ -933,8 +1023,8 @@ export default function EventManagement() {
                             <p className="mt-2 text-sm text-teal-100/90">{selectedEvent?.teamCount || 0} đội thi · {selectedEvent?.tracks?.length || 0} bảng đấu · {selectedEvent?.roundCount || 0} vòng</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-black text-white hover:bg-white/20 transition">Xem trang công khai</Link>
-                            <Link to="/dashboard/scoring-config" className="rounded-xl bg-white px-4 py-2.5 text-sm font-black text-[#0b3d49] hover:bg-teal-50 transition">Cấu hình chấm điểm</Link>
+                            <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-[#071936] px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#071936', color: '#ffffff' }}>Xem trang công khai</Link>
+                            <Link to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="rounded-xl border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#ffffff', color: '#0b3d49' }}>Cấu hình chấm điểm</Link>
                         </div>
                     </div>
                 </section>
@@ -967,7 +1057,7 @@ export default function EventManagement() {
                                     {managementSteps.map((step, index) => {
                                         const content = <><span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black ${step.done ? 'bg-emerald-500 text-white' : 'bg-blue-100 text-[#0f63c9]'}`}>{step.done ? '✓' : index + 1}</span><span className="min-w-0 flex-1 text-left"><span className="block font-black text-slate-900">{step.label}</span><span className="mt-1 block text-sm leading-5 text-slate-500">{step.description}</span></span><span className="shrink-0 text-sm font-black text-[#0f63c9]">{step.done ? 'Xem lại' : 'Thiết lập'} →</span></>;
                                         return step.id === 'scoring'
-                                            ? <Link key={step.id} to="/dashboard/scoring-config" className="flex items-center gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/50">{content}</Link>
+                                            ? <Link key={step.id} to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="flex items-center gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/50">{content}</Link>
                                             : <button key={step.id} type="button" onClick={() => setActiveTab(step.id)} className="flex w-full items-center gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/50">{content}</button>;
                                     })}
                                 </div>
@@ -1118,9 +1208,19 @@ export default function EventManagement() {
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <input className="input-custom" placeholder="Guideline / de bai / link quy che rieng" value={matrixForm.guidelineUrl} onChange={(e) => setMatrixForm({ ...matrixForm, guidelineUrl: e.target.value })} />
-                                        <input type="datetime-local" className="input-custom" value={matrixForm.submissionDeadline} onChange={(e) => setMatrixForm({ ...matrixForm, submissionDeadline: e.target.value })} />
+                                    <div className="grid gap-4 md:grid-cols-3">
+                                        <div>
+                                            <label className="mb-1 block text-xs font-bold text-slate-700">Guideline / Đề bài</label>
+                                            <input className="input-custom" placeholder="Guideline / de bai / link quy che rieng" value={matrixForm.guidelineUrl} onChange={(e) => setMatrixForm({ ...matrixForm, guidelineUrl: e.target.value })} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-bold text-slate-700">Thời gian mở nộp bài</label>
+                                            <input type="datetime-local" className="input-custom" value={matrixForm.submissionStartDate} onChange={(e) => setMatrixForm({ ...matrixForm, submissionStartDate: e.target.value })} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-bold text-slate-700">Hạn nộp bài (Deadline)</label>
+                                            <input type="datetime-local" className="input-custom" value={matrixForm.submissionDeadline} onChange={(e) => setMatrixForm({ ...matrixForm, submissionDeadline: e.target.value })} />
+                                        </div>
                                     </div>
                                     {!selectedMatrix?.finalRound && (
                                         <label className="block rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-900">
