@@ -340,9 +340,14 @@ export default function MyTeam() {
                     <div>
                         <h1 className="section-title">Đăng ký giải đấu</h1>
                         {selectedEvent && (
-                            <p className="mt-2 text-lg font-bold text-[#0f63c9]">{selectedEvent.name}</p>
+                            <div className="mt-2">
+                                <p className="text-lg font-bold text-[#0f63c9]">{selectedEvent.name}</p>
+                                <Link to={`/events/${selectedEvent.id}`} className="mt-1 inline-block text-sm font-bold text-[#0b1f3f] underline hover:text-[#0f63c9]">
+                                    Xem chi tiết sự kiện
+                                </Link>
+                            </div>
                         )}
-                        <p className="section-copy mt-1">Bạn chưa tham gia đội nào. Hãy tạo đội mới hoặc tìm một đội phù hợp trong lobby.</p>
+                        <p className="section-copy mt-3">Bạn chưa tham gia đội nào. Hãy tạo đội mới hoặc tìm một đội phù hợp trong lobby.</p>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
