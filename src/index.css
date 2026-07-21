@@ -1368,7 +1368,8 @@ main label,.form-label { font-size: 13px; }
 .market-community-banner a { border-radius: 4px; background: var(--dp-blue); padding: 6px 12px; color: white; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .market-event-list { display: grid; gap: 16px; }
 
-.market-event-card { display: grid; min-height: auto; overflow: hidden; grid-template-columns: 130px minmax(280px, 1fr) 240px; border: 1px solid #c6d3d7; border-left: 4px solid #22a58e; border-radius: 6px; background: white; transition: box-shadow 0.2s ease; }
+.market-event-card { position: relative; display: grid; min-height: auto; overflow: hidden; grid-template-columns: 130px minmax(280px, 1fr) 240px; border: 1px solid #c6d3d7; border-left: 4px solid #22a58e; border-radius: 6px; background: white; transition: box-shadow 0.2s ease, transform 0.15s ease; cursor: pointer; }
+.market-event-card:hover { box-shadow: 0 6px 24px rgba(11,48,60,0.13); transform: translateY(-1px); }
 .market-event-card--upcoming { border-left-color: #e66b32; }
 .market-event-card--running { border-left-color: #2784d5; }
 .market-event-card--ended { border-left-color: #8fa3a9; }
@@ -1386,8 +1387,8 @@ main label,.form-label { font-size: 13px; }
 .market-location span { color: #337d91; font-size: 16px; }
 .market-event-card__numbers { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-top: 12px; color: #6b7f86; font-size: 13px; }
 .market-event-card__numbers strong { color: #18323b; }
-.market-event-card__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.market-event-card__actions .btn-primary, .market-event-card__actions .btn-secondary { padding: 6px 14px; font-size: 13px; border-radius: 4px; }
+.market-event-card__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; position: relative; z-index: 2; }
+.market-event-card__actions .btn-primary, .market-event-card__actions .btn-secondary { padding: 6px 14px; font-size: 13px; border-radius: 4px; position: relative; z-index: 2; }
 .market-event-card__meta { border-left: 1px solid #dce3e5; padding: 16px 18px; color: #536d75; font-size: 13px; }
 .market-event-card__meta p { display: grid; grid-template-columns: 20px 1fr; gap: 8px; margin: 0 0 10px; line-height: 1.4; }
 .market-event-card__meta p > span:first-child { color: #3b7282; font-weight: 800; }
@@ -2219,6 +2220,120 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .dashboard-content :where(input,textarea,select) { background-color: white; }
 .dashboard-content :where(input,textarea,select):focus { border-color: var(--seal-600) !important; box-shadow: 0 0 0 3px rgba(22,137,155,.11) !important; }
 
+/* ============================================================
+   CONTAINER RATIO ADJUSTMENT ONLY
+   Giữ nguyên 100% tiếng Việt, nội dung, header, màu sắc & nút bấm gốc.
+   Khung chứa nội dung căn giữa max-width: 1220px (2 lề side nhỏ lại xíu).
+   ============================================================ */
+.site-header-inner,
+.site-footer-grid,
+.section-shell,
+.events-marketplace__search-wrap,
+.events-marketplace__body,
+.leaderboard-marketplace > div,
+.devpost-detail-body,
+.dashboard-content > div {
+    max-width: 1220px !important;
+    width: min(100% - 2rem, 1220px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+
+/* Tăng kích thước khung sự kiện ở dưới thêm 10px theo yêu cầu */
+.market-event-card {
+    padding: 8px !important;
+    grid-template-columns: 145px minmax(280px, 1fr) 250px !important;
+}
+.market-event-card__visual {
+    width: 110px !important;
+    height: 110px !important;
+    margin: 20px 0 20px 16px !important;
+}
+.market-event-card__main {
+    padding: 22px 20px 22px 14px !important;
+}
+.market-event-card__main h2 {
+    font-size: 20px !important;
+}
+.market-event-card__meta {
+    padding: 22px 24px !important;
+}
+
+/* Thu nhỏ thanh tìm kiếm và đẩy lùi về phía bên phải */
+.events-marketplace__search {
+    width: min(100%, 650px) !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+}
+
+/* Styling các nhãn tag rõ nét chuẩn ảnh Devpost */
+.market-event-card__meta .market-season span:last-child {
+    border: 1px solid #1474cb !important;
+    border-radius: 999px !important;
+    padding: 2px 12px !important;
+    color: #1474cb !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    background: transparent !important;
+}
+
+.market-tags span {
+    background: #eaf4fd !important;
+    color: #1474cb !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    border-radius: 3px !important;
+    padding: 4px 10px !important;
+    margin-bottom: 2px !important;
+}
+
+.market-phase {
+    background: #20a78f !important;
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    border-radius: 999px !important;
+    padding: 4px 12px !important;
+}
+
+.market-event-card__numbers strong {
+    color: #0e2027 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+}
+
+/* Quy định màu sắc các trạng thái sự kiện: 
+   - Đã kết thúc (ended): Màu xám (#8fa3a9)
+   - Sắp mở đăng ký (upcoming): Màu cam (#e66b32)
+   - Đang mở đăng ký / Đang diễn ra (registration / running): Màu xanh (#20a78f)
+*/
+.market-phase--ended {
+    background: #8fa3a9 !important;
+    color: #ffffff !important;
+}
+
+.market-phase--upcoming {
+    background: #e66b32 !important;
+    color: #ffffff !important;
+}
+
+.market-phase--registration,
+.market-phase--running {
+    background: #20a78f !important;
+    color: #ffffff !important;
+}
+
+.filter-dot--orange { background: #e66b32 !important; }
+.filter-dot--green { background: #20a78f !important; }
+.filter-dot--blue { background: #20a78f !important; }
+.filter-dot--gray { background: #8fa3a9 !important; }
+
+.market-event-card--upcoming { border-left-color: #e66b32 !important; }
+.market-event-card--registration,
+.market-event-card--running { border-left-color: #20a78f !important; }
+.market-event-card--ended { border-left-color: #8fa3a9 !important; }
+
 /* Custom premium date-time picker styles */
 input[type="datetime-local"] {
     position: relative;
@@ -2240,3 +2355,4 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     opacity: 0 !important;
     cursor: pointer !important;
 }
+
