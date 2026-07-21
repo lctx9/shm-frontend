@@ -185,22 +185,32 @@ function RankedList({ rows, mode }) {
 export default function Leaderboard() {
     const [rankings, setRankings] = useState([]);
     const [events, setEvents] = useState([]);
-    const [selectedEventId, setSelectedEventId] = useState('LATEST');
+    const [selectedEventId, setSelectedEventId] = useState('');
     const [mode, setMode] = useState('TEAM');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const fetchLeaderboard = async () => {
+    // Step 1: load events list once on mount
+    useEffect(() => {
+        axiosClient.get('/events')
+            .then(res => {
+                const list = [...(res.result || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
+                setEvents(list);
+                // Auto-select the latest event
+                if (list.length > 0) setSelectedEventId(String(list[0].id));
+            })
+            .catch(() => setEvents([]));
+    }, []);
+
+    // Step 2: load leaderboard whenever selectedEventId changes
+    const fetchLeaderboard = async (evId) => {
+        const id = evId ?? selectedEventId;
+        if (!id) return;
         try {
             setLoading(true);
-            const [rankRes, eventRes] = await Promise.allSettled([
-                axiosClient.get('/leaderboard'),
-                axiosClient.get('/events'),
-            ]);
-            if (rankRes.status === 'fulfilled') setRankings(rankRes.value.result || []);
-            if (eventRes.status === 'fulfilled') setEvents(eventRes.value.result || []);
-            if (rankRes.status === 'rejected') throw rankRes.reason;
             setError('');
+            const res = await axiosClient.get(`/leaderboard?eventId=${id}`);
+            setRankings(res.result || []);
         } catch (err) {
             setError(err.message || 'Không thể tải dữ liệu bảng xếp hạng.');
         } finally {
@@ -209,35 +219,23 @@ export default function Leaderboard() {
     };
 
     useEffect(() => {
-        fetchLeaderboard();
-    }, []);
+        if (selectedEventId) fetchLeaderboard(selectedEventId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedEventId]);
 
-    const displayRows = rankings.length ? rankings : demoWinners;
-    
-    const eventOptions = useMemo(() => {
-        return [...events].sort((a, b) => (b.year || 0) - (a.year || 0));
-    }, [events]);
-
-    const activeEventId = useMemo(() => {
-        if (selectedEventId !== 'LATEST') return selectedEventId;
-        if (eventOptions.length > 0) return String(eventOptions[0].id);
-        return '';
-    }, [selectedEventId, eventOptions]);
+    const displayRows = rankings.length ? rankings : (selectedEventId ? [] : demoWinners);
 
     const selectedEventName = useMemo(() => {
-        const found = eventOptions.find(e => String(e.id) === String(activeEventId));
-        return found ? found.name : 'Giải gần nhất';
-    }, [eventOptions, activeEventId]);
+        const found = events.find(e => String(e.id) === String(selectedEventId));
+        return found ? found.name : 'Giải đấu';
+    }, [events, selectedEventId]);
 
     const teamRows = useMemo(() => {
         if (displayRows === demoWinners) {
             return displayRows.map((row, index) => ({ ...row, rank: row.rank || index + 1 }));
         }
-
-        return displayRows
-            .filter((row) => !activeEventId || !row.eventId || String(row.eventId) === String(activeEventId))
-            .map((row, index) => ({ ...row, rank: row.rank || index + 1 }));
-    }, [displayRows, activeEventId]);
+        return displayRows.map((row, index) => ({ ...row, rank: row.rank || index + 1 }));
+    }, [displayRows]);
 
     const individualRows = useMemo(() => {
         const stats = new Map();
@@ -295,8 +293,8 @@ export default function Leaderboard() {
                                     onChange={(e) => setSelectedEventId(e.target.value)}
                                     className="bg-white border border-[#afc0c6] rounded px-3 py-1.5 text-xs font-bold text-[#102d38] focus:border-[var(--dp-blue)] focus:outline-none min-w-[220px]"
                                 >
-                                    <option value="LATEST">Giải đấu mới nhất</option>
-                                    {eventOptions.map((evt) => <option key={evt.id} value={evt.id}>{evt.name}</option>)}
+                                    {events.length === 0 && <option value="">Đang tải...</option>}
+                                    {events.map((evt) => <option key={evt.id} value={String(evt.id)}>{evt.name}</option>)}
                                 </select>
                             </div>
                         ) : (
@@ -327,7 +325,7 @@ export default function Leaderboard() {
                         </div>
 
                         <button 
-                            onClick={fetchLeaderboard} 
+                            onClick={() => fetchLeaderboard(selectedEventId)} 
                             title="Làm mới dữ liệu" 
                             className="h-9 w-9 flex items-center justify-center rounded border border-[#afc0c6] bg-white text-[#1474cb] hover:bg-[#e8f4ff] font-bold text-sm transition-all shadow-sm" 
                             type="button"
