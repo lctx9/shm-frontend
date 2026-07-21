@@ -553,7 +553,16 @@ export default function MyTeam() {
                                 <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Thành viên</h2>
                                 <div className="flex gap-2">
                                     {isLeader && <button type="button" onClick={() => setShowActions((value) => !value)} className="btn-secondary">Thao tác</button>}
-                                    <button type="button" onClick={handleLeave} className="rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-bold px-4 py-2 text-sm transition-all duration-200">Rời đội</button>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleLeave} 
+                                        title="Rời đội" 
+                                        className="flex items-center justify-center rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 p-2 transition-all duration-200"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                             <div className="mt-5 divide-y divide-[#d7e6f8]">
