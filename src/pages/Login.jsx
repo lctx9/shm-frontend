@@ -49,7 +49,6 @@ export default function Login() {
 
             <section className="devpost-auth__form-panel" aria-labelledby="login-title">
                 <div className="devpost-auth__form-wrap">
-                    <Link to="/" className="devpost-auth__back">← Về trang chủ</Link>
                     <p className="devpost-auth__eyebrow">Đăng nhập</p>
                     <h1 id="login-title">Chào mừng trở lại</h1>
                     <span className="devpost-auth__copy">Tiếp tục hành trình của bạn cùng SEAL Hackathon.</span>

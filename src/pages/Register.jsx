@@ -123,7 +123,6 @@ export default function Register() {
 
             <section className="devpost-auth__form-panel" aria-labelledby="register-title">
                 <div className="devpost-auth__form-wrap devpost-auth__form-wrap--wide">
-                    <Link to="/" className="devpost-auth__back">← Về trang chủ</Link>
                     <p className="devpost-auth__eyebrow">Tạo tài khoản</p>
                     <h1 id="register-title">Đăng ký thí sinh</h1>
                     <span className="devpost-auth__copy">Hoàn thành thông tin dưới đây để tham gia SEAL Hackathon.</span>

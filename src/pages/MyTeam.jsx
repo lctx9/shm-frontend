@@ -21,6 +21,7 @@ export default function MyTeam() {
     const [inviteEmail, setInviteEmail] = useState('');
     const [joinPassword, setJoinPassword] = useState('');
     const [privateTeam, setPrivateTeam] = useState(null);
+    const [joinError, setJoinError] = useState('');
     const [message, setMessage] = useState({ text: '', type: '' });
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
@@ -124,10 +125,11 @@ export default function MyTeam() {
 
     const filteredTeams = useMemo(() => {
         return teams.filter((item) => {
+            if (String(item.eventId) !== String(formData.eventId)) return false;
             if (teamFilter === 'ALL') return true;
             return String(item.trackId) === String(teamFilter);
         });
-    }, [teams, teamFilter]);
+    }, [teams, teamFilter, formData.eventId]);
 
     const handleEventChange = (eventId) => {
         const nextEvent = events.find((event) => String(event.id) === String(eventId));
@@ -191,6 +193,7 @@ export default function MyTeam() {
 
     const handlePrivateJoin = async (e) => {
         e.preventDefault();
+        setJoinError('');
         try {
             await axiosClient.post(`/teams/${privateTeam.id}/join-private`, { password: joinPassword });
             alert('Gia nhập đội thành công!');
@@ -198,8 +201,7 @@ export default function MyTeam() {
             setJoinPassword('');
             await fetchData();
         } catch (err) {
-            alert(err.message || 'Mã PIN không đúng hoặc không thể tham gia đội.');
-            setMessage({ text: err.message || 'Mã PIN không đúng hoặc không thể tham gia đội.', type: 'error' });
+            setJoinError(err.message || 'Mã PIN không đúng hoặc không thể tham gia đội.');
         }
     };
 
@@ -335,9 +337,11 @@ export default function MyTeam() {
             {!team ? (
                 <div className="space-y-6">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.22em] text-[#0f63c9]">Đội của tôi</p>
                         <h1 className="section-title">Đăng ký giải đấu</h1>
-                        <p className="section-copy">Bạn chưa tham gia đội nào. Hãy tạo đội mới hoặc tìm một đội phù hợp trong lobby.</p>
+                        {selectedEvent && (
+                            <p className="mt-2 text-lg font-bold text-[#0f63c9]">{selectedEvent.name}</p>
+                        )}
+                        <p className="section-copy mt-1">Bạn chưa tham gia đội nào. Hãy tạo đội mới hoặc tìm một đội phù hợp trong lobby.</p>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -351,18 +355,23 @@ export default function MyTeam() {
                                 <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Lọc theo hạng mục</label>
                                 <select className="input-custom max-w-md" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
                                     <option value="ALL">Tất cả hạng mục</option>
-                                    {events.flatMap((event) => event.tracks || []).map((track) => <option key={track.id} value={track.id}>{track.name}</option>)}
+                                    {(selectedEvent?.tracks || []).map((track) => (
+                                        <option key={track.id} value={track.id}>{track.name}</option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                                 {filteredTeams.map((item) => (
-                                    <article key={item.id} className="feature-card">
-                                        <h3 className="text-lg font-black uppercase tracking-[0.06em] text-[#071936]">{item.name}</h3>
-                                        <p className="mt-2 text-sm text-[#5c6d83]">{item.description || 'Đội chưa thêm mô tả.'}</p>
-                                        <p className="mt-4 text-sm font-bold text-[#0f63c9]">{item.trackName || 'Chưa chọn hạng mục'}</p>
-                                        <button type="button" onClick={() => handleJoin(item)} className="btn-primary mt-5 w-full">
-                                            {item.type === 'PRIVATE' ? 'Nhập mã PIN' : 'Gửi request'}
-                                        </button>
+                                    <article key={item.id} className="feature-card flex flex-col h-full">
+                                        <h3 className="text-lg font-black uppercase tracking-[0.06em] text-[#071936] line-clamp-2" title={item.name}>{item.name}</h3>
+                                        <p className="mt-2 text-sm text-[#5c6d83] line-clamp-3" title={item.description}>{item.description || 'Đội chưa thêm mô tả.'}</p>
+                                        
+                                        <div className="mt-auto pt-5">
+                                            <p className="text-sm font-bold text-[#0f63c9] line-clamp-1" title={item.trackName}>{item.trackName || 'Chưa chọn hạng mục'}</p>
+                                            <button type="button" onClick={() => handleJoin(item)} className="btn-primary mt-4 w-full">
+                                                {item.type === 'PRIVATE' ? 'Nhập mã PIN' : 'Gửi request'}
+                                            </button>
+                                        </div>
                                     </article>
                                 ))}
                             </div>
@@ -383,7 +392,7 @@ export default function MyTeam() {
                                         <div>
                                             <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Giải đấu</label>
                                             <select required className="input-custom" value={formData.eventId} onChange={(e) => handleEventChange(e.target.value)}>
-                                                {activeOrUpcomingEvents.map((event) => <option key={event.id} value={event.id}>{event.name} - {event.year}</option>)}
+                                                {activeOrUpcomingEvents.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
                                             </select>
                                         </div>
                                     </div>
@@ -609,9 +618,10 @@ export default function MyTeam() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
                     <form onSubmit={handlePrivateJoin} className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
                         <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Nhập mã PIN của {privateTeam.name}</h3>
-                        <input required className="input-custom mt-5" inputMode="numeric" maxLength={4} value={joinPassword} onChange={(e) => setJoinPassword(e.target.value.replace(/\D/g, ''))} />
+                        <input required className="input-custom mt-5" inputMode="numeric" maxLength={4} value={joinPassword} onChange={(e) => { setJoinPassword(e.target.value.replace(/\D/g, '')); setJoinError(''); }} />
+                        {joinError && <p className="mt-2 text-sm font-semibold text-red-600">{joinError}</p>}
                         <div className="mt-5 flex gap-3">
-                            <button type="button" onClick={() => setPrivateTeam(null)} className="btn-secondary flex-1">Hủy</button>
+                            <button type="button" onClick={() => { setPrivateTeam(null); setJoinPassword(''); setJoinError(''); }} className="btn-secondary flex-1">Hủy</button>
                             <button type="submit" className="btn-primary flex-1">Vào đội</button>
                         </div>
                     </form>

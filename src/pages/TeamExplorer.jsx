@@ -123,6 +123,7 @@ export default function TeamExplorer() {
     const [chatTeam, setChatTeam] = useState(null);
     const [joinTeam, setJoinTeam] = useState(null);
     const [joinPassword, setJoinPassword] = useState('');
+    const [joinError, setJoinError] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const isMentor = role === 'STAFF' || role === 'MENTOR';
@@ -199,6 +200,7 @@ export default function TeamExplorer() {
     const handleJoinPrivate = async (e) => {
         e.preventDefault();
         if (!joinTeam) return;
+        setJoinError('');
 
         try {
             await axiosClient.post(`/teams/${joinTeam.id}/join-private`, { password: joinPassword });
@@ -206,7 +208,7 @@ export default function TeamExplorer() {
             setJoinPassword('');
             window.location.href = '/my-team';
         } catch (err) {
-            alert(err.message || 'Không thể gia nhập đội riêng tư.');
+            setJoinError(err.message || 'Không thể gia nhập đội riêng tư.');
         }
     };
 
@@ -250,7 +252,7 @@ export default function TeamExplorer() {
                 <select className="input-custom max-w-md" value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
                     <option value="ALL">Tất cả giải đấu</option>
                     {events.map((event) => (
-                        <option key={event.id} value={event.id}>{event.name} - {event.season} {event.year}</option>
+                        <option key={event.id} value={event.id}>{event.name}</option>
                     ))}
                 </select>
             </div>
@@ -269,16 +271,16 @@ export default function TeamExplorer() {
                         const teamSubmissions = submissions.filter((item) => String(item.teamId) === String(team.id));
                         const gradedCount = teamSubmissions.filter((item) => item.graded).length;
                         return (
-                            <article key={team.id} className="rounded-lg border border-blue-100 bg-white p-5 shadow-sm">
+                            <article key={team.id} className="flex flex-col h-full rounded-lg border border-blue-100 bg-white p-5 shadow-sm">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="text-lg font-black text-slate-900">{team.name}</h3>
-                                        <p className="mt-1 text-sm text-slate-500">{team.eventName || 'Chưa gắn giải đấu'}</p>
+                                        <h3 className="text-lg font-black text-slate-900 line-clamp-2" title={team.name}>{team.name}</h3>
+                                        <p className="mt-1 text-sm text-slate-500 line-clamp-1" title={team.eventName}>{team.eventName || 'Chưa gắn giải đấu'}</p>
                                     </div>
                                     <Pill>{team.type}</Pill>
                                 </div>
 
-                                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600">{team.description || 'Đội chưa cập nhật mô tả.'}</p>
+                                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600 line-clamp-3" title={team.description}>{team.description || 'Đội chưa cập nhật mô tả.'}</p>
 
                                 <dl className="mt-5 space-y-2 text-sm text-slate-600">
                                     <div className="flex justify-between gap-4">
@@ -295,7 +297,7 @@ export default function TeamExplorer() {
                                     </div>
                                 </dl>
 
-                                <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                                <div className="mt-auto pt-6 grid gap-2 sm:grid-cols-2">
                                     <button type="button" onClick={() => setSelectedTeam(team)} className="btn-secondary">Chi tiết</button>
                                     {isMentor || staffRoles.has(role) ? (
                                         <button type="button" onClick={() => openChatForTeam(team)} className="btn-primary">Trao đổi</button>
@@ -332,9 +334,10 @@ export default function TeamExplorer() {
                         <h3 className="text-lg font-black tracking-wide text-slate-900">Gia nhập {joinTeam.name}</h3>
                         <p className="mt-2 text-sm text-slate-600">Đội riêng tư yêu cầu mật khẩu do Team Leader cung cấp.</p>
                         <form onSubmit={handleJoinPrivate} className="mt-5 space-y-4">
-                            <input required className="input-custom" value={joinPassword} onChange={(e) => setJoinPassword(e.target.value)} placeholder="Mật khẩu đội" />
+                            <input required className="input-custom" value={joinPassword} onChange={(e) => { setJoinPassword(e.target.value); setJoinError(''); }} placeholder="Mật khẩu đội" />
+                            {joinError && <p className="mt-2 text-sm font-semibold text-red-600">{joinError}</p>}
                             <div className="flex gap-3">
-                                <button type="button" onClick={() => setJoinTeam(null)} className="btn-secondary flex-1">Hủy</button>
+                                <button type="button" onClick={() => { setJoinTeam(null); setJoinPassword(''); setJoinError(''); }} className="btn-secondary flex-1">Hủy</button>
                                 <button type="submit" className="btn-primary flex-1">Xác nhận</button>
                             </div>
                         </form>
