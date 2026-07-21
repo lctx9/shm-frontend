@@ -1514,8 +1514,8 @@ body { background: var(--dp-canvas); color: var(--dp-ink); }
 
 /* Homepage: editorial split hero like a hackathon marketplace */
 .hero-stage { min-height: 590px; border-bottom: 1px solid var(--dp-line); background: #eef3f3; }
-.hero-bg { display: block; inset: 0 0 0 auto; width: 52%; opacity: .95; filter: contrast(1.1) saturate(1.2) brightness(0.95); transform: none; background-position: center; }
-.hero-overlay { background: linear-gradient(90deg,#eef3f3 0%,#eef3f3 38%,rgba(238,243,243,.75) 52%,rgba(238,243,243,.12) 100%); }
+.hero-bg { display: block; inset: 0 0 0 auto; width: 50%; opacity: .92; filter: none; transform: none; background-position: center; }
+.hero-overlay { background: linear-gradient(90deg,#eef3f3 0%,#eef3f3 48%,rgba(238,243,243,.65) 60%,rgba(238,243,243,.08) 100%); }
 .hero-content { width: min(100%,1200px); min-height: 590px; align-items: flex-start; justify-content: center; padding: 62px 24px; text-align: left; }
 .hero-content > * { max-width: 570px; }
 .hero-content > .flex { justify-content: flex-start; }
@@ -1562,15 +1562,15 @@ body { background: var(--dp-canvas); color: var(--dp-ink); }
 
 @media(max-width:900px){
     .event-discovery-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-    .hero-bg{width:48%;opacity:.75;}
-    .hero-overlay{background:linear-gradient(90deg,#eef3f3 0%,rgba(238,243,243,.8) 60%,rgba(238,243,243,.25) 100%);}
+    .hero-bg{width:42%;opacity:.35;}
+    .hero-overlay{background:rgba(238,243,243,.88);}
 }
 @media(max-width:640px){
     .devpost-page-heading{align-items:flex-start;flex-direction:column;}
     .event-discovery-bar{grid-template-columns:1fr;}
     .event-discovery-grid{grid-template-columns:1fr;}
     .hero-stage,.hero-content{min-height:620px;}
-    .hero-bg{width:100%;opacity:.45;}
+    .hero-bg{width:100%;opacity:.16;}
     .hero-content{padding-block:52px;}
     .hero-title{font-size:clamp(44px,14vw,62px);}
 }
