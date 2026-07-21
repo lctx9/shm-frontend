@@ -60,7 +60,7 @@ export default function MyTeam() {
         try {
             setLoading(true);
             const [teamRes, eventsRes, teamsRes] = await Promise.allSettled([
-                axiosClient.get('/teams/my-team'),
+                axiosClient.get(preselectedEventId ? `/teams/my-team?eventId=${preselectedEventId}` : '/teams/my-team'),
                 axiosClient.get('/events'),
                 axiosClient.get('/teams'),
             ]);
@@ -73,12 +73,7 @@ export default function MyTeam() {
 
             const activeOrUpcoming = loadedEvents.filter((event) => {
                 if (!event.active) return false;
-                if (event.eventEndDate) {
-                    const endDate = new Date(event.eventEndDate);
-                    const now = new Date();
-                    if (endDate < now) return false;
-                }
-                return true;
+                return getEventPhase(event).key === 'registration';
             });
             const firstEvent = activeOrUpcoming.find((item) => String(item.id) === String(preselectedEventId)) || activeOrUpcoming[0] || loadedEvents[0];
             setFormData((current) => ({
@@ -91,8 +86,8 @@ export default function MyTeam() {
                 const isLeaderRole = loadedTeam?.members?.some((member) => member.email === currentEmail && member.role === 'LEADER');
                 const [matrixRes, submissionRes, requestRes, sentInvRes] = await Promise.allSettled([
                     axiosClient.get(`/events/${loadedTeam.eventId}/matrices`),
-                    axiosClient.get('/submissions/my-submission'),
-                    isLeaderRole
+                    axiosClient.get(`/submissions/my-submission?teamId=${loadedTeam.id}`),
+                    loadedTeam?.members?.some((member) => member.email === currentEmail && member.role === 'LEADER')
                         ? axiosClient.get(`/teams/${loadedTeam.id}/join-requests`)
                         : Promise.resolve({ result: [] }),
                     isLeaderRole
@@ -128,18 +123,14 @@ export default function MyTeam() {
     };
 
     useEffect(() => {
+        window.scrollTo(0, 0);
         fetchData();
     }, [preselectedEventId]);
 
     const activeOrUpcomingEvents = useMemo(() => {
         return events.filter((event) => {
             if (!event.active) return false;
-            if (event.eventEndDate) {
-                const endDate = new Date(event.eventEndDate);
-                const now = new Date();
-                if (endDate < now) return false;
-            }
-            return true;
+            return getEventPhase(event).key === 'registration';
         });
     }, [events]);
 
@@ -370,7 +361,7 @@ export default function MyTeam() {
             message: confirmMsg,
             onConfirm: async () => {
                 try {
-                    await axiosClient.post('/teams/leave');
+                    await axiosClient.post(`/teams/leave?teamId=${team.id}`);
                     setTeam(null);
                     setMessage({ text: 'Rời khỏi đội thành công!', type: 'success' });
                     await fetchData();
@@ -471,9 +462,20 @@ export default function MyTeam() {
                     <div>
                         <h1 className="section-title">Đăng ký giải đấu</h1>
                         {selectedEvent && (
-                            <p className="mt-2 text-lg font-bold text-[#0f63c9]">{selectedEvent.name}</p>
+                            <div className="mt-2 flex flex-col items-start gap-1">
+                                <p className="text-xl font-black text-[#0b1f3f]">{selectedEvent.name}</p>
+                                <Link to={`/events/${selectedEvent.id}`} className="group inline-flex items-center gap-1.5 rounded-full bg-[#f4f7fa] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0f63c9] transition-all hover:bg-[#e6eff8] hover:shadow-sm">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Xem chi tiết sự kiện
+                                    <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </Link>
+                            </div>
                         )}
-                        <p className="section-copy mt-1">Bạn chưa tham gia đội nào. Hãy tạo đội mới hoặc tìm một đội phù hợp trong lobby.</p>
+                        <p className="section-copy mt-3">Bạn chưa tham gia đội nào. Hãy tạo đội mới hoặc tìm một đội phù hợp trong lobby.</p>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -527,7 +529,7 @@ export default function MyTeam() {
                                     <div className="grid gap-5 md:grid-cols-2">
                                         <div>
                                             <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Tên team</label>
-                                            <input required className="input-custom" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                                            <input required className="input-custom" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} disabled={selectedEvent && getEventPhase(selectedEvent).key !== 'registration'} />
                                         </div>
                                         <div>
                                             <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Giải đấu</label>
@@ -536,50 +538,45 @@ export default function MyTeam() {
                                             </select>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mô tả</label>
-                                        <textarea className="input-custom min-h-28" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
-                                    </div>
-                                    <div className="grid gap-5 md:grid-cols-2">
-                                        <div>
-                                            <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Hạng mục</label>
-                                            <select required className="input-custom font-medium" value={formData.trackId} onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}>
-                                                {(selectedEvent?.tracks || []).map((track) => {
-                                                    const isFull = track.maxTeams && track.maxTeams > 0 && (track.currentTeamsCount || 0) >= track.maxTeams;
-                                                    const label = track.maxTeams && track.maxTeams > 0
-                                                        ? `${track.name} (Đã có ${track.currentTeamsCount || 0}/${track.maxTeams} đội${isFull ? ' - ĐÃ ĐẦY' : ''})`
-                                                        : `${track.name} (Đang có ${track.currentTeamsCount || 0} đội)`;
-                                                    return (
-                                                        <option key={track.id} value={track.id} disabled={isFull}>
-                                                            {label}
-                                                        </option>
-                                                    );
-                                                })}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Chế độ</label>
-                                            <select className="input-custom" value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
-                                                <option value="PUBLIC">Public</option>
-                                                <option value="PRIVATE">Private</option>
-                                            </select>
-                                        </div>
-                                    </div>
 
-                                    {formData.type === 'PRIVATE' && (
-                                        <div>
-                                            <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mã PIN 4 số</label>
-                                            <input className="input-custom max-w-xs" inputMode="numeric" maxLength={4} value={formData.joinPassword} onChange={(e) => { setFormData({ ...formData, joinPassword: e.target.value.replace(/\D/g, '') }); setPinError(''); }} />
-                                            {pinError && <p className="mt-1 text-xs font-semibold text-red-600">{pinError}</p>}
+                                    {selectedEvent && getEventPhase(selectedEvent).key !== 'registration' ? (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                                            Sự kiện này đã đóng cổng đăng ký đội. Bạn chỉ có thể xem lobby các đội đã tham gia.
                                         </div>
-                                    )}
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mô tả</label>
+                                                <textarea className="input-custom min-h-28" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                                            </div>
+                                            <div className="grid gap-5 md:grid-cols-2">
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Hạng mục</label>
+                                                    <select required className="input-custom" value={formData.trackId} onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}>
+                                                        {(selectedEvent?.tracks || []).map((track) => <option key={track.id} value={track.id}>{track.name}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Chế độ</label>
+                                                    <select className="input-custom" value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
+                                                        <option value="PUBLIC">Public</option>
+                                                        <option value="PRIVATE">Private</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            {formData.type === 'PRIVATE' && (
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mã PIN 4 số</label>
+                                                    <input className="input-custom max-w-xs" inputMode="numeric" maxLength={4} value={formData.joinPassword} onChange={(e) => setFormData({ ...formData, joinPassword: e.target.value.replace(/\D/g, '') })} />
+                                                </div>
+                                            )}
 
-                                    <div>
-                                        <label className="mb-2 block text-sm font-bold text-[#0b1f3f]">
-                                            Mời thành viên khác (Tối thiểu 2 người, tối tối đa 4)
-                                        </label>
-                                        <p className="text-xs text-[#5c6d83] mb-2">Đội của bạn phải có ít nhất 3 thành viên khi tạo (bản thân bạn và ít nhất 2 thành viên khác).</p>
-                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="mb-2 block text-sm font-bold text-[#0b1f3f]">
+                                                    Mời thành viên khác (Tối thiểu 2 người, tối tối đa 4)
+                                                </label>
+                                                <p className="text-xs text-[#5c6d83] mb-2">Đội của bạn phải có ít nhất 3 thành viên khi tạo (bản thân bạn và ít nhất 2 thành viên khác).</p>
+                                                <div className="space-y-3">
                                             {memberEmails.map((email, index) => (
                                                 <div key={index} className="flex items-center gap-2">
                                                     <input
@@ -626,6 +623,8 @@ export default function MyTeam() {
                                     {createError && <p className="text-sm font-semibold text-red-600">{createError}</p>}
                                     {createSuccess && <p className="text-sm font-semibold text-green-600">{createSuccess}</p>}
                                     <button type="submit" disabled={creating} className="btn-primary w-full">{creating ? 'Đang tạo...' : 'Tạo đội'}</button>
+                                        </>
+                                    )}
                                 </form>
                             )}
                         </section>
