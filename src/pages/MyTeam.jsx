@@ -59,12 +59,7 @@ export default function MyTeam() {
 
             const activeOrUpcoming = loadedEvents.filter((event) => {
                 if (!event.active) return false;
-                if (event.regEndDate) {
-                    const endDate = new Date(event.regEndDate);
-                    const now = new Date();
-                    if (endDate < now) return false;
-                }
-                return true;
+                return getEventPhase(event).key === 'registration';
             });
             const firstEvent = activeOrUpcoming.find((item) => String(item.id) === String(preselectedEventId)) || activeOrUpcoming[0] || loadedEvents[0];
             setFormData((current) => ({
@@ -109,12 +104,7 @@ export default function MyTeam() {
     const activeOrUpcomingEvents = useMemo(() => {
         return events.filter((event) => {
             if (!event.active) return false;
-            if (event.regEndDate) {
-                const endDate = new Date(event.regEndDate);
-                const now = new Date();
-                if (endDate < now) return false;
-            }
-            return true;
+            return getEventPhase(event).key === 'registration';
         });
     }, [events]);
 
