@@ -933,8 +933,8 @@ export default function EventManagement() {
                             <p className="mt-2 text-sm text-teal-100/90">{selectedEvent?.teamCount || 0} đội thi · {selectedEvent?.tracks?.length || 0} bảng đấu · {selectedEvent?.roundCount || 0} vòng</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-black text-white hover:bg-white/20 transition">Xem trang công khai</Link>
-                            <Link to="/dashboard/scoring-config" className="rounded-xl bg-white px-4 py-2.5 text-sm font-black text-[#0b3d49] hover:bg-teal-50 transition">Cấu hình chấm điểm</Link>
+                            <Link to={`/events/${selectedEventId}`} className="rounded-xl bg-[#071936] border border-[#071936] px-4 py-2.5 text-sm font-black text-white hover:bg-[#071936]/80 transition shadow-sm">Xem trang công khai</Link>
+                            <Link to="/dashboard/scoring-config" className="rounded-xl bg-white border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black text-[#0b3d49] hover:bg-teal-50 transition shadow-sm">Cấu hình chấm điểm</Link>
                         </div>
                     </div>
                 </section>
