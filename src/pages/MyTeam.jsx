@@ -8,8 +8,9 @@ import Toast from '../components/Toast';
 export default function MyTeam() {
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTeamId = searchParams.get('teamId');
-    const registeringEventId = searchParams.get('registerEventId');
-    const preselectedEventId = searchParams.get('eventId');
+    const paramEventId = searchParams.get('registerEventId') || searchParams.get('eventId');
+    const registeringEventId = paramEventId;
+    const preselectedEventId = searchParams.get('eventId') || searchParams.get('registerEventId');
     const currentEmail = localStorage.getItem('email');
  
     const [team, setTeam] = useState(null);
@@ -544,27 +545,24 @@ export default function MyTeam() {
     };
 
     const handleLeave = async () => {
-        const isLeaderOfTeam = team?.members?.some(
-            (member) => member.email === currentEmail && member.role === 'LEADER'
-        );
-        const memberCount = team?.members?.length || 0;
-
         setActionMessage({ text: '', type: '' });
 
-        if (isLeaderOfTeam) {
-            setActionMessage({ text: "Bạn là Trưởng nhóm. Bạn phải chuyển quyền Trưởng nhóm cho thành viên khác trước khi rời đội.", type: 'error' });
+        if (isLeader) {
+            setConfirmModal({
+                isOpen: true,
+                title: 'Không thể rời đội',
+                message: 'Bạn đang là Trưởng nhóm (Leader). Bạn phải chuyển quyền Trưởng nhóm cho thành viên khác trước khi rời khỏi đội.',
+                isAlert: true,
+                isError: true,
+                onConfirm: null,
+            });
             return;
-        }
-
-        let confirmMsg = "Bạn có chắc chắn muốn rời đội?";
-        if (memberCount <= 3) {
-            confirmMsg = "Đội của bạn hiện có 3 người. Khi bạn rời đi, số thành viên sẽ dưới 3 và đội sẽ tự động bị GIẢI TÁN. Bạn có chắc chắn muốn rời đội?";
         }
 
         setConfirmModal({
             isOpen: true,
-            title: 'Rời đội',
-            message: confirmMsg,
+            title: 'Xác nhận rời đội',
+            message: `Bạn có chắc chắn muốn rời khỏi đội "${team?.name}" không?`,
             onConfirm: async () => {
                 try {
                     await axiosClient.post(`/teams/leave?teamId=${team.id}`);
@@ -573,6 +571,27 @@ export default function MyTeam() {
                     await fetchData();
                 } catch (err) {
                     setActionMessage({ text: err.message || 'Không thể rời đội.', type: 'error' });
+                }
+            }
+        });
+    };
+
+    const handleDisbandTeam = () => {
+        if (!isLeader) return;
+
+        setConfirmModal({
+            isOpen: true,
+            title: 'Xác nhận xóa đội thi',
+            message: `Bạn có chắc chắn muốn XÓA đội thi "${team?.name}" không? Thao tác này sẽ xóa hoàn toàn đội khỏi cuộc thi.`,
+            isError: true,
+            onConfirm: async () => {
+                try {
+                    await axiosClient.delete(`/teams/${team.id}`);
+                    setTeam(null);
+                    setMessage({ text: 'Xóa đội thi thành công!', type: 'success' });
+                    await fetchData();
+                } catch (err) {
+                    setActionMessage({ text: err.message || 'Không thể xóa đội.', type: 'error' });
                 }
             }
         });
@@ -656,8 +675,35 @@ export default function MyTeam() {
                                 <p className="mt-2 text-sm leading-7 text-[#5c6d83]">{team.description || 'Đội chưa thêm mô tả.'}</p>
                                 <p className="mt-3 text-sm font-bold text-[#0f63c9]">{team.trackName}</p>
                             </div>
-                            <span className="badge-status-pill">{team.type}</span>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="badge-status-pill">{team.type}</span>
+                                {(team.members?.length || team.memberCount || 0) >= 3 ? (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 border border-emerald-200">
+                                        <span className="pulsing-dot-green shrink-0" />
+                                        Đội chính thức
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 border border-amber-200">
+                                        <span className="pulsing-dot-amber shrink-0" />
+                                        Đội chưa chính thức
+                                    </span>
+                                )}
+                            </div>
                         </div>
+
+                        {(team.members?.length || team.memberCount || 0) < 3 && (
+                            <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-amber-900 shadow-sm flex items-start gap-3">
+                                <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <div>
+                                    <h4 className="font-black text-amber-900 text-sm">Đội thi hiện tại là Đội chưa chính thức</h4>
+                                    <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                                        Đội của bạn hiện tại chưa đủ tối thiểu 3 thành viên xác nhận tham gia. Hãy mời thêm thành viên hoặc đợi người được mời chấp nhận để đội trở thành <strong>Đội chính thức</strong> và mở quyền nộp bài dự thi.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                         {startCountdown && eventPhase?.key !== 'running' && (
                             <div className="mt-6 grid gap-3 sm:grid-cols-3">
                                 {startCountdown.map((item) => (
@@ -768,14 +814,28 @@ export default function MyTeam() {
 
                         <div className="team-members-panel rounded-lg border border-[#d7e6f8] bg-white p-6">
                             <div className="flex items-center justify-between gap-3">
-                                <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Thành viên</h2>
-                                <div className="flex gap-2">
-                                    {isLeader && <button type="button" onClick={() => setShowActions((value) => !value)} className="btn-secondary">Thao tác</button>}
+                                <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Thành viên ({team.members?.length || 0})</h2>
+                                <div className="flex items-center gap-2.5">
+                                    {isLeader && (
+                                        <>
+                                            <button type="button" onClick={() => setShowActions((value) => !value)} className="btn-secondary">Thao tác</button>
+                                            <button 
+                                                type="button" 
+                                                onClick={handleDisbandTeam} 
+                                                title="Xóa đội (Dành cho Trưởng nhóm)" 
+                                                className="flex items-center justify-center rounded-lg border border-red-300 bg-red-100 hover:bg-red-200 text-red-700 p-2.5 transition-all duration-200 cursor-pointer shadow-sm"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </>
+                                    )}
                                     <button 
                                         type="button" 
                                         onClick={handleLeave} 
-                                        title="Rời đội" 
-                                        className="flex items-center justify-center rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 p-2 transition-all duration-200"
+                                        title="Rời khỏi đội" 
+                                        className="flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 p-2.5 transition-all duration-200 cursor-pointer shadow-sm"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
@@ -796,7 +856,7 @@ export default function MyTeam() {
                                                 <Link to={`/profile?userId=${member.userId}`} className="font-black text-[#071936]">{member.fullName || member.email}</Link>
                                                 <p className="text-sm text-[#5c6d83]">{member.email}</p>
                                             </div>
-                                            <span className="rounded-full bg-[#f8fbff] px-3 py-1 text-xs font-black text-[#0f63c9]">{member.role}</span>
+                                             <span className={member.role === 'LEADER' ? 'rounded-full bg-red-100 text-red-700 border border-red-200 px-3 py-1 text-xs font-black uppercase shadow-xs' : 'rounded-full bg-slate-100 text-slate-700 px-3 py-1 text-xs font-black uppercase'}>{member.role}</span>
                                         </div>
                                         {showActions && isLeader && member.role !== 'LEADER' && (
                                             <div className="mt-3 flex items-center gap-2">
@@ -1119,35 +1179,57 @@ export default function MyTeam() {
                     )}
 
                     {/* SECTION 1: DANH SÁCH ĐỘI THI ĐÃ THAM GIA */}
-                    <div className="mb-8 space-y-4">
-                        <div>
-                            <h2 className="text-xl font-black text-[#0b1f3f]">Đội thi của bạn</h2>
-                            <p className="text-sm text-[#5c6d83]">Bấm vào đội thi để xem chi tiết, quản lý thành viên và nộp bài</p>
+                    <div className="mb-10 rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-50/70 via-indigo-50/30 to-white p-6 sm:p-8 shadow-sm space-y-6">
+                        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-blue-100">
+                            <div>
+                                <div className="flex items-center gap-2.5">
+                                    <span className="p-2 rounded-xl bg-[#0f63c9] text-white shadow-md shadow-blue-500/20">
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                    </span>
+                                    <h2 className="text-xl sm:text-2xl font-black text-[#0b1f3f]">Đội thi của bạn</h2>
+                                </div>
+                                <p className="text-xs sm:text-sm text-[#5c6d83] font-medium mt-1">Bấm vào đội thi để xem chi tiết, quản lý thành viên và nộp bài</p>
+                            </div>
+                            <span className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-[#0f63c9] bg-blue-100/80 border border-blue-200 shadow-inner">
+                                {myTeams.length} Đội thi
+                            </span>
                         </div>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             {myTeams.map((item) => {
                                 const isLeaderOfItem = item.members?.some(m => m.email === currentEmail && m.role === 'LEADER');
+                                const isOfficial = (item.memberCount || item.members?.length || 0) >= 3;
                                 return (
                                     <button
                                         type="button"
                                         key={item.id}
                                         onClick={() => handleSelectTeam(item)}
-                                        className="text-left p-5 rounded-xl border border-[#e2e8f0] bg-white hover:border-[#0f63c9]/50 hover:shadow-md transition-all duration-200 cursor-pointer"
+                                        className="group text-left p-5 rounded-2xl border border-blue-100/90 bg-white hover:border-[#0f63c9] hover:shadow-[0_8px_25px_rgba(15,99,201,0.14)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden"
                                     >
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-[#0f63c9] block mb-1">
+                                        <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-bl from-blue-400/10 to-transparent rounded-bl-full pointer-events-none group-hover:from-blue-500/20 transition-colors" />
+                                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#0f63c9] bg-blue-50/90 border border-blue-200/80 px-2.5 py-0.5 rounded-full mb-2">
                                             {item.eventName}
                                         </span>
-                                        <h3 className="text-base font-black text-[#0b1f3f] line-clamp-1">{item.name}</h3>
+                                        <h3 className="text-base font-black text-[#0b1f3f] group-hover:text-[#0f63c9] transition-colors line-clamp-1">{item.name}</h3>
                                         <p className="text-xs text-[#5c6d83] mt-1 font-semibold">{item.trackName}</p>
-                                        <div className="mt-4 flex items-center justify-between">
-                                            <span className="inline-flex items-center gap-1 text-xs text-[#5c6d83] font-medium">
-                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                                </svg>
-                                                {item.memberCount || 0} thành viên
-                                            </span>
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                                                isLeaderOfItem ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                        <div className="mt-4 flex items-center justify-between pt-3 border-t border-blue-100/80">
+                                            <div className="flex items-center gap-1.5 text-xs text-[#5c6d83] font-bold">
+                                                <span>{item.memberCount || 0} TV</span>
+                                                {isOfficial ? (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                                        <span className="pulsing-dot-green shrink-0" />
+                                                        Chính thức
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                                        <span className="pulsing-dot-amber shrink-0" />
+                                                        Chưa chính thức
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                                                isLeaderOfItem ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
                                             }`}>
                                                 {isLeaderOfItem ? 'Leader' : 'Member'}
                                             </span>
@@ -1165,10 +1247,22 @@ export default function MyTeam() {
 
                     {/* SECTION 2: ĐĂNG KÝ GIẢI ĐẤU KHÁC */}
                     {availableEventsToRegister.length > 0 && (
-                        <div className="mb-8 space-y-4">
-                            <div>
-                                <h2 className="text-xl font-black text-[#0b1f3f]">Đăng ký giải đấu khác</h2>
-                                <p className="text-sm text-[#5c6d83]">Danh sách các giải đấu đang mở đăng ký. Click vào giải đấu để tạo đội hoặc tìm đội.</p>
+                        <div className="mb-10 rounded-3xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/70 via-teal-50/30 to-white p-6 sm:p-8 shadow-sm space-y-6">
+                            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-emerald-100">
+                                <div>
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="p-2 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20">
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </span>
+                                        <h2 className="text-xl sm:text-2xl font-black text-emerald-950">Đăng ký giải đấu khác</h2>
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-emerald-800/80 font-medium mt-1">Danh sách các giải đấu đang mở cổng đăng ký. Click vào giải đấu để tạo đội hoặc tìm đội.</p>
+                                </div>
+                                <span className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/90 border border-emerald-300 shadow-inner">
+                                    {availableEventsToRegister.length} Mùa giải mới
+                                </span>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {availableEventsToRegister.map((event) => (
@@ -1176,20 +1270,22 @@ export default function MyTeam() {
                                         type="button"
                                         key={event.id}
                                         onClick={() => handleSelectEventToRegister(event.id)}
-                                        className="text-left p-5 rounded-xl border border-[#e2e8f0] bg-white hover:border-emerald-500/50 hover:shadow-md transition-all duration-200 cursor-pointer"
+                                        className="group text-left p-5 rounded-2xl border border-emerald-200/90 bg-white hover:border-emerald-500 hover:shadow-[0_8px_25px_rgba(16,185,129,0.15)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden"
                                     >
-                                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-100 uppercase tracking-wider mb-2">
+                                        <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-bl from-emerald-400/10 to-transparent rounded-bl-full pointer-events-none group-hover:from-emerald-500/20 transition-colors" />
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-black text-emerald-700 border border-emerald-200/80 uppercase tracking-wider mb-2">
+                                            <span className="pulsing-dot-green shrink-0" />
                                             Đang mở đăng ký
                                         </span>
-                                        <h3 className="text-base font-black text-[#0b1f3f] line-clamp-1">{event.name}</h3>
+                                        <h3 className="text-base font-black text-[#0b1f3f] group-hover:text-emerald-700 transition-colors line-clamp-1">{event.name}</h3>
                                         <p className="text-xs text-[#5c6d83] mt-1 line-clamp-2 min-h-[32px]">{event.description || 'Chưa có mô tả ngắn cho giải đấu.'}</p>
-                                        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase">
+                                        <div className="mt-4 flex items-center justify-between border-t border-emerald-100/80 pt-3">
+                                            <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
                                                 Hạn: {new Date(event.regEndDate).toLocaleDateString('vi-VN')}
                                             </span>
-                                            <span className="text-xs font-bold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1">
+                                            <span className="text-xs font-black text-emerald-700 group-hover:translate-x-1 inline-flex items-center gap-1 transition-transform">
                                                 Đăng ký ngay
-                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                                                 </svg>
                                             </span>
@@ -1219,15 +1315,19 @@ export default function MyTeam() {
 
             {confirmModal.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-[#d7e6f8]">
-                        <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">{confirmModal.title}</h3>
-                        <p className="mt-4 text-sm text-[#5c6d83] leading-relaxed">{confirmModal.message}</p>
+                    <div className={`w-full max-w-md rounded-lg bg-white p-6 shadow-xl border ${confirmModal.isError ? 'border-red-200' : 'border-[#d7e6f8]'}`}>
+                        <h3 className={`text-lg font-black uppercase tracking-[0.08em] ${confirmModal.isError ? 'text-red-600' : 'text-[#071936]'}`}>
+                            {confirmModal.title}
+                        </h3>
+                        <p className={`mt-4 text-sm leading-relaxed ${confirmModal.isError ? 'text-red-600 bg-red-50 border border-red-100 p-4 rounded-lg font-semibold' : 'text-[#5c6d83]'}`}>
+                            {confirmModal.message}
+                        </p>
                         <div className="mt-6 flex gap-3">
                             {confirmModal.isAlert ? (
                                 <button 
                                     type="button" 
                                     onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} 
-                                    className="btn-primary flex-1"
+                                    className={`btn-primary flex-1 ${confirmModal.isError ? '!bg-red-600 hover:!bg-red-700 text-white' : ''}`}
                                 >
                                     Đồng ý
                                 </button>

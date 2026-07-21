@@ -1315,7 +1315,14 @@ export default function EventManagement() {
                                     <input className="input-custom" value={prizeForm.description} onChange={(e) => setPrizeForm({ ...prizeForm, description: e.target.value })} placeholder="Mô tả hoặc phần thưởng" />
                                     <select className="input-custom" value={prizeForm.teamId} onChange={(e) => setPrizeForm({ ...prizeForm, teamId: e.target.value })}>
                                         <option value="">Chưa trao cho đội</option>
-                                        {eventTeams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+                                        {eventTeams.map((team) => {
+                                            const isEligible = (team.memberCount || team.members?.length || 0) >= 3;
+                                            return (
+                                                <option key={team.id} value={team.id} disabled={!isEligible}>
+                                                    {team.name} {!isEligible ? '(Chưa đủ 3 TV - Chưa chính thức)' : '(Đội chính thức)'}
+                                                </option>
+                                            );
+                                        })}
                                     </select>
                                     <button type="submit" className="btn-primary" disabled={!selectedEventId || loading}>{prizeForm.id ? 'Cập nhật' : 'Thêm giải'}</button>
                                 </form>

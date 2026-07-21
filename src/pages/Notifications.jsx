@@ -8,6 +8,7 @@ export default function Notifications() {
     const [form, setForm] = useState({ title: '', body: '', targetRole: 'USER' });
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
@@ -58,6 +59,21 @@ export default function Notifications() {
         }
     };
 
+    const deleteAllNotifications = async () => {
+        setDeleting(true);
+        setError('');
+        try {
+            await axiosClient.delete('/notifications/my');
+            setNotifications([]);
+            setSuccess('Đã xóa tất cả thông báo.');
+            window.dispatchEvent(new Event('notifications:refresh'));
+        } catch (err) {
+            setError(err.message || 'Không thể xóa thông báo.');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
     useEffect(() => {
         fetchNotifications();
     }, []);
@@ -85,9 +101,10 @@ export default function Notifications() {
     return (
         <div className="mx-auto max-w-5xl space-y-6">
             <Toast error={error} success={success} onClose={() => { setError(''); setSuccess(''); }} />
+
             {canSend && (
                 <section className="rounded-lg border border-blue-100 bg-white p-8 shadow-sm">
-                    <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Gửi thông báo</h2>
+                    <h2 className="text-xl font-black uppercase tracking-wide text-[#071936]">Gửi thông báo</h2>
                     <form onSubmit={handleSubmit} className="mt-5 space-y-4">
                         <div className="grid gap-4 md:grid-cols-[1fr_180px]">
                             <input required className="input-custom" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Tiêu đề" />
@@ -109,7 +126,23 @@ export default function Notifications() {
                 <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50 px-6 py-4">
                     <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Thông báo của tôi</h2>
                     <div className="flex gap-2">
-                        {notifications.some((item) => !item.read) && <button type="button" onClick={markAllAsRead} className="btn-secondary">Đọc tất cả</button>}
+                        {notifications.some((item) => !item.read) && (
+                            <button type="button" onClick={markAllAsRead} className="btn-secondary">Đọc tất cả</button>
+                        )}
+                        {notifications.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={deleteAllNotifications}
+                                disabled={deleting}
+                                title="Xóa tất cả thông báo"
+                                className="btn-secondary flex items-center gap-1.5 !text-red-600 hover:!bg-red-50 hover:!border-red-200 transition-colors disabled:opacity-50"
+                            >
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                {deleting ? 'Đang xóa...' : 'Xóa tất cả'}
+                            </button>
+                        )}
                         <button type="button" onClick={fetchNotifications} title="Làm mới thông báo" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
                     </div>
                 </div>
@@ -151,3 +184,4 @@ export default function Notifications() {
         </div>
     );
 }
+

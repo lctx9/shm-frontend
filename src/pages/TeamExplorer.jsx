@@ -56,7 +56,7 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                         </div>
 
                         <div className="rounded-lg border border-blue-100 bg-white p-5">
-                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Thành viên</p>
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Thành viên ({(team.members || []).length || team.memberCount || 0})</p>
                             <div className="mt-4 space-y-3">
                                 {(team.members || []).map((member) => (
                                     <div key={member.id} className="rounded-lg border border-blue-50 bg-slate-50 p-4">
@@ -66,7 +66,7 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                                                 <p className="mt-1 text-sm text-slate-500">{member.email}</p>
                                                 <p className="mt-1 text-sm text-slate-500">MSSV: {member.studentId || 'Chưa có'}</p>
                                             </div>
-                                            <Pill tone={member.role === 'LEADER' ? 'blue' : 'slate'}>{member.role}</Pill>
+                                            <Pill tone={member.role === 'LEADER' ? 'red' : 'slate'}>{member.role}</Pill>
                                         </div>
                                     </div>
                                 ))}
@@ -162,6 +162,10 @@ export default function TeamExplorer() {
         return events.filter((event) => getEventPhase(event).key === 'registration');
     }, [events]);
 
+    const registrationEventIds = useMemo(() => {
+        return new Set(registrationEvents.map((event) => String(event.id)));
+    }, [registrationEvents]);
+
     const assignedTrackIds = useMemo(() => {
         if (!isMentor) return new Set();
         return new Set(
@@ -173,9 +177,16 @@ export default function TeamExplorer() {
 
     const filteredTeams = useMemo(() => {
         return teams.filter((team) => {
-            const eventMatched = eventFilter === 'ALL' || String(team.eventId) === String(eventFilter);
+            const isRegOpenEvent = registrationEventIds.has(String(team.eventId));
+            const eventMatched = eventFilter === 'ALL' ? isRegOpenEvent : String(team.eventId) === String(eventFilter);
             const mentorMatched = !isMentor || assignedTrackIds.has(String(team.trackId));
             const isMember = (team.members || []).some((member) => String(member.userId) === String(userId));
+            const isOfficial = (team.memberCount || team.members?.length || 0) >= 3;
+
+            // Ẩn các đội chưa đủ thành viên (< 3 TV) khỏi Sảnh chờ công khai trừ tài khoản Staff/Coordinator
+            if (!staffRoles.has(role) && !isOfficial) {
+                return false;
+            }
             
             if (canJoin && isMember) {
                 return false;
@@ -183,7 +194,7 @@ export default function TeamExplorer() {
             
             return eventMatched && mentorMatched;
         });
-    }, [assignedTrackIds, eventFilter, isMentor, teams, userId, canJoin]);
+    }, [assignedTrackIds, eventFilter, isMentor, teams, userId, canJoin, registrationEventIds, staffRoles, role]);
 
     const stats = useMemo(() => {
         const teamIds = new Set(filteredTeams.map((team) => String(team.id)));
@@ -307,7 +318,20 @@ export default function TeamExplorer() {
                                     </div>
                                     <div className="flex justify-between gap-4">
                                         <dt className="font-bold text-slate-800">Thành viên</dt>
-                                        <dd>{team.memberCount || 0}</dd>
+                                        <dd className="flex items-center gap-1.5 font-semibold">
+                                            <span>{team.memberCount || 0}/5</span>
+                                            {(team.memberCount || 0) >= 3 ? (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                                    <span className="pulsing-dot-green shrink-0" />
+                                                    Chính thức
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                                    <span className="pulsing-dot-amber shrink-0" />
+                                                    Chưa chính thức
+                                                </span>
+                                            )}
+                                        </dd>
                                     </div>
                                     <div className="flex justify-between gap-4">
                                         <dt className="font-bold text-slate-800">Bài nộp</dt>
