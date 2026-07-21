@@ -36,7 +36,7 @@ export default function Submission() {
                     }));
                 }
 
-                const submissionRes = await axiosClient.get('/submissions/my-submission');
+                const submissionRes = await axiosClient.get(loadedTeam ? `/submissions/my-submission?teamId=${loadedTeam.id}` : '/submissions/my-submission');
                 if (submissionRes.result) {
                     setSubmission(submissionRes.result);
                     setFormData({
