@@ -31,7 +31,7 @@ export default function Login() {
             localStorage.setItem('userId', String(userId));
             localStorage.setItem('user', JSON.stringify({ email, fullName: email }));
 
-            navigate(managerRoles.has(role) ? '/dashboard' : '/my-team', { replace: true });
+            navigate(managerRoles.has(role) ? '/dashboard' : '/', { replace: true });
         } catch (err) {
             setError(err.message || 'Sai tài khoản hoặc mật khẩu.');
         } finally {
