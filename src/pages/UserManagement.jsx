@@ -95,7 +95,7 @@ export default function UserManagement() {
         </section>
         <section className="overflow-hidden rounded-lg border border-blue-100 bg-white shadow-sm">
             <div className="flex flex-col gap-3 border-b border-blue-100 bg-blue-50 p-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex flex-1 gap-3"><input className="input-custom max-w-md" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm tên, email, MSSV..." /><select className="input-custom max-w-44" value={filterRole} onChange={(e) => setFilterRole(e.target.value)}><option value="ALL">Tất cả role</option>{roles.map((role) => <option key={role}>{role}</option>)}</select></div>
+                <div className="flex flex-1 gap-3"><input className="input-custom max-w-md" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm tên, email, MSSV..." /><select className="input-custom max-w-44" value={filterRole} onChange={(e) => setFilterRole(e.target.value)}><option value="ALL">Tất cả role</option>{roles.filter(r => r !== 'ADMIN').map((role) => <option key={role}>{role}</option>)}</select></div>
                 <span className="text-sm font-bold text-slate-600">{visibleUsers.length} tài khoản</span>
             </div>
             <div className="overflow-x-auto"><table className="w-full text-left">
