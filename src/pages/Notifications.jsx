@@ -3,7 +3,7 @@ import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 
 export default function Notifications() {
-    const role = localStorage.getItem('role');
+    const email = localStorage.getItem('email');
     const [notifications, setNotifications] = useState([]);
     const [form, setForm] = useState({ title: '', body: '', targetRole: 'USER' });
     const [loading, setLoading] = useState(true);
@@ -11,7 +11,10 @@ export default function Notifications() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    const role = localStorage.getItem('role');
     const canSend = role === 'COORDINATOR' || role === 'ADMIN';
+
+    const ROLE_LABELS = { USER: 'Người tham gia', STAFF: 'Staff', null: 'Tất cả', '': 'Tất cả' };
 
     const fetchNotifications = async () => {
         try {
@@ -65,7 +68,10 @@ export default function Notifications() {
         setError('');
         setSuccess('');
         try {
-            await axiosClient.post('/notifications', form);
+            await axiosClient.post('/notifications', {
+                ...form,
+                targetRole: form.targetRole === '' ? null : form.targetRole,
+            });
             setForm({ title: '', body: '', targetRole: 'USER' });
             setSuccess('Thông báo đã được gửi thành công!');
             await fetchNotifications();
@@ -88,6 +94,7 @@ export default function Notifications() {
                             <select className="input-custom" value={form.targetRole} onChange={(e) => setForm({ ...form, targetRole: e.target.value })}>
                                 <option value="USER">Người tham gia</option>
                                 <option value="STAFF">Staff</option>
+                                <option value="">Tất cả người dùng</option>
                             </select>
                         </div>
                         <textarea required rows="4" className="input-custom" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Nội dung thông báo" />
@@ -114,8 +121,20 @@ export default function Notifications() {
                         <div className="p-8 text-center text-slate-500">Chưa có thông báo.</div>
                     ) : notifications.map((item) => (
                         <article key={item.id} onClick={() => markAsRead(item.id)} className={`cursor-pointer px-6 py-5 ${item.read ? 'bg-white' : 'bg-blue-50/70'}`}>
-                            <div className="flex items-center justify-between">
-                                <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">{item.targetRole || 'Cá nhân'}</p>
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">
+                                        {ROLE_LABELS[item.targetRole] ?? item.targetRole ?? 'Cá nhân'}
+                                    </p>
+                                    {item.senderEmail && item.senderEmail === email && (
+                                        <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                            Đã gửi
+                                        </span>
+                                    )}
+                                    {item.senderEmail && item.senderEmail !== email && (
+                                        <span className="text-[10px] text-slate-400">← từ {item.senderEmail}</span>
+                                    )}
+                                </div>
                                 {item.actionUrl && (
                                     <a href={item.actionUrl} className="text-xs font-bold text-[#0f63c9] hover:underline flex items-center gap-1">
                                         Xem chi tiết &rarr;
