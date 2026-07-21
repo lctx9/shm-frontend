@@ -89,17 +89,17 @@ function OperationalDashboard() {
 
     return (
         <div className="mx-auto max-w-7xl space-y-6">
-            {/* Greeting Header */}
-            <section className="rounded-2xl border border-[#0e5362] bg-gradient-to-r from-[#062f3b] to-[#104e5b] p-6 sm:p-8 text-white shadow-md">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            {/* Compact Greeting Header */}
+            <section className="rounded-lg border border-[#0e5362] bg-gradient-to-r from-[#062f3b] to-[#104e5b] px-6 py-4 sm:px-7 sm:py-5 text-white shadow-sm">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#70d0d6]">Hệ thống quản lý SEAL</p>
-                        <h1 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-white" style={{ color: '#ffffff' }}>Bảng điều khiển</h1>
-                        <p className="mt-2 text-sm text-[#c7dce2]">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#70d0d6]">Hệ thống quản lý SEAL</p>
+                        <h1 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-white" style={{ color: '#ffffff' }}>Bảng điều khiển</h1>
+                        <p className="mt-1 text-xs sm:text-sm text-[#c7dce2]">
                             Chào mừng quay trở lại! Bạn đang làm việc với vai trò <span className="font-extrabold text-[#70d0d6]">{roleCopy[role] || role || 'Khách'}</span>.
                         </p>
                     </div>
-                    <button type="button" onClick={fetchDashboardStats} disabled={loading} title="Làm mới dữ liệu" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold bg-white/10 text-white border-white/20 hover:bg-white/20 transition-all active:scale-95">
+                    <button type="button" onClick={fetchDashboardStats} disabled={loading} title="Làm mới dữ liệu" className="btn-secondary h-8 w-8 p-0 inline-flex items-center justify-center text-xs font-bold bg-white/10 text-white border-white/20 hover:bg-white/20 transition-all active:scale-95">
                         {loading ? <span className="animate-spin">↻</span> : '↻'}
                     </button>
                 </div>
@@ -379,12 +379,12 @@ function StaffDashboard() {
 
     return (
         <div className="mx-auto max-w-7xl space-y-6">
-            {/* Greeting Header */}
-            <section className="rounded-2xl border border-[#0e5362] bg-gradient-to-r from-[#062f3b] to-[#104e5b] p-6 sm:p-8 text-white shadow-md">
+            {/* Compact Greeting Header */}
+            <section className="rounded-lg border border-[#0e5362] bg-gradient-to-r from-[#062f3b] to-[#104e5b] px-6 py-4 sm:px-7 sm:py-5 text-white shadow-sm">
                 <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#70d0d6]">Hệ thống SEAL Staff</p>
-                    <h1 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-white" style={{ color: '#ffffff' }}>Bảng điều khiển Staff</h1>
-                    <p className="mt-2 text-sm text-[#c7dce2]">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#70d0d6]">Hệ thống SEAL Staff</p>
+                    <h1 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-white" style={{ color: '#ffffff' }}>Bảng điều khiển Staff</h1>
+                    <p className="mt-1 text-xs sm:text-sm text-[#c7dce2]">
                         Chào mừng quay trở lại, <span className="font-extrabold text-[#70d0d6]">{email}</span>. Dưới đây là các phân hệ nhiệm vụ dành riêng cho bạn.
                     </p>
                 </div>
