@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 import { demoEvent, getEventPhase } from '../utils/hackathon';
 
 const PHASE_OPTIONS = [
@@ -179,7 +180,7 @@ export default function Events() {
                         ))}
                     </fieldset>
 
-                    <button type="button" className="market-filters__refresh" onClick={fetchEvents}>↻ Làm mới dữ liệu</button>
+                    <button type="button" className="market-filters__refresh h-8 w-8 inline-flex items-center justify-center rounded border border-[#afc0c6] bg-white text-[#1474cb] hover:bg-[#e8f4ff] font-bold text-sm transition-all" onClick={fetchEvents} title="Làm mới dữ liệu">↻</button>
                 </aside>
 
                 <section className="market-results">
@@ -201,7 +202,7 @@ export default function Events() {
                         <Link to="/teams">Tìm đồng đội ngay</Link>
                     </div>
 
-                    {error && <div className="market-results__message market-results__message--error">{error}</div>}
+                    <Toast error={error} onClose={() => setError('')} />
                     {loading ? (
                         <div className="market-results__message">Đang tải danh sách sự kiện...</div>
                     ) : filteredEvents.length ? (

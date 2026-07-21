@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 export default function SubmissionManagement() {
     const [submissions, setSubmissions] = useState([]);
@@ -42,7 +43,7 @@ export default function SubmissionManagement() {
                     <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Bài nộp của đội thi</h2>
                     <p className="mt-2 text-sm text-slate-600">Theo dõi bài đã nộp, trạng thái chấm và link tài liệu của từng đội.</p>
                 </div>
-                <button type="button" onClick={fetchSubmissions} className="btn-secondary">Làm mới</button>
+                <button type="button" onClick={fetchSubmissions} title="Làm mới bài nộp" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             <section className="grid gap-4 rounded-lg border border-blue-100 bg-white p-4 md:grid-cols-2">
@@ -63,7 +64,7 @@ export default function SubmissionManagement() {
                 </div>
             </section>
 
-            {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
+            <Toast error={error} onClose={() => setError('')} />
 
             <section className="overflow-hidden rounded-lg border border-blue-100 bg-white shadow-sm">
                 <div className="overflow-x-auto">

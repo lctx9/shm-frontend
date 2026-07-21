@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const podiumOrder = [2, 1, 3];
 const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
@@ -39,7 +40,7 @@ export default function EventResults() {
     }, [eventId, rankings]);
 
     if (loading) return <main className="section-shell"><div className="leaderboard-empty">Đang tải kết quả sự kiện...</div></main>;
-    if (error || !event) return <main className="section-shell"><div className="form-alert">{error || 'Không tìm thấy sự kiện.'}</div></main>;
+    if (error || !event) return <main className="section-shell"><Toast error={error || 'Không tìm thấy sự kiện.'} onClose={() => setError('')} /><div className="leaderboard-empty">Không tìm thấy sự kiện.</div></main>;
 
     const podium = podiumOrder.map((rank) => eventRows.find((row) => row.eventRank === rank));
     const remaining = eventRows.filter((row) => row.eventRank > 3);

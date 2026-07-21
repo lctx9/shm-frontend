@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 import AdminOverview from './AdminOverview';
 
 const roleCopy = {
@@ -88,27 +89,23 @@ function OperationalDashboard() {
 
     return (
         <div className="mx-auto max-w-7xl space-y-6">
-            {/* Greeting Header */}
-            <section className="rounded-2xl border border-[var(--shield-line)] bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            {/* Compact Greeting Header */}
+            <section className="rounded-lg border border-[#0e5362] bg-gradient-to-r from-[#062f3b] to-[#104e5b] px-6 py-4 sm:px-7 sm:py-5 text-white shadow-sm">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--shield-blue)]">Hệ thống quản lý SEAL</p>
-                        <h1 className="mt-2 text-2xl font-black tracking-tight text-[var(--shield-ink)]">Bảng điều khiển</h1>
-                        <p className="mt-2 text-sm text-[var(--shield-copy)]">
-                            Chào mừng quay trở lại! Bạn đang làm việc với vai trò <span className="font-extrabold text-[var(--shield-blue)]">{roleCopy[role] || role || 'Khách'}</span>.
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#70d0d6]">Hệ thống quản lý SEAL</p>
+                        <h1 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-white" style={{ color: '#ffffff' }}>Bảng điều khiển</h1>
+                        <p className="mt-1 text-xs sm:text-sm text-[#c7dce2]">
+                            Chào mừng quay trở lại! Bạn đang làm việc với vai trò <span className="font-extrabold text-[#70d0d6]">{roleCopy[role] || role || 'Khách'}</span>.
                         </p>
                     </div>
-                    <button type="button" onClick={fetchDashboardStats} disabled={loading} className="btn-secondary transition-all active:scale-95 flex items-center gap-2">
-                        {loading ? 'Đang làm mới...' : '↻ Làm mới dữ liệu'}
+                    <button type="button" onClick={fetchDashboardStats} disabled={loading} title="Làm mới dữ liệu" className="btn-secondary h-8 w-8 p-0 inline-flex items-center justify-center text-xs font-bold bg-white/10 text-white border-white/20 hover:bg-white/20 transition-all active:scale-95">
+                        {loading ? <span className="animate-spin">↻</span> : '↻'}
                     </button>
                 </div>
             </section>
 
-            {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 animate-pulse">
-                    {error}
-                </div>
-            )}
+            <Toast error={error} onClose={() => setError('')} />
 
             {/* Metrics cards grid */}
             <section className="grid gap-4 md:grid-cols-3">
@@ -382,13 +379,13 @@ function StaffDashboard() {
 
     return (
         <div className="mx-auto max-w-7xl space-y-6">
-            {/* Greeting Header */}
-            <section className="rounded-2xl border border-[var(--shield-line)] bg-white p-6 shadow-sm">
+            {/* Compact Greeting Header */}
+            <section className="rounded-lg border border-[#0e5362] bg-gradient-to-r from-[#062f3b] to-[#104e5b] px-6 py-4 sm:px-7 sm:py-5 text-white shadow-sm">
                 <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--shield-blue)]">Hệ thống SEAL Staff</p>
-                    <h1 className="mt-2 text-2xl font-black tracking-tight text-[var(--shield-ink)]">Bảng điều khiển Staff</h1>
-                    <p className="mt-2 text-sm text-[var(--shield-copy)]">
-                        Chào mừng quay trở lại, <span className="font-extrabold text-[var(--shield-blue)]">{email}</span>. Dưới đây là các phân hệ nhiệm vụ dành riêng cho bạn.
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#70d0d6]">Hệ thống SEAL Staff</p>
+                    <h1 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-white" style={{ color: '#ffffff' }}>Bảng điều khiển Staff</h1>
+                    <p className="mt-1 text-xs sm:text-sm text-[#c7dce2]">
+                        Chào mừng quay trở lại, <span className="font-extrabold text-[#70d0d6]">{email}</span>. Dưới đây là các phân hệ nhiệm vụ dành riêng cho bạn.
                     </p>
                 </div>
             </section>
