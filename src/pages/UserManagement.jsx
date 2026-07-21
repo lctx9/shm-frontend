@@ -27,10 +27,11 @@ export default function UserManagement() {
     useEffect(() => { loadUsers(); }, []);
 
     const visibleUsers = useMemo(() => users.filter((user) => {
+        if (user.email === currentEmail) return false;
         const keyword = query.trim().toLowerCase();
         return (filterRole === 'ALL' || user.role === filterRole)
             && (!keyword || `${user.fullName} ${user.email} ${user.studentId || ''}`.toLowerCase().includes(keyword));
-    }), [users, query, filterRole]);
+    }), [users, query, filterRole, currentEmail]);
 
     const createAccount = async (event) => {
         event.preventDefault();

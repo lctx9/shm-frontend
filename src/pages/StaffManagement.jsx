@@ -28,11 +28,18 @@ export default function StaffManagement() {
         fetchUsers();
     }, []);
 
+    const myRole = localStorage.getItem('role');
+    const myId = localStorage.getItem('userId');
+
     const staffUsers = useMemo(() => {
         return users
             .filter((user) => staffRoles.has(user.role))
-            .filter((user) => roleFilter === 'ALL' || user.role === roleFilter);
-    }, [users, roleFilter]);
+            .filter((user) => {
+                if (String(user.id) === String(myId)) return false;
+                if (myRole === 'COORDINATOR' && (user.role === 'COORDINATOR' || user.role === 'ADMIN')) return false;
+                return roleFilter === 'ALL' || user.role === roleFilter;
+            });
+    }, [users, roleFilter, myRole, myId]);
 
     const handleCreateStaff = async (e) => {
         e.preventDefault();
@@ -49,8 +56,13 @@ export default function StaffManagement() {
     };
 
     const handleStatus = async (userId, status) => {
-        await axiosClient.put(`/users/${userId}/status`, { status });
-        await fetchUsers();
+        try {
+            setError('');
+            await axiosClient.put(`/users/${userId}/status`, { status, reason: status === 'REJECTED' ? 'Tài khoản bị khóa bởi Coordinator' : '' });
+            await fetchUsers();
+        } catch (err) {
+            setError(err.message || 'Không thể cập nhật trạng thái.');
+        }
     };
 
     return (
@@ -68,7 +80,7 @@ export default function StaffManagement() {
                     <input required className="input-custom" value={staffForm.password} onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })} placeholder="Mật khẩu" />
                     <select className="input-custom" value={staffForm.role} onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}>
                         <option value="STAFF">Staff</option>
-                        <option value="COORDINATOR">Coordinator</option>
+                        {myRole !== 'COORDINATOR' && <option value="COORDINATOR">Coordinator</option>}
                     </select>
                     <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Đang tạo...' : 'Tạo'}</button>
                 </form>
@@ -83,8 +95,8 @@ export default function StaffManagement() {
                     <select className="input-custom max-w-xs" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
                         <option value="ALL">Tất cả vai trò</option>
                         <option value="STAFF">Staff</option>
-                        <option value="COORDINATOR">Coordinator</option>
-                        <option value="ADMIN">Admin</option>
+                        {myRole !== 'COORDINATOR' && <option value="COORDINATOR">Coordinator</option>}
+                        {myRole !== 'COORDINATOR' && <option value="ADMIN">Admin</option>}
                     </select>
                 </div>
 
@@ -114,7 +126,7 @@ export default function StaffManagement() {
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
                                         {user.status !== 'APPROVED' && <button type="button" onClick={() => handleStatus(user.id, 'APPROVED')} className="btn-primary">Mở</button>}
-                                        {user.status !== 'BANNED' && <button type="button" onClick={() => handleStatus(user.id, 'BANNED')} className="btn-secondary">Khóa</button>}
+                                        {user.status === 'APPROVED' && <button type="button" onClick={() => handleStatus(user.id, 'REJECTED')} className="btn-secondary">Khóa</button>}
                                     </div>
                                 </td>
                             </tr>
