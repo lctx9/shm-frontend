@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
 export default function Login() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const redirect = searchParams.get('redirect') || '/';
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
@@ -31,7 +33,7 @@ export default function Login() {
             localStorage.setItem('userId', String(userId));
             localStorage.setItem('user', JSON.stringify({ email, fullName: email }));
 
-            navigate(managerRoles.has(role) ? '/dashboard' : '/', { replace: true });
+            navigate(managerRoles.has(role) ? '/dashboard' : redirect, { replace: true });
         } catch (err) {
             setError(err.message || 'Sai tài khoản hoặc mật khẩu.');
         } finally {
