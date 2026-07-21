@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const defaultCriteria = [
     { id: 'presentation', label: 'Trình bày', description: 'Storytelling và trả lời câu hỏi', maxScore: 100, weight: 25 },
@@ -178,7 +179,7 @@ export default function ScoringConfiguration() {
                 </div>
             </section>
 
-            {message && <div className={`rounded-xl border p-4 text-sm font-bold ${message.type === 'success' ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>{message.text}</div>}
+            <Toast message={message} onClose={() => setMessage(null)} />
 
             {!selectedEvent ? (
                 <section className="rounded-2xl border border-blue-100 bg-white p-10 text-center text-slate-500">Chưa có sự kiện. Hãy tạo sự kiện trước khi cấu hình chấm điểm.</section>
@@ -204,13 +205,33 @@ export default function ScoringConfiguration() {
                         </section>}
 
                         {activeStep === 'rubric' && <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
-                            <div className="flex flex-col gap-4 border-b border-blue-100 pb-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Bước 2/3</p><h3 className="mt-1 text-lg font-black text-slate-900">Tiêu chí chấm điểm</h3><p className="mt-1 text-sm text-slate-500">Tổng trọng số của rubric phải bằng 100%.</p></div><div className="flex items-center gap-2"><span className={`rounded-full px-3 py-2 text-xs font-black ${totalWeight === 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}`}>{totalWeight}/100%</span><button type="button" className="btn-secondary" onClick={() => setForm((current) => ({ ...current, criteria: [...current.criteria, { id: `criterion_${Date.now()}`, label: '', description: '', maxScore: 100, weight: 10 }] }))}>+ Thêm tiêu chí</button></div></div>
+                            <div className="flex flex-col gap-4 border-b border-blue-100 pb-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Bước 2/3</p><h3 className="mt-1 text-lg font-black text-slate-900">Tiêu chí chấm điểm</h3><p className="mt-1 text-sm text-slate-500">Tổng trọng số của rubric phải bằng 100%.</p></div><div className="flex items-center gap-2"><span className={`rounded-full px-3 py-2 text-xs font-black ${totalWeight === 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700 font-bold border border-red-200'}`}>{totalWeight}/100%</span><button type="button" className="btn-secondary" onClick={() => setForm((current) => ({ ...current, criteria: [...current.criteria, { id: `criterion_${Date.now()}`, label: '', description: '', maxScore: 100, weight: 10 }] }))}>+ Thêm tiêu chí</button></div></div>
+                            {totalWeight !== 100 && (
+                                <p className="mt-3 text-xs font-bold text-red-600 animate-pulse">
+                                    * Tổng trọng số hiện tại là {totalWeight}%. Hãy điều chỉnh các trọng số về đúng 100% để có thể lưu cấu hình.
+                                </p>
+                            )}
                             <div className="mt-5 space-y-3">{form.criteria.map((criterion, index) => <div key={criterion.id || index} className="grid gap-3 rounded-xl border border-blue-100 bg-slate-50/60 p-4 lg:grid-cols-[1fr_1.35fr_110px_110px_auto]"><input className="input-custom font-bold" value={criterion.label} onChange={(event) => updateCriterion(index, { label: event.target.value, id: criterion.id || event.target.value.toLowerCase().replaceAll(' ', '_') })} placeholder="Tên tiêu chí" /><input className="input-custom" value={criterion.description} onChange={(event) => updateCriterion(index, { description: event.target.value })} placeholder="Mô tả cách đánh giá" /><label className="text-xs font-bold text-slate-500">Điểm tối đa<input type="number" min="1" className="input-custom mt-1" value={criterion.maxScore} onChange={(event) => updateCriterion(index, { maxScore: Number(event.target.value) })} /></label><label className="text-xs font-bold text-slate-500">Trọng số %<input type="number" min="1" className="input-custom mt-1" value={criterion.weight} onChange={(event) => updateCriterion(index, { weight: Number(event.target.value) })} /></label><button type="button" className="btn-secondary self-end" disabled={form.criteria.length === 1} onClick={() => setForm((current) => ({ ...current, criteria: current.criteria.filter((_, criterionIndex) => criterionIndex !== index) }))}>Xóa</button></div>)}</div>
                         </section>}
 
                         {activeStep === 'judges' && <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
                             <div className="flex items-center justify-between border-b border-blue-100 pb-4"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Bước 3/3</p><h3 className="mt-1 text-lg font-black text-slate-900">Phân công Judge</h3><p className="mt-1 text-sm text-slate-500">Chọn từ 2 đến 4 người phụ trách chấm vòng này.</p></div><span className="rounded-full bg-blue-50 px-3 py-2 text-sm font-black text-[#0f63c9]">{form.judgeIds.length}/4</span></div>
-                            <div className="mt-4 grid gap-2 sm:grid-cols-2">{judges.map((judge) => { const checked = form.judgeIds.some((id) => String(id) === String(judge.id)); return <label key={judge.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm ${checked ? 'border-blue-300 bg-blue-50 font-bold text-blue-900' : 'border-slate-200 hover:bg-slate-50'}`}><input type="checkbox" checked={checked} disabled={!checked && form.judgeIds.length >= 4} onChange={() => toggleJudge(judge.id)} /><span>{judge.fullName || judge.email}</span></label>; })}{!judges.length && <p className="text-sm text-amber-700">Chưa có tài khoản Staff để phân công.</p>}</div>
+                            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                                {judges.map((judge) => {
+                                    const checked = form.judgeIds.some((id) => String(id) === String(judge.id));
+                                    const isMentorOfMatrix = selectedMatrix?.mentors?.some((m) => String(m.id) === String(judge.id));
+                                    return (
+                                        <label key={judge.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm ${isMentorOfMatrix ? 'border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60' : checked ? 'border-blue-300 bg-blue-50 font-bold text-blue-900' : 'border-slate-200 hover:bg-slate-50'}`}>
+                                            <input type="checkbox" checked={checked} disabled={isMentorOfMatrix || (!checked && form.judgeIds.length >= 4)} onChange={() => toggleJudge(judge.id)} />
+                                            <span>
+                                                {judge.fullName || judge.email}
+                                                {isMentorOfMatrix && <span className="ml-2 text-xs text-red-500 font-normal">(Đang làm Mentor)</span>}
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                                {!judges.length && <p className="text-sm text-amber-700">Chưa có tài khoản Staff để phân công.</p>}
+                            </div>
                         </section>}
 
                         <div className="flex flex-col gap-3 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">

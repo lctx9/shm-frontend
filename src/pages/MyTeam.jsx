@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { formatDateTime, getCountdownParts, getEventPhase } from '../utils/hackathon';
 import TeamChat from './TeamChat';
+import Toast from '../components/Toast';
 
 export default function MyTeam() {
     const [searchParams] = useSearchParams();
@@ -23,6 +24,17 @@ export default function MyTeam() {
     const [privateTeam, setPrivateTeam] = useState(null);
     const [joinError, setJoinError] = useState('');
     const [message, setMessage] = useState({ text: '', type: '' });
+    const [createError, setCreateError] = useState('');
+    const [createSuccess, setCreateSuccess] = useState('');
+    const [pinError, setPinError] = useState('');
+    const [emailsError, setEmailsError] = useState('');
+    const [lobbyActionStatus, setLobbyActionStatus] = useState({ teamId: null, message: '', type: '' });
+    const [inviteError, setInviteError] = useState('');
+    const [inviteSuccess, setInviteSuccess] = useState('');
+    const [actionMessage, setActionMessage] = useState({ text: '', type: '' });
+    const [submitError, setSubmitError] = useState('');
+    const [submitSuccess, setSubmitSuccess] = useState('');
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
     const [savingSubmission, setSavingSubmission] = useState(false);
@@ -129,19 +141,35 @@ export default function MyTeam() {
 
     const handleCreateTeam = async (e) => {
         e.preventDefault();
+        setCreateError('');
+        setCreateSuccess('');
+        setPinError('');
+        setEmailsError('');
+
+        let hasErr = false;
         if (formData.type === 'PRIVATE' && !/^\d{4}$/.test(formData.joinPassword)) {
-            alert('Mã PIN đội private phải gồm đúng 4 số.');
-            return;
+            setPinError('Mã PIN đội private phải gồm đúng 4 số.');
+            hasErr = true;
         }
         const nonNullEmails = memberEmails.filter(email => email.trim() !== '');
         if (nonNullEmails.length < 2) {
-            alert('Bạn phải điền tối thiểu 2 email của thành viên khác.');
-            return;
+            setEmailsError('Bạn phải điền tối thiểu 2 email của thành viên khác.');
+            hasErr = true;
         }
         if (nonNullEmails.includes(currentEmail)) {
-            alert('Bạn không thể tự mời chính mình vào đội.');
-            return;
+            setEmailsError('Bạn không thể tự mời chính mình vào đội.');
+            hasErr = true;
         }
+        const selectedTrack = (selectedEvent?.tracks || []).find((t) => String(t.id) === String(formData.trackId));
+        if (selectedTrack && selectedTrack.maxTeams && selectedTrack.maxTeams > 0) {
+            const currentTeams = selectedTrack.currentTeamsCount || 0;
+            if (currentTeams >= selectedTrack.maxTeams) {
+                setCreateError(`Bảng đấu ${selectedTrack.name} đã đạt giới hạn tối đa ${selectedTrack.maxTeams} đội tham gia.`);
+                hasErr = true;
+            }
+        }
+
+        if (hasErr) return;
 
         try {
             setCreating(true);
@@ -155,30 +183,28 @@ export default function MyTeam() {
                 memberEmails: nonNullEmails,
             });
             setTeam(response.result);
-            alert('Tạo đội thành công!');
-            setMessage({ text: 'Tạo đội thành công.', type: 'success' });
+            setCreateSuccess('Tạo đội thành công!');
             await fetchData();
         } catch (err) {
-            alert(err.message || 'Không thể tạo đội thi.');
-            setMessage({ text: err.message || 'Không thể tạo đội thi.', type: 'error' });
+            setCreateError(err.message || 'Không thể tạo đội thi.');
         } finally {
             setCreating(false);
         }
     };
 
     const handleJoin = async (targetTeam) => {
+        setLobbyActionStatus({ teamId: targetTeam.id, message: 'Đang gửi yêu cầu...', type: 'info' });
         try {
             if (targetTeam.type === 'PRIVATE') {
                 setPrivateTeam(targetTeam);
+                setLobbyActionStatus({ teamId: null, message: '', type: '' });
                 return;
             }
             await axiosClient.post(`/teams/${targetTeam.id}/join-request`);
-            alert('Đã gửi yêu cầu gia nhập thành công. Đang chờ Leader duyệt.');
-            setMessage({ text: 'Đã gửi yêu cầu tham gia đội public.', type: 'success' });
+            setLobbyActionStatus({ teamId: targetTeam.id, message: 'Đã gửi yêu cầu gia nhập thành công. Đang chờ Leader duyệt.', type: 'success' });
             await fetchData();
         } catch (err) {
-            alert(err.message || 'Không thể gửi yêu cầu tham gia đội.');
-            setMessage({ text: err.message || 'Không thể tham gia đội.', type: 'error' });
+            setLobbyActionStatus({ teamId: targetTeam.id, message: err.message || 'Không thể gửi yêu cầu tham gia đội.', type: 'error' });
         }
     };
 
@@ -187,10 +213,10 @@ export default function MyTeam() {
         setJoinError('');
         try {
             await axiosClient.post(`/teams/${privateTeam.id}/join-private`, { password: joinPassword });
-            alert('Gia nhập đội thành công!');
             setPrivateTeam(null);
             setJoinPassword('');
             await fetchData();
+            setMessage({ text: 'Gia nhập đội thành công!', type: 'success' });
         } catch (err) {
             setJoinError(err.message || 'Mã PIN không đúng hoặc không thể tham gia đội.');
         }
@@ -198,27 +224,34 @@ export default function MyTeam() {
 
     const handleInvite = async (e) => {
         e.preventDefault();
+        setInviteError('');
+        setInviteSuccess('');
         try {
             const response = await axiosClient.post(`/teams/${team.id}/invite`, { email: inviteEmail });
             setTeam(response.result);
             setInviteEmail('');
-            alert('Mời thành viên thành công!');
+            setInviteSuccess('Mời thành viên thành công!');
         } catch (err) {
-            alert(err.message || 'Không thể mời thành viên.');
+            setInviteError(err.message || 'Không thể mời thành viên.');
         }
     };
 
     const handleTransfer = async (memberId) => {
-        if (!window.confirm("Bạn có chắc chắn muốn chuyển quyền Trưởng nhóm cho thành viên này?")) {
-            return;
-        }
-        try {
-            const response = await axiosClient.put(`/teams/${team.id}/leader/${memberId}`);
-            setTeam(response.result);
-            alert('Chuyển quyền Trưởng nhóm thành công!');
-        } catch (err) {
-            alert(err.message || 'Không thể chuyển quyền Trưởng nhóm.');
-        }
+        setActionMessage({ text: '', type: '' });
+        setConfirmModal({
+            isOpen: true,
+            title: 'Chuyển quyền Trưởng nhóm',
+            message: 'Bạn có chắc chắn muốn chuyển quyền Trưởng nhóm cho thành viên này?',
+            onConfirm: async () => {
+                try {
+                    const response = await axiosClient.put(`/teams/${team.id}/leader/${memberId}`);
+                    setTeam(response.result);
+                    setActionMessage({ text: 'Chuyển quyền Trưởng nhóm thành công!', type: 'success' });
+                } catch (err) {
+                    setActionMessage({ text: err.message || 'Không thể chuyển quyền Trưởng nhóm.', type: 'error' });
+                }
+            }
+        });
     };
 
     const handleKick = async (memberId) => {
@@ -227,36 +260,43 @@ export default function MyTeam() {
         if (memberCount <= 3) {
             confirmMsg = "Đội hiện tại chỉ có 3 người. Nếu bạn xóa thành viên này, số thành viên sẽ dưới 3 và đội sẽ tự động bị GIẢI TÁN. Bạn có chắc chắn muốn xóa?";
         }
-        if (!window.confirm(confirmMsg)) {
-            return;
-        }
-        try {
-            await axiosClient.delete(`/teams/${team.id}/members/${memberId}`);
-            alert('Xóa thành viên khỏi đội thành công!');
-            await fetchData();
-        } catch (err) {
-            alert(err.message || 'Không thể xóa thành viên.');
-        }
+        setActionMessage({ text: '', type: '' });
+        setConfirmModal({
+            isOpen: true,
+            title: 'Xóa thành viên',
+            message: confirmMsg,
+            onConfirm: async () => {
+                try {
+                    await axiosClient.delete(`/teams/${team.id}/members/${memberId}`);
+                    setActionMessage({ text: 'Xóa thành viên khỏi đội thành công!', type: 'success' });
+                    await fetchData();
+                } catch (err) {
+                    setActionMessage({ text: err.message || 'Không thể xóa thành viên.', type: 'error' });
+                }
+            }
+        });
     };
 
     const handleApproveRequest = async (requestId) => {
+        setActionMessage({ text: '', type: '' });
         try {
             const response = await axiosClient.post(`/teams/${team.id}/join-requests/${requestId}/approve`);
             setTeam(response.result);
             setJoinRequests((current) => current.filter((request) => request.id !== requestId));
-            alert('Đã duyệt yêu cầu tham gia!');
+            setActionMessage({ text: 'Đã duyệt yêu cầu tham gia!', type: 'success' });
         } catch (err) {
-            alert(err.message || 'Không thể duyệt yêu cầu.');
+            setActionMessage({ text: err.message || 'Không thể duyệt yêu cầu.', type: 'error' });
         }
     };
 
     const handleRejectRequest = async (requestId) => {
+        setActionMessage({ text: '', type: '' });
         try {
             await axiosClient.post(`/teams/${team.id}/join-requests/${requestId}/reject`);
             setJoinRequests((current) => current.filter((request) => request.id !== requestId));
-            alert('Đã từ chối yêu cầu tham gia.');
+            setActionMessage({ text: 'Đã từ chối yêu cầu tham gia.', type: 'success' });
         } catch (err) {
-            alert(err.message || 'Không thể từ chối yêu cầu.');
+            setActionMessage({ text: err.message || 'Không thể từ chối yêu cầu.', type: 'error' });
         }
     };
 
@@ -266,8 +306,10 @@ export default function MyTeam() {
         );
         const memberCount = team?.members?.length || 0;
 
+        setActionMessage({ text: '', type: '' });
+
         if (isLeaderOfTeam) {
-            alert("Bạn là Trưởng nhóm. Bạn phải chuyển quyền Trưởng nhóm cho thành viên khác trước khi rời đội.");
+            setActionMessage({ text: "Bạn là Trưởng nhóm. Bạn phải chuyển quyền Trưởng nhóm cho thành viên khác trước khi rời đội.", type: 'error' });
             return;
         }
 
@@ -276,24 +318,29 @@ export default function MyTeam() {
             confirmMsg = "Đội của bạn hiện có 3 người. Khi bạn rời đi, số thành viên sẽ dưới 3 và đội sẽ tự động bị GIẢI TÁN. Bạn có chắc chắn muốn rời đội?";
         }
 
-        if (!window.confirm(confirmMsg)) {
-            return;
-        }
-
-        try {
-            await axiosClient.post('/teams/leave');
-            alert('Rời khỏi đội thành công!');
-            setTeam(null);
-            await fetchData();
-        } catch (err) {
-            alert(err.message || 'Không thể rời đội.');
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Rời đội',
+            message: confirmMsg,
+            onConfirm: async () => {
+                try {
+                    await axiosClient.post('/teams/leave');
+                    setTeam(null);
+                    setMessage({ text: 'Rời khỏi đội thành công!', type: 'success' });
+                    await fetchData();
+                } catch (err) {
+                    setActionMessage({ text: err.message || 'Không thể rời đội.', type: 'error' });
+                }
+            }
+        });
     };
 
     const handleSubmission = async (e) => {
         e.preventDefault();
+        setSubmitError('');
+        setSubmitSuccess('');
         if (!isLeader) {
-            alert('Chỉ Team Leader được nộp hoặc cập nhật bài.');
+            setSubmitError('Chỉ Team Leader được nộp hoặc cập nhật bài.');
             return;
         }
         try {
@@ -303,11 +350,9 @@ export default function MyTeam() {
                 ? await axiosClient.put(`/submissions/${submission.id}`, payload)
                 : await axiosClient.post('/submissions', payload);
             setSubmission(response.result);
-            alert('Lưu bài nộp thành công!');
-            setMessage({ text: 'Lưu bài nộp thành công.', type: 'success' });
+            setSubmitSuccess('Lưu bài nộp thành công!');
         } catch (err) {
-            alert(err.message || 'Không thể lưu bài nộp.');
-            setMessage({ text: err.message || 'Không thể lưu bài nộp.', type: 'error' });
+            setSubmitError(err.message || 'Không thể lưu bài nộp.');
         } finally {
             setSavingSubmission(false);
         }
@@ -319,11 +364,7 @@ export default function MyTeam() {
 
     return (
         <main className="section-shell">
-            {message.text && (
-                <div className={`mb-6 rounded-lg border p-4 text-sm font-semibold ${message.type === 'success' ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-                    {message.text}
-                </div>
-            )}
+            <Toast message={message} onClose={() => setMessage({ text: '', type: '' })} />
 
             {!team ? (
                 <div className="space-y-6">
@@ -373,6 +414,14 @@ export default function MyTeam() {
                                             <button type="button" onClick={() => handleJoin(item)} className="btn-primary mt-4 w-full">
                                                 {item.type === 'PRIVATE' ? 'Nhập mã PIN' : 'Gửi request'}
                                             </button>
+                                            {lobbyActionStatus.teamId === item.id && lobbyActionStatus.message && (
+                                                <p className={`mt-2 text-xs font-semibold text-center ${
+                                                    lobbyActionStatus.type === 'success' ? 'text-green-600' :
+                                                    lobbyActionStatus.type === 'error' ? 'text-red-600' : 'text-blue-600'
+                                                }`}>
+                                                    {lobbyActionStatus.message}
+                                                </p>
+                                            )}
                                         </div>
                                     </article>
                                 ))}
@@ -449,6 +498,7 @@ export default function MyTeam() {
                                                             const newEmails = [...memberEmails];
                                                             newEmails[index] = e.target.value;
                                                             setMemberEmails(newEmails);
+                                                            setEmailsError('');
                                                         }}
                                                     />
                                                     {memberEmails.length > 2 && (
@@ -458,6 +508,7 @@ export default function MyTeam() {
                                                             onClick={() => {
                                                                 const newEmails = memberEmails.filter((_, i) => i !== index);
                                                                 setMemberEmails(newEmails);
+                                                                setEmailsError('');
                                                             }}
                                                         >
                                                             Xóa
@@ -474,9 +525,12 @@ export default function MyTeam() {
                                                     + Thêm ô nhập email
                                                 </button>
                                             )}
+                                            {emailsError && <p className="mt-1.5 text-xs font-semibold text-red-600">{emailsError}</p>}
                                         </div>
                                     </div>
 
+                                    {createError && <p className="text-sm font-semibold text-red-600">{createError}</p>}
+                                    {createSuccess && <p className="text-sm font-semibold text-green-600">{createSuccess}</p>}
                                     <button type="submit" disabled={creating} className="btn-primary w-full">{creating ? 'Đang tạo...' : 'Tạo đội'}</button>
                                         </>
                                     )}
@@ -564,6 +618,8 @@ export default function MyTeam() {
                                     <button type="submit" disabled={savingSubmission || !isLeader} className="btn-primary w-full">
                                         {!isLeader ? 'Chỉ leader được nộp bài' : savingSubmission ? 'Đang lưu...' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
                                     </button>
+                                    {submitError && <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p>}
+                                    {submitSuccess && <p className="mt-2 text-sm font-semibold text-green-600">{submitSuccess}</p>}
                                 </form>
                             )}
                         </div>
@@ -573,9 +629,23 @@ export default function MyTeam() {
                                 <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Thành viên</h2>
                                 <div className="flex gap-2">
                                     {isLeader && <button type="button" onClick={() => setShowActions((value) => !value)} className="btn-secondary">Thao tác</button>}
-                                    <button type="button" onClick={handleLeave} className="rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-bold px-4 py-2 text-sm transition-all duration-200">Rời đội</button>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleLeave} 
+                                        title="Rời đội" 
+                                        className="flex items-center justify-center rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 p-2 transition-all duration-200"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
+                            {actionMessage.text && (
+                                <p className={`mt-3 text-sm font-semibold ${actionMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {actionMessage.text}
+                                </p>
+                            )}
                             <div className="mt-5 divide-y divide-[#d7e6f8]">
                                 {(team.members || []).map((member) => (
                                     <div key={member.id} className="py-4">
@@ -587,36 +657,59 @@ export default function MyTeam() {
                                             <span className="rounded-full bg-[#f8fbff] px-3 py-1 text-xs font-black text-[#0f63c9]">{member.role}</span>
                                         </div>
                                         {showActions && isLeader && member.role !== 'LEADER' && (
-                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                <button type="button" onClick={() => handleTransfer(member.id)} className="btn-secondary">Chuyển leader</button>
-                                                <button type="button" onClick={() => handleKick(member.id)} className="btn-secondary">Kick</button>
+                                            <div className="mt-3 flex items-center gap-2">
+                                                <button type="button" onClick={() => handleTransfer(member.id)} className="btn-secondary text-xs py-1 px-3">Chuyển leader</button>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => handleKick(member.id)} 
+                                                    title="Xóa thành viên khỏi đội" 
+                                                    className="flex items-center justify-center rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 p-1.5 transition-all duration-200 cursor-pointer"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.3 20c-2.282 0-4.47-.6-6.42-1.656z" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         )}
                                     </div>
                                 ))}
                             </div>
-                            {showActions && isLeader && (
-                                <div className="mt-5 space-y-5">
+                            {isLeader && (
+                                <div className="mt-6 border-t border-[#d7e6f8] pt-5 space-y-6">
                                     <div>
-                                        <h3 className="mb-3 text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Yêu cầu tham gia</h3>
-                                        <div className="space-y-3">
+                                        <h3 className="mb-3 text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Mời thành viên</h3>
+                                        <form onSubmit={handleInvite} className="flex gap-2">
+                                            <input required type="email" className="input-custom" placeholder="Email thành viên" value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); setInviteSuccess(''); }} />
+                                            <button type="submit" className="btn-primary">Mời</button>
+                                        </form>
+                                        {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
+                                        {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
+                                    </div>
+
+                                    <div className="border-t border-[#d7e6f8] pt-5">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Yêu cầu tham gia</h3>
+                                            {joinRequests.length > 0 && (
+                                                <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600 animate-pulse">
+                                                    {joinRequests.length} mới
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="mt-3 space-y-3">
                                             {joinRequests.length ? joinRequests.map((request) => (
-                                                <div key={request.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3">
-                                                    <p className="font-bold text-[#071936]">{request.fullName || request.email}</p>
-                                                    <p className="text-sm text-[#5c6d83]">{request.email}</p>
-                                                    <div className="mt-3 flex gap-2">
-                                                        <button type="button" onClick={() => handleApproveRequest(request.id)} className="btn-primary">Duyệt</button>
-                                                        <button type="button" onClick={() => handleRejectRequest(request.id)} className="btn-secondary">Từ chối</button>
+                                                <div key={request.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                    <div>
+                                                        <p className="font-bold text-[#071936]">{request.fullName || request.email}</p>
+                                                        <p className="text-sm text-[#5c6d83]">{request.email}</p>
+                                                    </div>
+                                                    <div className="flex gap-2 shrink-0">
+                                                        <button type="button" onClick={() => handleApproveRequest(request.id)} className="btn-primary py-1.5 px-3 text-xs">Duyệt</button>
+                                                        <button type="button" onClick={() => handleRejectRequest(request.id)} className="btn-secondary py-1.5 px-3 text-xs">Từ chối</button>
                                                     </div>
                                                 </div>
                                             )) : <p className="text-sm text-[#5c6d83]">Chưa có yêu cầu tham gia nào.</p>}
                                         </div>
                                     </div>
-
-                                    <form onSubmit={handleInvite} className="flex gap-2">
-                                        <input required type="email" className="input-custom" placeholder="Email thành viên" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-                                        <button type="submit" className="btn-primary">Mời</button>
-                                    </form>
                                 </div>
                             )}
                         </div>
@@ -636,6 +729,34 @@ export default function MyTeam() {
                             <button type="submit" className="btn-primary flex-1">Vào đội</button>
                         </div>
                     </form>
+                </div>
+            )}
+
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+                    <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-[#d7e6f8]">
+                        <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">{confirmModal.title}</h3>
+                        <p className="mt-4 text-sm text-[#5c6d83] leading-relaxed">{confirmModal.message}</p>
+                        <div className="mt-6 flex gap-3">
+                            <button 
+                                type="button" 
+                                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} 
+                                className="btn-secondary flex-1"
+                            >
+                                Hủy
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => {
+                                    confirmModal.onConfirm?.();
+                                    setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+                                }} 
+                                className="btn-primary bg-red-600 hover:bg-red-700 text-white flex-1"
+                            >
+                                Đồng ý
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </main>

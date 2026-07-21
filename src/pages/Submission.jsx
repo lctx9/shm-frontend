@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 function matrixLabel(matrix) {
     return `${matrix.roundName} - ${matrix.trackName}`;
@@ -134,15 +135,7 @@ export default function Submission() {
                     </p>
                 </div>
 
-                {message.text && (
-                    <div className={`mb-6 rounded-lg border p-4 text-sm font-semibold ${
-                        message.type === 'success'
-                            ? 'border-green-200 bg-green-50 text-green-700'
-                            : 'border-red-200 bg-red-50 text-red-700'
-                    }`}>
-                        {message.text}
-                    </div>
-                )}
+                <Toast message={message} onClose={() => setMessage({ text: '', type: '' })} />
 
                 {matrices.length === 0 ? (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">

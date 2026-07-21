@@ -8,6 +8,9 @@ export default function Register() {
     const [sendingOtp, setSendingOtp] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [otpSuccess, setOtpSuccess] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [studentCardPreview, setStudentCardPreview] = useState('');
 
     const [formData, setFormData] = useState({
@@ -31,13 +34,13 @@ export default function Register() {
         }
 
         if (!file.type.startsWith('image/')) {
-            setError('Vui lòng upload file ảnh thẻ sinh viên.');
+            setFieldErrors((curr) => ({ ...curr, studentCard: 'Vui lòng upload file ảnh thẻ sinh viên.' }));
             event.target.value = '';
             return;
         }
 
         if (file.size > 2 * 1024 * 1024) {
-            setError('Ảnh thẻ sinh viên không được vượt quá 2MB.');
+            setFieldErrors((curr) => ({ ...curr, studentCard: 'Ảnh thẻ sinh viên không được vượt quá 2MB.' }));
             event.target.value = '';
             return;
         }
@@ -47,16 +50,18 @@ export default function Register() {
             const dataUrl = reader.result || '';
             setFormData((current) => ({ ...current, studentCardUrl: dataUrl }));
             setStudentCardPreview(dataUrl);
-            setError('');
+            setFieldErrors((curr) => ({ ...curr, studentCard: '' }));
         };
-        reader.onerror = () => setError('Không thể đọc file ảnh. Vui lòng thử lại.');
+        reader.onerror = () => setFieldErrors((curr) => ({ ...curr, studentCard: 'Không thể đọc file ảnh. Vui lòng thử lại.' }));
         reader.readAsDataURL(file);
     };
 
     const handleSendOtp = async () => {
+        setFieldErrors((curr) => ({ ...curr, email: '' }));
+        setOtpSuccess('');
         setError('');
         if (!formData.email) {
-            setError('Vui lòng nhập email trước khi gửi mã OTP.');
+            setFieldErrors((curr) => ({ ...curr, email: 'Vui lòng nhập email trước khi gửi mã OTP.' }));
             return;
         }
 
@@ -64,9 +69,9 @@ export default function Register() {
         try {
             const response = await axiosClient.post('/auth/send-otp', { email: formData.email });
             setOtpSent(true);
-            alert(response.result || 'Đã gửi mã OTP đến email của bạn.');
+            setOtpSuccess(response.result || 'Đã gửi mã OTP đến email của bạn.');
         } catch (err) {
-            setError(err.message || 'Không thể gửi mã OTP. Vui lòng kiểm tra cấu hình email.');
+            setFieldErrors((curr) => ({ ...curr, email: err.message || 'Không thể gửi mã OTP. Vui lòng kiểm tra cấu hình email.' }));
         } finally {
             setSendingOtp(false);
         }
@@ -75,19 +80,29 @@ export default function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setFieldErrors({});
+        setSuccessMessage('');
+
+        let hasError = false;
+        const newFieldErrors = {};
 
         if (formData.password !== formData.confirmPassword) {
-            setError('Mật khẩu xác nhận không khớp.');
-            return;
+            newFieldErrors.confirmPassword = 'Mật khẩu xác nhận không khớp.';
+            hasError = true;
         }
 
         if (!formData.otp.trim()) {
-            setError('Vui lòng nhập mã OTP đã gửi qua email.');
-            return;
+            newFieldErrors.otp = 'Vui lòng nhập mã OTP đã gửi qua email.';
+            hasError = true;
         }
 
         if (!formData.studentCardUrl) {
-            setError('Vui lòng upload thẻ sinh viên để Coordinator xác thực.');
+            newFieldErrors.studentCard = 'Vui lòng upload thẻ sinh viên để Coordinator xác thực.';
+            hasError = true;
+        }
+
+        if (hasError) {
+            setFieldErrors(newFieldErrors);
             return;
         }
 
@@ -104,8 +119,10 @@ export default function Register() {
                 otp: formData.otp,
             });
 
-            alert(response.result || 'Đăng ký thành công. Vui lòng chờ Coordinator phê duyệt.');
-            navigate('/login');
+            setSuccessMessage(response.result || 'Đăng ký thành công. Vui lòng chờ Coordinator phê duyệt.');
+            setTimeout(() => {
+                navigate('/login');
+            }, 3000);
         } catch (err) {
             setError(err.message || 'Có lỗi xảy ra khi đăng ký.');
         } finally {
@@ -126,8 +143,6 @@ export default function Register() {
                     <p className="devpost-auth__eyebrow">Tạo tài khoản</p>
                     <h1 id="register-title">Đăng ký thí sinh</h1>
                     <span className="devpost-auth__copy">Hoàn thành thông tin dưới đây để tham gia SEAL Hackathon.</span>
-
-                {error && <div className="form-alert" role="alert">{error}</div>}
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-grid">
@@ -166,6 +181,8 @@ export default function Register() {
                                     {sendingOtp ? 'Đang gửi...' : otpSent ? 'Gửi lại OTP' : 'Gửi mã OTP'}
                                 </button>
                             </div>
+                            {fieldErrors.email && <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.email}</p>}
+                            {otpSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{otpSuccess}</p>}
                         </div>
 
                         <div>
@@ -181,6 +198,7 @@ export default function Register() {
                                 value={formData.otp}
                                 onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') })}
                             />
+                            {fieldErrors.otp && <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.otp}</p>}
                         </div>
 
                         <div>
@@ -217,6 +235,7 @@ export default function Register() {
                                 value={formData.confirmPassword}
                                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                             />
+                            {fieldErrors.confirmPassword && <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.confirmPassword}</p>}
                         </div>
 
                         <div className="form-span-full flex items-center gap-3 rounded-xl border border-[#d7e6f8] bg-[#f7fbff] p-4">
@@ -255,6 +274,7 @@ export default function Register() {
                                 onChange={handleStudentCardUpload}
                             />
                             <p className="form-helper">Ảnh cần thấy rõ tên, MSSV và logo trường. Dung lượng tối đa 2MB.</p>
+                            {fieldErrors.studentCard && <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.studentCard}</p>}
                             {studentCardPreview && (
                                 <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                                     <img src={studentCardPreview} alt="Xem trước thẻ sinh viên" className="max-h-56 w-full object-contain" />
@@ -262,6 +282,9 @@ export default function Register() {
                             )}
                         </div>
                     </div>
+
+                    {error && <div className="form-alert mt-6" role="alert">{error}</div>}
+                    {successMessage && <div className="form-alert form-alert--success mt-6" style={{ borderColor: '#bbf7d0', backgroundColor: '#f0fdf4', color: '#166534' }} role="alert">{successMessage}</div>}
 
                     <button type="submit" disabled={loading} className="btn-primary mt-6 w-full disabled:opacity-50">
                         {loading ? 'Đang xử lý...' : 'Đăng ký tài khoản'}

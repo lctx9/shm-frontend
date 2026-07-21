@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const roles = ['USER', 'STAFF', 'COORDINATOR', 'ADMIN'];
 const statusStyle = { APPROVED: 'bg-emerald-50 text-emerald-700', PENDING: 'bg-amber-50 text-amber-700', REJECTED: 'bg-red-50 text-red-700' };
@@ -67,7 +68,7 @@ export default function UserManagement() {
             <h2 className="mt-2 text-2xl font-black text-slate-900">Tài khoản & phân quyền</h2>
             <p className="mt-2 text-sm text-slate-600">Admin quản lý vòng đời tài khoản và quyền truy cập. Coordinator chỉ quản lý nhân sự cuộc thi.</p>
         </section>
-        {message && <div className={`rounded-lg border p-4 text-sm font-semibold ${message.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{message.text}</div>}
+        <Toast message={message} onClose={() => setMessage(null)} />
         <section className="rounded-lg border border-blue-100 bg-white p-6 shadow-sm">
             <h3 className="text-lg font-black text-slate-900">Tạo tài khoản nội bộ</h3>
             <form onSubmit={createAccount} className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">

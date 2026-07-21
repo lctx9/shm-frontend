@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 function exportAchievement(profile, achievement) {
     const html = `
@@ -141,11 +142,7 @@ export default function Profile() {
 
     return (
         <main className="section-shell">
-            {message.text && (
-                <div className={`mb-6 rounded-lg border p-4 text-sm font-semibold ${message.type === 'success' ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-                    {message.text}
-                </div>
-            )}
+            <Toast message={message} onClose={() => setMessage({ text: '', type: '' })} />
 
             <div className="profile-layout">
                 <aside className="profile-sidebar">
