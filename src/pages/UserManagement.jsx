@@ -13,7 +13,7 @@ export default function UserManagement() {
     const [query, setQuery] = useState('');
     const [filterRole, setFilterRole] = useState('ALL');
     const [message, setMessage] = useState(null);
-    const [form, setForm] = useState({ fullName: '', email: '', password: '', role: 'COORDINATOR' });
+    const [form, setForm] = useState({ fullName: '', email: '', password: '123456', role: 'COORDINATOR' });
 
     const loadUsers = async () => {
         try {
@@ -38,7 +38,7 @@ export default function UserManagement() {
         try {
             setSaving(true); setMessage(null);
             await axiosClient.post('/users/staff', form);
-            setForm({ fullName: '', email: '', password: '', role: 'COORDINATOR' });
+            setForm({ fullName: '', email: '', password: '123456', role: 'COORDINATOR' });
             setMessage({ type: 'success', text: `Đã tạo tài khoản ${form.role}.` });
             await loadUsers();
         } catch (error) { setMessage({ type: 'error', text: error?.message || 'Không thể tạo tài khoản.' }); }

@@ -6,7 +6,7 @@ const staffRoles = new Set(['STAFF', 'MENTOR', 'JUDGE', 'COORDINATOR', 'ADMIN'])
 export default function StaffManagement() {
     const [users, setUsers] = useState([]);
     const [roleFilter, setRoleFilter] = useState('ALL');
-    const [staffForm, setStaffForm] = useState({ fullName: '', email: '', password: '1', role: 'STAFF' });
+    const [staffForm, setStaffForm] = useState({ fullName: '', email: '', password: '123456', role: 'STAFF' });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -46,7 +46,7 @@ export default function StaffManagement() {
         try {
             setSaving(true);
             await axiosClient.post('/users/staff', staffForm);
-            setStaffForm({ fullName: '', email: '', password: '1', role: 'STAFF' });
+            setStaffForm({ fullName: '', email: '', password: '123456', role: 'STAFF' });
             await fetchUsers();
         } catch (err) {
             setError(err.message || 'Không thể tạo tài khoản staff.');
@@ -80,7 +80,7 @@ export default function StaffManagement() {
                 <form onSubmit={handleCreateStaff} className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_160px_160px_auto]">
                     <input required className="input-custom" value={staffForm.fullName} onChange={(e) => setStaffForm({ ...staffForm, fullName: e.target.value })} placeholder="Họ tên" />
                     <input required type="email" className="input-custom" value={staffForm.email} onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })} placeholder="email@fpt.edu.vn" />
-                    <input required className="input-custom" value={staffForm.password} onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })} placeholder="Mật khẩu" />
+                    <input required minLength="6" type="password" className="input-custom" value={staffForm.password} onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })} placeholder="Mật khẩu ban đầu" />
                     <select className="input-custom" value={staffForm.role} onChange={(e) => setStaffForm({ ...staffForm, role: e.target.value })}>
                         <option value="STAFF">Staff</option>
                         {myRole !== 'COORDINATOR' && <option value="COORDINATOR">Coordinator</option>}
