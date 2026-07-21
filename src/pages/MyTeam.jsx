@@ -412,6 +412,14 @@ export default function MyTeam() {
                                             <button type="button" onClick={() => handleJoin(item)} className="btn-primary mt-4 w-full">
                                                 {item.type === 'PRIVATE' ? 'Nhập mã PIN' : 'Gửi request'}
                                             </button>
+                                            {lobbyActionStatus.teamId === item.id && lobbyActionStatus.message && (
+                                                <p className={`mt-2 text-xs font-semibold text-center ${
+                                                    lobbyActionStatus.type === 'success' ? 'text-green-600' :
+                                                    lobbyActionStatus.type === 'error' ? 'text-red-600' : 'text-blue-600'
+                                                }`}>
+                                                    {lobbyActionStatus.message}
+                                                </p>
+                                            )}
                                         </div>
                                     </article>
                                 ))}
