@@ -928,6 +928,60 @@ export default function MyTeam() {
             ) : (
                 /* VIEW 3: DASHBOARD CHÍNH (Chỉ hiển thị danh sách Đội đang tham gia & các giải đấu có thể đăng ký) */
                 <>
+                    {myInvitations.length > 0 && (
+                        <div className="mb-8 rounded-2xl border-2 border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-md animate-fade-in">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-black uppercase tracking-[0.06em] text-[#071936] flex items-center gap-2">
+                                        <span className="flex h-3 w-3 rounded-full bg-blue-600 animate-ping"></span>
+                                        Lời mời gia nhập đội ({myInvitations.length})
+                                    </h2>
+                                    <p className="text-xs text-[#5c6d83] mt-1 font-semibold">
+                                        Bạn có lời mời tham gia đội thi. Bạn có quyền chấp nhận hoặc từ chối lời mời bên dưới.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {myInvitations.map((inv) => (
+                                    <div key={inv.id} className="rounded-xl border border-[#d7e6f8] bg-white p-5 shadow-sm flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <h3 className="font-black text-[#071936] text-base">{inv.teamName}</h3>
+                                                <span className="rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-bold text-[#0f63c9] shrink-0 uppercase tracking-wider">
+                                                    {inv.trackName || 'Hạng mục'}
+                                                </span>
+                                            </div>
+                                            <p className="mt-2 text-xs text-[#5c6d83] font-semibold">
+                                                Giải đấu: <strong className="text-[#071936]">{inv.eventName || 'Sự kiện'}</strong>
+                                            </p>
+                                            {inv.inviterName && (
+                                                <p className="mt-1 text-xs text-[#5c6d83] font-semibold">
+                                                    Người mời: <strong className="text-[#071936]">{inv.inviterName}</strong>
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="mt-5 flex gap-2 pt-4 border-t border-[#f0f4f8]">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAcceptInvitation(inv.id)}
+                                                className="btn-primary py-1.5 px-4 text-xs bg-emerald-600 hover:bg-emerald-700 hover:border-emerald-700 text-white flex-1 font-bold cursor-pointer"
+                                            >
+                                                ✓ Chấp nhận
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRejectInvitation(inv.id)}
+                                                className="btn-secondary py-1.5 px-4 text-xs text-red-600 border-red-200 hover:bg-red-50 flex-1 font-bold cursor-pointer"
+                                            >
+                                                ✕ Từ chối
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* SECTION 1: DANH SÁCH ĐỘI THI ĐÃ THAM GIA */}
                     <div className="mb-8 space-y-4">
                         <div>
