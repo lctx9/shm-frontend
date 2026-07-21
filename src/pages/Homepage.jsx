@@ -75,7 +75,7 @@ export default function Homepage() {
         <main className="bg-transparent text-[var(--shield-ink)] min-h-screen">
             {/* Hero Section */}
             <section className="hero-stage relative overflow-hidden min-h-[680px] flex items-center">
-                <div className="hero-bg absolute inset-0 z-0 bg-center bg-cover opacity-20 transform scale-105" style={{ backgroundImage: `url(${heroCourt})` }} />
+                <div className="hero-bg absolute inset-0 z-0 bg-center bg-cover opacity-85 transform scale-105 transition-all duration-500" style={{ backgroundImage: `url(${heroCourt})` }} />
                 <div className="hero-overlay absolute inset-0 z-10 pointer-events-none" />
 
                 <div className="hero-content relative z-20 w-full max-w-[1180px] mx-auto px-5 py-16 text-center animate-fade-up">
