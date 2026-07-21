@@ -1368,7 +1368,8 @@ main label,.form-label { font-size: 13px; }
 .market-community-banner a { border-radius: 4px; background: var(--dp-blue); padding: 6px 12px; color: white; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .market-event-list { display: grid; gap: 16px; }
 
-.market-event-card { display: grid; min-height: auto; overflow: hidden; grid-template-columns: 130px minmax(280px, 1fr) 240px; border: 1px solid #c6d3d7; border-left: 4px solid #22a58e; border-radius: 6px; background: white; transition: box-shadow 0.2s ease; }
+.market-event-card { position: relative; display: grid; min-height: auto; overflow: hidden; grid-template-columns: 130px minmax(280px, 1fr) 240px; border: 1px solid #c6d3d7; border-left: 4px solid #22a58e; border-radius: 6px; background: white; transition: box-shadow 0.2s ease, transform 0.15s ease; cursor: pointer; }
+.market-event-card:hover { box-shadow: 0 6px 24px rgba(11,48,60,0.13); transform: translateY(-1px); }
 .market-event-card--upcoming { border-left-color: #e66b32; }
 .market-event-card--running { border-left-color: #2784d5; }
 .market-event-card--ended { border-left-color: #8fa3a9; }
@@ -1386,8 +1387,8 @@ main label,.form-label { font-size: 13px; }
 .market-location span { color: #337d91; font-size: 16px; }
 .market-event-card__numbers { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-top: 12px; color: #6b7f86; font-size: 13px; }
 .market-event-card__numbers strong { color: #18323b; }
-.market-event-card__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.market-event-card__actions .btn-primary, .market-event-card__actions .btn-secondary { padding: 6px 14px; font-size: 13px; border-radius: 4px; }
+.market-event-card__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; position: relative; z-index: 2; }
+.market-event-card__actions .btn-primary, .market-event-card__actions .btn-secondary { padding: 6px 14px; font-size: 13px; border-radius: 4px; position: relative; z-index: 2; }
 .market-event-card__meta { border-left: 1px solid #dce3e5; padding: 16px 18px; color: #536d75; font-size: 13px; }
 .market-event-card__meta p { display: grid; grid-template-columns: 20px 1fr; gap: 8px; margin: 0 0 10px; line-height: 1.4; }
 .market-event-card__meta p > span:first-child { color: #3b7282; font-weight: 800; }
