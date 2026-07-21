@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 import AdminOverview from './AdminOverview';
 
 const roleCopy = {
@@ -104,11 +105,7 @@ function OperationalDashboard() {
                 </div>
             </section>
 
-            {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 animate-pulse">
-                    {error}
-                </div>
-            )}
+            <Toast error={error} onClose={() => setError('')} />
 
             {/* Metrics cards grid */}
             <section className="grid gap-4 md:grid-cols-3">
