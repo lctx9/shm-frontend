@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 
@@ -33,6 +34,9 @@ function formFromMatrix(matrix) {
 }
 
 export default function ScoringConfiguration() {
+    const [searchParams] = useSearchParams();
+    const queryEventId = searchParams.get('eventId');
+
     const [events, setEvents] = useState([]);
     const [judges, setJudges] = useState([]);
     const [selectedEventId, setSelectedEventId] = useState('');
@@ -87,12 +91,12 @@ export default function ScoringConfiguration() {
     };
 
     useEffect(() => {
-        loadData('', '')
+        loadData(queryEventId || '', '')
             .catch((error) => setMessage({ type: 'error', text: error.message || 'Không tải được cấu hình chấm điểm.' }))
             .finally(() => setLoading(false));
         // Initial load only; mutations refresh explicitly.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [queryEventId]);
 
     const changeEvent = (eventId) => {
         const event = events.find((item) => String(item.id) === String(eventId));
