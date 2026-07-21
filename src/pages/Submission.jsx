@@ -10,6 +10,7 @@ export default function Submission() {
     const currentEmail = localStorage.getItem('email');
     const [team, setTeam] = useState(null);
     const [matrices, setMatrices] = useState([]);
+    const [allSubmissions, setAllSubmissions] = useState([]);
     const [submission, setSubmission] = useState(null);
     const [formData, setFormData] = useState({ fileUrl: '', matrixId: '' });
     const [loading, setLoading] = useState(true);
@@ -24,26 +25,29 @@ export default function Submission() {
                 const loadedTeam = teamRes.result;
                 setTeam(loadedTeam);
 
+                let defaultMatrixId = '';
                 if (loadedTeam?.eventId) {
                     const matrixRes = await axiosClient.get(`/events/${loadedTeam.eventId}/matrices`);
                     const teamMatrices = (matrixRes.result || []).filter(
                         (matrix) => matrix.trackId == null || String(matrix.trackId) === String(loadedTeam.trackId)
                     );
                     setMatrices(teamMatrices);
-                    setFormData((current) => ({
-                        ...current,
-                        matrixId: teamMatrices[0]?.id || '',
-                    }));
+                    defaultMatrixId = teamMatrices[0]?.id || '';
                 }
 
                 const submissionRes = await axiosClient.get(loadedTeam ? `/submissions/my-submission?teamId=${loadedTeam.id}` : '/submissions/my-submission');
-                if (submissionRes.result) {
-                    setSubmission(submissionRes.result);
-                    setFormData({
-                        fileUrl: submissionRes.result.fileUrl || '',
-                        matrixId: submissionRes.result.matrixId || '',
-                    });
+                const loadedSubmissions = Array.isArray(submissionRes.result) ? submissionRes.result : (submissionRes.result ? [submissionRes.result] : []);
+                setAllSubmissions(loadedSubmissions);
+
+                if (loadedSubmissions.length > 0) {
+                    const latestSub = loadedSubmissions[loadedSubmissions.length - 1];
+                    defaultMatrixId = latestSub.matrixId || defaultMatrixId;
                 }
+
+                setFormData({
+                    fileUrl: '',
+                    matrixId: defaultMatrixId,
+                });
             } catch (err) {
                 setMessage({ text: err.message || 'Không thể tải dữ liệu nộp bài.', type: 'error' });
             } finally {
@@ -53,6 +57,20 @@ export default function Submission() {
 
         bootstrap();
     }, []);
+
+    useEffect(() => {
+        if (!formData.matrixId) {
+            setSubmission(null);
+            setFormData((current) => ({ ...current, fileUrl: '' }));
+            return;
+        }
+        const activeSub = allSubmissions.find((sub) => String(sub.matrixId) === String(formData.matrixId));
+        setSubmission(activeSub || null);
+        setFormData((current) => ({
+            ...current,
+            fileUrl: activeSub?.fileUrl || '',
+        }));
+    }, [formData.matrixId, allSubmissions]);
 
     const selectedMatrix = useMemo(
         () => matrices.find((matrix) => String(matrix.id) === String(formData.matrixId)),
@@ -118,7 +136,15 @@ export default function Submission() {
                 ? await axiosClient.put(`/submissions/${submission.id}`, payload)
                 : await axiosClient.post('/submissions', payload);
 
-            setSubmission(response.result);
+            const savedSub = response.result;
+            setAllSubmissions((prev) => {
+                const idx = prev.findIndex((sub) => String(sub.matrixId) === String(savedSub.matrixId));
+                if (idx >= 0) {
+                    return prev.map((sub, i) => i === idx ? savedSub : sub);
+                } else {
+                    return [...prev, savedSub];
+                }
+            });
             setMessage({ text: submission ? 'Cập nhật bài nộp thành công.' : 'Nộp bài thành công.', type: 'success' });
         } catch (err) {
             setMessage({ text: err.message || 'Không thể lưu bài nộp.', type: 'error' });
@@ -180,7 +206,6 @@ export default function Submission() {
                                 className="input-custom"
                                 value={formData.matrixId}
                                 onChange={(e) => setFormData({ ...formData, matrixId: e.target.value })}
-                                disabled={!isLeader}
                             >
                                 {matrices.map((matrix) => (
                                     <option key={matrix.id} value={matrix.id}>{matrixLabel(matrix)}</option>

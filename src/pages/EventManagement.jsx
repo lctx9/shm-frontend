@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 
@@ -30,8 +30,8 @@ const emptyEvent = () => ({
     submissionDeadline: '',
     roundCount: 3,
     tracks: [
-        { name: 'Bảng A', mentorIds: [], maxTeams: null },
-        { name: 'Bảng B', mentorIds: [], maxTeams: null },
+        { id: null, name: 'Bảng A', mentorIds: [], maxTeams: null },
+        { id: null, name: 'Bảng B', mentorIds: [], maxTeams: null },
     ],
     submissionFields: defaultSubmissionFields,
     competitionRules: [
@@ -76,8 +76,8 @@ function eventToForm(event) {
         submissionDeadline: toLocalInput(event.defaultSubmissionDeadline),
         roundCount: Math.max(event.roundCount || 2, 2),
         tracks: event.tracks?.length
-            ? event.tracks.map((track) => ({ name: track.name, mentorIds: track.mentors?.map((mentor) => mentor.id) || [], maxTeams: track.maxTeams || null }))
-            : [{ name: 'Bảng A', mentorIds: [], maxTeams: null }],
+            ? event.tracks.map((track) => ({ id: track.id, name: track.name, mentorIds: track.mentors?.map((mentor) => mentor.id) || [], maxTeams: track.maxTeams || null }))
+            : [{ id: null, name: 'Bảng A', mentorIds: [], maxTeams: null }],
         submissionFields: parseJson(event.submissionFormSchema, defaultSubmissionFields),
         competitionRules: event.competitionRules || '',
         ruleDocumentUrl: event.ruleDocumentUrl || '',
@@ -162,6 +162,26 @@ export default function EventManagement() {
     const [newTemplateName, setNewTemplateName] = useState('');
     const didBootstrap = useRef(false);
 
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    useEffect(() => {
+        const evId = searchParams.get('eventId');
+        const tab = searchParams.get('tab');
+        if (evId) {
+            setSelectedEventId(evId);
+        }
+        if (tab) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        const newParams = {};
+        if (selectedEventId) newParams.eventId = selectedEventId;
+        if (activeTab) newParams.tab = activeTab;
+        setSearchParams(newParams, { replace: true });
+    }, [selectedEventId, activeTab]);
+
     const selectedEvent = useMemo(
         () => events.find((event) => String(event.id) === String(selectedEventId)),
         [events, selectedEventId]
@@ -174,6 +194,11 @@ export default function EventManagement() {
 
     const eventTeams = useMemo(
         () => teams.filter((team) => String(team.eventId) === String(selectedEventId)),
+        [teams, selectedEventId]
+    );
+
+    const pendingDisqualifications = useMemo(
+        () => teams.filter((team) => String(team.eventId) === String(selectedEventId) && team.disqualificationStatus === 'PENDING'),
         [teams, selectedEventId]
     );
 
@@ -306,6 +331,76 @@ export default function EventManagement() {
         }));
     };
 
+    const handleAutofill = () => {
+        const now = new Date();
+        const year = now.getFullYear();
+
+        const formatDate = (d) => {
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
+
+        const regStart = new Date(now.getTime() - 10 * 60 * 1000); // Mở đăng ký: 10 phút trước
+        const regEnd = new Date(now.getTime() - 7 * 60 * 1000);   // Đóng đăng ký: 7 phút trước
+        const eventStart = new Date(now.getTime() - 5 * 60 * 1000); // Bắt đầu cuộc thi: 5 phút trước
+        const deadline = new Date(now.getTime() - 2 * 60 * 1000);   // Hạn nộp bài mặc định: 2 phút trước (đã qua để chấm điểm được ngay)
+        const eventEnd = new Date(now.getTime() + 10 * 60 * 1000);  // Kết thúc cuộc thi: 10 phút sau (cuộc thi đang diễn ra)
+
+        const track1Mentors = [];
+        const track2Mentors = [];
+        if (mentors.length > 0) {
+            track1Mentors.push(mentors[0].id);
+            if (mentors.length > 1) {
+                track1Mentors.push(mentors[1].id);
+            }
+            if (mentors.length > 2) {
+                track2Mentors.push(mentors[2].id);
+            } else {
+                track2Mentors.push(mentors[0].id);
+            }
+            if (mentors.length > 3) {
+                track2Mentors.push(mentors[3].id);
+            } else if (mentors.length > 1) {
+                track2Mentors.push(mentors[1].id);
+            }
+        }
+
+        setForm({
+            id: null,
+            name: `SEAL Hackathon ${form.season || 'SPRING'} ${year}`,
+            description: 'Cuộc thi lập trình Hackathon nhằm tìm kiếm và phát triển các sản phẩm công nghệ sáng tạo, ứng dụng trí tuệ nhân tạo (AI) và giải pháp phần mềm đột phá để giải quyết các vấn đề thực tiễn trong đời sống và doanh nghiệp.',
+            season: form.season || 'SPRING',
+            year: year,
+            regStartDate: formatDate(regStart),
+            regEndDate: formatDate(regEnd),
+            eventStartDate: formatDate(eventStart),
+            eventEndDate: formatDate(eventEnd),
+            submissionDeadline: formatDate(deadline),
+            roundCount: 3,
+            tracks: [
+                { id: null, name: 'Bảng A (Công nghệ & AI)', mentorIds: track1Mentors, maxTeams: 15 },
+                { id: null, name: 'Bảng B (Giải pháp doanh nghiệp)', mentorIds: track2Mentors, maxTeams: 15 }
+            ],
+            submissionFields: defaultSubmissionFields,
+            competitionRules: [
+                'Mỗi đội nộp bài đúng deadline trên hệ thống.',
+                'Sản phẩm phải do đội tự phát triển trong khuôn khổ sự kiện.',
+                'Hội đồng Giám khảo sẽ chấm điểm độc lập dựa trên Rubric đã công bố cho từng vòng đấu.',
+                'Các hành vi gian lận hoặc sao chép mã nguồn sẽ bị loại trực tiếp.'
+            ].join('\n'),
+            ruleDocumentUrl: 'https://docs.google.com/document/d/example-rules',
+            active: true,
+            resultsPublished: false,
+            draftPrizes: [
+                { name: 'Giải Nhất', description: 'Cúp vàng vinh danh + Bằng khen điện tử + 15.000.000 VNĐ tiền mặt' },
+                { name: 'Giải Nhì', description: 'Bằng khen điện tử + 8.000.000 VNĐ tiền mặt' },
+                { name: 'Giải Ba', description: 'Bằng khen điện tử + 4.000.000 VNĐ tiền mặt' }
+            ]
+        });
+
+        setMessage({ type: 'success', text: '⚡ Đã tự động điền thông tin sự kiện mẫu thành công! Bạn có thể nhấn Tiếp tục để xem và tinh chỉnh thêm.' });
+    };
+
     const updateCriterion = (index, patch) => {
         setMatrixForm((current) => ({
             ...current,
@@ -337,7 +432,7 @@ export default function EventManagement() {
         tracks: form.tracks.map((track) => track.name.trim()).filter(Boolean),
         trackConfigs: form.tracks
             .filter((track) => track.name.trim())
-            .map((track) => ({ name: track.name.trim(), mentorIds: track.mentorIds.map(Number), maxTeams: track.maxTeams || null })),
+            .map((track) => ({ id: track.id || null, name: track.name.trim(), mentorIds: track.mentorIds.map(Number), maxTeams: track.maxTeams || null })),
         submissionFormSchema: JSON.stringify(form.submissionFields),
         competitionRules: form.competitionRules,
         ruleDocumentUrl: form.ruleDocumentUrl,
@@ -406,7 +501,7 @@ export default function EventManagement() {
 
     const saveEvent = async (e) => {
         e.preventDefault();
-        if (!selectedEvent?.structureInitialized && form.tracks.some((track) => track.mentorIds.length < 1 || track.mentorIds.length > 2)) {
+        if (form.tracks.some((track) => track.mentorIds.length < 1 || track.mentorIds.length > 2)) {
             setMessage({ type: 'error', text: 'Mỗi bảng đấu cần được phân công từ 1 đến 2 mentor.' });
             return;
         }
@@ -450,6 +545,41 @@ export default function EventManagement() {
             }
         } catch (err) {
             setMessage({ type: 'error', text: err.message || 'Không thể thực hiện yêu cầu.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleApproveDisqualify = async (teamId, teamName) => {
+        if (window.confirm(`XÁC NHẬN: Bạn thực sự muốn LOẠI đội "${teamName}" khỏi giải đấu?\nHành động này không thể hoàn tác, mọi bài nộp và thành viên của đội sẽ bị xóa khỏi giải.`)) {
+            try {
+                setLoading(true);
+                await axiosClient.post(`/teams/${teamId}/approve-disqualify`);
+                setMessage({ type: 'success', text: `Đã duyệt loại đội "${teamName}" khỏi giải đấu.` });
+                await fetchAll(selectedEventId);
+            } catch (err) {
+                setMessage({ type: 'error', text: err.message || 'Không thể duyệt loại đội.' });
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    const handleRejectDisqualify = async (teamId, teamName) => {
+        const reason = window.prompt(`Nhập lý do từ chối yêu cầu loại đội "${teamName}" (lý do này sẽ được gửi tới Giám khảo):`);
+        if (reason === null) return;
+        if (!reason.trim()) {
+            alert('Bạn phải nhập lý do từ chối yêu cầu loại.');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await axiosClient.post(`/teams/${teamId}/reject-disqualify`, { reason: reason.trim() });
+            setMessage({ type: 'success', text: `Đã từ chối đề xuất loại đội "${teamName}".` });
+            await fetchAll(selectedEventId);
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message || 'Không thể từ chối đề xuất loại.' });
         } finally {
             setLoading(false);
         }
@@ -726,6 +856,7 @@ export default function EventManagement() {
         { id: 'event', label: 'Thông tin & lịch' },
         { id: 'submission', label: 'Form bài nộp' },
         { id: 'rules', label: 'Thể lệ & giải thưởng' },
+        { id: 'disqualifications', label: 'Đề xuất loại đội' },
     ];
     const managementSteps = [
         { id: 'event', label: 'Thông tin và lịch sự kiện', description: 'Tên, thời gian đăng ký, thời gian thi, bảng đấu và Mentor.', done: Boolean(form.name && form.regStartDate && form.regEndDate && form.eventStartDate && form.eventEndDate && form.tracks.length) },
@@ -858,10 +989,19 @@ export default function EventManagement() {
                     <div className="min-h-[520px] p-6 md:p-10">
                         {createStep === 0 && (
                             <div className="mx-auto max-w-3xl space-y-6">
-                                <div>
-                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Bước 1/4</p>
-                                    <h2 className="mt-2 text-2xl font-black text-slate-900">Thông tin cuộc thi</h2>
-                                    <p className="mt-2 text-sm text-slate-500">Thông tin người tham gia sẽ nhìn thấy trên trang sự kiện.</p>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Bước 1/4</p>
+                                        <h2 className="mt-2 text-2xl font-black text-slate-900">Thông tin cuộc thi</h2>
+                                        <p className="mt-1 text-sm text-slate-500">Thông tin người tham gia sẽ nhìn thấy trên trang sự kiện.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleAutofill}
+                                        className="shrink-0 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-xs font-black text-teal-700 hover:bg-teal-100 hover:scale-102 transition-all active:scale-98 shadow-sm flex items-center gap-1.5 self-start sm:self-center"
+                                    >
+                                        <span>⚡</span> Điền nhanh thông tin mẫu
+                                    </button>
                                 </div>
                                 <WizardField label="Tên cuộc thi">
                                     <input autoFocus className="input-custom text-base" placeholder="Ví dụ: SEAL Innovation Challenge 2026" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -895,8 +1035,7 @@ export default function EventManagement() {
                                     <WizardField label="3. Bắt đầu cuộc thi"><input type="datetime-local" className="input-custom bg-white" value={form.eventStartDate} onChange={(e) => setForm({ ...form, eventStartDate: e.target.value })} /></WizardField>
                                     <WizardField label="4. Kết thúc cuộc thi"><input type="datetime-local" className="input-custom bg-white" value={form.eventEndDate} onChange={(e) => setForm({ ...form, eventEndDate: e.target.value })} /></WizardField>
                                 </div>
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <WizardField label="Deadline nộp bài mặc định" hint="Có thể đổi theo từng vòng"><input type="datetime-local" className="input-custom" value={form.submissionDeadline} onChange={(e) => setForm({ ...form, submissionDeadline: e.target.value })} /></WizardField>
+                                <div className="grid gap-5 md:grid-cols-1">
                                     <WizardField label="Tổng số vòng" hint="Đã gồm vòng chung kết"><input type="number" min="2" className="input-custom" value={form.roundCount} onChange={(e) => setForm({ ...form, roundCount: Math.max(2, Number(e.target.value)) })} /></WizardField>
                                 </div>
                                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
@@ -913,7 +1052,7 @@ export default function EventManagement() {
                                         <h2 className="mt-2 text-2xl font-black text-slate-900">Bảng đấu và mentor</h2>
                                         <p className="mt-2 text-sm text-slate-500">Thêm bảng tùy ý; mỗi bảng chọn 1–2 mentor đúng một lần.</p>
                                     </div>
-                                    <button type="button" className="btn-primary" onClick={() => setForm((current) => ({ ...current, tracks: [...current.tracks, { name: `Bảng ${String.fromCharCode(65 + current.tracks.length)}`, mentorIds: [], maxTeams: null }] }))}>+ Thêm bảng đấu</button>
+                                    <button type="button" className="btn-primary" onClick={() => setForm((current) => ({ ...current, tracks: [...current.tracks, { id: null, name: `Bảng ${String.fromCharCode(65 + current.tracks.length)}`, mentorIds: [], maxTeams: null }] }))}>+ Thêm bảng đấu</button>
                                 </div>
                                 <div className="grid gap-4 lg:grid-cols-2">
                                     {form.tracks.map((track, index) => (
@@ -1147,7 +1286,6 @@ export default function EventManagement() {
                                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                                     <label className="text-sm font-bold text-slate-700">Mở đăng ký<input required type="datetime-local" className="input-custom mt-1" value={form.regStartDate} onChange={(e) => setForm({ ...form, regStartDate: e.target.value })} /></label>
                                     <label className="text-sm font-bold text-slate-700">Đóng đăng ký<input required type="datetime-local" className="input-custom mt-1" value={form.regEndDate} onChange={(e) => setForm({ ...form, regEndDate: e.target.value })} /></label>
-                                    <label className="text-sm font-bold text-slate-700">Deadline mặc định<input type="datetime-local" className="input-custom mt-1" value={form.submissionDeadline} onChange={(e) => setForm({ ...form, submissionDeadline: e.target.value })} /></label>
                                     <label className="text-sm font-bold text-slate-700">Bắt đầu thi<input required type="datetime-local" className="input-custom mt-1" value={form.eventStartDate} onChange={(e) => setForm({ ...form, eventStartDate: e.target.value })} /></label>
                                     <label className="text-sm font-bold text-slate-700">Kết thúc thi<input required type="datetime-local" className="input-custom mt-1" value={form.eventEndDate} onChange={(e) => setForm({ ...form, eventEndDate: e.target.value })} /></label>
                                     <label className="text-sm font-bold text-slate-700">Tổng số vòng (gồm chung kết)<input required min="2" type="number" className="input-custom mt-1" value={form.roundCount} onChange={(e) => setForm({ ...form, roundCount: Math.max(2, Number(e.target.value)) })} /></label>
@@ -1158,14 +1296,14 @@ export default function EventManagement() {
                                             <p className="text-sm font-black text-slate-800">3. Bảng đấu và Mentor phụ trách</p>
                                             <p className="mt-1 text-xs text-slate-500">Mỗi bảng chọn từ 1–2 Staff được giao nhiệm vụ Mentor.</p>
                                         </div>
-                                        <button type="button" className="btn-secondary" disabled={selectedEvent?.structureInitialized} onClick={() => setForm((current) => ({ ...current, tracks: [...current.tracks, { name: `Bảng ${String.fromCharCode(65 + current.tracks.length)}`, mentorIds: [], maxTeams: null }] }))}>Thêm bảng</button>
+                                        <button type="button" className="btn-secondary" onClick={() => setForm((current) => ({ ...current, tracks: [...current.tracks, { id: null, name: `Bảng ${String.fromCharCode(65 + current.tracks.length)}`, mentorIds: [], maxTeams: null }] }))}>Thêm bảng</button>
                                     </div>
                                     <div className="mt-4 grid gap-4 lg:grid-cols-2">
                                         {form.tracks.map((track, index) => (
                                             <div key={index} className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm">
                                                 <div className="flex gap-2">
                                                     <input required className="input-custom font-bold" value={track.name} onChange={(e) => updateTrack(index, { name: e.target.value })} placeholder="Tên bảng đấu" />
-                                                    <button type="button" className="btn-secondary" disabled={selectedEvent?.structureInitialized || form.tracks.length <= 1} onClick={() => setForm((current) => ({ ...current, tracks: current.tracks.filter((_, itemIndex) => itemIndex !== index) }))}>Xóa</button>
+                                                    <button type="button" className="btn-secondary" disabled={form.tracks.length <= 1} onClick={() => setForm((current) => ({ ...current, tracks: current.tracks.filter((_, itemIndex) => itemIndex !== index) }))}>Xóa</button>
                                                 </div>
                                                 <label className="mt-3 block text-xs font-bold text-slate-700">
                                                     Giới hạn số đội đăng ký (0 hoặc bỏ trống = không giới hạn)
@@ -1176,7 +1314,6 @@ export default function EventManagement() {
                                                         value={track.maxTeams || ''} 
                                                         onChange={(e) => updateTrack(index, { maxTeams: e.target.value ? Number(e.target.value) : null })} 
                                                         placeholder="Ví dụ: 15"
-                                                        disabled={selectedEvent?.structureInitialized}
                                                     />
                                                 </label>
                                                 <p className="mb-2 mt-4 text-xs font-black uppercase tracking-wide text-[#0f63c9]">Chọn Mentor phụ trách ({track.mentorIds.length}/2)</p>
@@ -1195,7 +1332,7 @@ export default function EventManagement() {
                                     <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">
                                         Cấu trúc hiện tại: {form.tracks.length} bảng đấu và {form.roundCount} vòng thi.
                                     </div>
-                                    {selectedEvent?.structureInitialized && <p className="mt-2 text-xs font-semibold text-amber-700">Cấu trúc đã được khởi tạo nên bảng đấu được khóa để bảo toàn dữ liệu bài thi.</p>}
+                                    {selectedEvent?.structureInitialized && <p className="mt-2 text-xs font-semibold text-[#0f63c9]">Cấu trúc đã được khởi tạo. Các bảng đấu và phân công mentor mới sẽ được đồng bộ trực tiếp.</p>}
                                 </div>
                                 <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
                                     <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
@@ -1379,6 +1516,57 @@ export default function EventManagement() {
                                         </div>
                                     ))}
                                     {prizes.length === 0 && <p className="p-4 text-sm text-slate-500">Chưa có giải thưởng.</p>}
+                                </div>
+                            </Section>
+                        </div>
+                    )}
+
+                    {activeTab === 'disqualifications' && (
+                        <div className="space-y-6">
+                            <Section title="Đề xuất loại đội thi (Disqualifications)" eyebrow="Duyệt kỷ luật từ Giám khảo">
+                                <div className="space-y-4">
+                                    {pendingDisqualifications.length === 0 ? (
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-500">
+                                            Không có đề xuất loại đội thi nào đang chờ duyệt.
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            {pendingDisqualifications.map((team) => (
+                                                <div key={team.id} className="rounded-xl border border-red-200 bg-white p-5 shadow-sm space-y-4">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h4 className="text-lg font-black text-slate-900">{team.name}</h4>
+                                                            <p className="text-xs font-bold text-slate-500 mt-0.5">{team.trackName || 'Bảng chung'}</p>
+                                                        </div>
+                                                        <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-1 text-xs font-black">Chờ duyệt</span>
+                                                    </div>
+
+                                                    <div className="rounded-lg bg-red-50/50 border border-red-100 p-3.5 space-y-2 text-sm">
+                                                        <p className="font-bold text-red-900">Chi tiết đề xuất loại:</p>
+                                                        <p className="text-slate-700 italic">"{team.disqualificationReason}"</p>
+                                                        <p className="text-xs text-slate-500 mt-2">Người đề xuất: <span className="font-semibold">{team.disqualifierEmail}</span></p>
+                                                    </div>
+
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleApproveDisqualify(team.id, team.name)}
+                                                            style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', flex: 1 }}
+                                                        >
+                                                            Đồng ý loại (Disqualify)
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRejectDisqualify(team.id, team.name)}
+                                                            style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', flex: 1 }}
+                                                        >
+                                                            Từ chối loại (Reject)
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </Section>
                         </div>

@@ -52,6 +52,11 @@ export default function Grading() {
     const [query, setQuery] = useState('');
     const [queueFilter, setQueueFilter] = useState('pending');
 
+    const [showDisqualifyModal, setShowDisqualifyModal] = useState(false);
+    const [disqualifyReasonOption, setDisqualifyReasonOption] = useState('Gian lận');
+    const [disqualifyCustomReason, setDisqualifyCustomReason] = useState('');
+    const [disqualifyingTeam, setDisqualifyingTeam] = useState(null);
+
     useEffect(() => {
         if (error) {
             const timer = setTimeout(() => setError(''), 6000);
@@ -79,9 +84,10 @@ export default function Grading() {
     }, [events]);
 
     const visibleSubmissions = useMemo(() => {
-        if (role === 'ADMIN' || role === 'COORDINATOR') return submissions;
+        const withFile = submissions.filter((s) => s.fileUrl && s.fileUrl.trim() !== '');
+        if (role === 'ADMIN' || role === 'COORDINATOR') return withFile;
         if (!resolvedUserId) return [];
-        return submissions.filter((submission) => {
+        return withFile.filter((submission) => {
             const matrix = matrixById.get(String(submission.matrixId));
             return (matrix?.judges || []).some(
                 (judge) => String(judge.id) === resolvedUserId
@@ -108,6 +114,36 @@ export default function Grading() {
     const finalScore = useMemo(() => weightedAverage(criteriaScores), [criteriaScores]);
     const completedCriteria = criteriaScores.filter((item) => item.score !== '').length;
     const totalWeight = criteriaScores.reduce((sum, item) => sum + Number(item.weight || 0), 0);
+
+    const handleDisqualifyClick = (teamId, teamName) => {
+        setDisqualifyingTeam({ id: teamId, name: teamName });
+        setDisqualifyReasonOption('Gian lận');
+        setDisqualifyCustomReason('');
+        setShowDisqualifyModal(true);
+    };
+
+    const handleConfirmDisqualify = async () => {
+        const finalReason = disqualifyReasonOption === 'Khác' ? disqualifyCustomReason.trim() : disqualifyReasonOption;
+        if (!finalReason) {
+            alert('Vui lòng chọn hoặc nhập lý do loại đội thi.');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            await axiosClient.post(`/teams/${disqualifyingTeam.id}/propose-disqualify`, { reason: finalReason });
+            alert(`Đã gửi đề xuất loại đội "${disqualifyingTeam.name}" lên Coordinator duyệt.`);
+            setShowDisqualifyModal(false);
+            setDisqualifyingTeam(null);
+            setDisqualifyCustomReason('');
+            setSelectedSub(null);
+            fetchData();
+        } catch (err) {
+            alert(err.message || 'Không thể gửi đề xuất loại đội thi.');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -138,7 +174,27 @@ export default function Grading() {
         }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    // Silent background refresh — keeps disqualification statuses in sync across all judges
+    const fetchDataQuiet = async () => {
+        try {
+            const [submissionRes, eventRes] = await Promise.all([
+                axiosClient.get('/submissions'),
+                axiosClient.get('/events').catch(() => ({ result: [] })),
+            ]);
+            setSubmissions(submissionRes.result || []);
+            setEvents(eventRes.result || []);
+        } catch {
+            // Silently ignore background poll failures
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+        // Poll every 15 seconds so PENDING dim is reflected for all judges in real-time
+        const pollId = window.setInterval(() => fetchDataQuiet(), 15000);
+        return () => window.clearInterval(pollId);
+    }, []);
+
 
     const handleSelect = (submission) => {
         const matrix = matrixById.get(String(submission.matrixId));
@@ -213,9 +269,27 @@ export default function Grading() {
                     <div className="judge-queue__list">
                         {filteredSubmissions.length ? filteredSubmissions.map((submission) => {
                             const matrix = matrixById.get(String(submission.matrixId));
+                            const isPendingDisqualify = submission.disqualificationStatus === 'PENDING';
+                            const handleClick = () => {
+                                if (isPendingDisqualify) {
+                                    alert(`Đội "${submission.teamName || `Đội #${submission.teamId}`}" đang trong quá trình xử lý kỷ luật/chờ duyệt loại.`);
+                                    return;
+                                }
+                                handleSelect(submission);
+                            };
                             return (
-                                <button type="button" key={submission.id} onClick={() => handleSelect(submission)} className={selectedSub?.id === submission.id ? 'is-selected' : ''}>
-                                    <div><strong>{submission.teamName || `Đội #${submission.teamId}`}</strong><span>{matrix?.eventName || 'Sự kiện'} · {submission.trackName || 'Bảng chung'}</span></div>
+                                <button 
+                                    type="button" 
+                                    key={submission.id} 
+                                    onClick={handleClick} 
+                                    className={selectedSub?.id === submission.id ? 'is-selected' : ''}
+                                    style={isPendingDisqualify ? { opacity: 0.45, filter: 'grayscale(80%)', cursor: 'not-allowed' } : {}}
+                                >
+                                    <div>
+                                        <strong>{submission.teamName || `Đội #${submission.teamId}`}</strong>
+                                        <span>{matrix?.eventName || 'Sự kiện'} · {submission.trackName || 'Bảng chung'}</span>
+                                        {isPendingDisqualify && <span style={{ color: '#b91c1c', fontSize: '10px', fontWeight: 'bold', marginLeft: '6px', backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: '4px' }}>Chờ duyệt loại</span>}
+                                    </div>
                                     <p>{submission.roundName || 'Vòng thi'}<span className={submission.graded ? 'is-graded' : 'is-pending'}>{submission.graded ? `${submission.score ?? 0}/100` : 'Chờ chấm'}</span></p>
                                 </button>
                             );
@@ -228,8 +302,36 @@ export default function Grading() {
                         <form onSubmit={handleSubmitGrade}>
                             <header className="judge-rubric__header">
                                 <div><p>{selectedMatrix?.eventName || 'SEAL Hackathon'} · {selectedSub.roundName}</p><h2>{selectedSub.teamName || `Đội #${selectedSub.teamId}`}</h2><span>{selectedSub.trackName || 'Bảng chung'}</span></div>
-                                <a href={selectedSub.fileUrl} target="_blank" rel="noreferrer">Mở bài nộp ↗</a>
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                    <a href={selectedSub.fileUrl} target="_blank" rel="noreferrer">Mở bài nộp ↗</a>
+                                    {canGrade && selectedSub.disqualificationStatus !== 'PENDING' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDisqualifyClick(selectedSub.teamId, selectedSub.teamName)}
+                                            style={{ backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', padding: '6px 12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', fontSize: '13px' }}
+                                        >
+                                            Loại đội (Disqualify)
+                                        </button>
+                                    )}
+                                </div>
                             </header>
+
+                            {selectedSub.disqualificationStatus === 'PENDING' && (
+                                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', color: '#92400e', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>
+                                    ⚠️ Đội thi này đang có đề xuất loại giải đấu chờ Coordinator duyệt.
+                                    <span style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginTop: '4px', opacity: 0.85 }}>
+                                        Lý do đề xuất: "{selectedSub.disqualificationReason}" (bởi {selectedSub.disqualifierEmail || 'Giám khảo'})
+                                    </span>
+                                </div>
+                            )}
+                            {selectedSub.disqualificationStatus === 'REJECTED' && (
+                                <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>
+                                    ❌ Đề xuất loại đội thi đã bị Coordinator từ chối.
+                                    <span style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginTop: '4px', opacity: 0.85 }}>
+                                        Lý do từ chối: "{selectedSub.rejectionReason}"
+                                    </span>
+                                </div>
+                            )}
 
                             <section className="judge-rubric__guide">
                                 <div><strong>Rubric chấm điểm</strong><span>{completedCriteria}/{criteriaScores.length} tiêu chí đã nhập · Tổng trọng số {totalWeight}%</span></div>
@@ -267,6 +369,66 @@ export default function Grading() {
                     )}
                 </main>
             </div>
+            {showDisqualifyModal && disqualifyingTeam && (
+                <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
+                    <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', width: '100%', maxWidth: '480px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                            <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>Đề xuất loại đội thi</h3>
+                            <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Bạn đang đề xuất loại đội <strong>"{disqualifyingTeam.name}"</strong> khỏi giải đấu.</p>
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Lý do loại đội:</label>
+                            <select 
+                                value={disqualifyReasonOption} 
+                                onChange={(e) => setDisqualifyReasonOption(e.target.value)}
+                                style={{ width: '100%', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', outline: 'none' }}
+                            >
+                                <option value="Gian lận">Gian lận (Cheating)</option>
+                                <option value="Đạo văn">Đạo văn (Plagiarism)</option>
+                                <option value="Vi phạm điều khoản">Vi phạm điều khoản & quy chế</option>
+                                <option value="Không tham gia các hoạt động bắt buộc">Không tham gia các hoạt động hoạt động bắt buộc</option>
+                                <option value="Khác">Khác (Nhập lý do riêng...)</option>
+                            </select>
+                        </div>
+
+                        {disqualifyReasonOption === 'Khác' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>Nhập lý do khác:</label>
+                                <textarea 
+                                    required
+                                    rows="3"
+                                    value={disqualifyCustomReason}
+                                    onChange={(e) => setDisqualifyCustomReason(e.target.value)}
+                                    placeholder="Vui lòng nhập lý do cụ thể..."
+                                    style={{ width: '100%', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', outline: 'none' }}
+                                />
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowDisqualifyModal(false);
+                                    setDisqualifyingTeam(null);
+                                    setDisqualifyCustomReason('');
+                                }}
+                                style={{ flex: 1, backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmDisqualify}
+                                style={{ flex: 1, backgroundColor: '#dc2626', color: '#ffffff', border: '1px solid #b91c1c', borderRadius: '8px', padding: '10px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                            >
+                                Gửi đề xuất
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
