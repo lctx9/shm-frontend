@@ -3,13 +3,18 @@ import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 
 export default function Notifications() {
-    const role = localStorage.getItem('role');
+    const email = localStorage.getItem('email');
     const [notifications, setNotifications] = useState([]);
     const [form, setForm] = useState({ title: '', body: '', targetRole: 'USER' });
     const [loading, setLoading] = useState(true);
+    const [sending, setSending] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
+    const role = localStorage.getItem('role');
     const canSend = role === 'COORDINATOR' || role === 'ADMIN';
+
+    const ROLE_LABELS = { USER: 'Người tham gia', STAFF: 'Staff', null: 'Tất cả', '': 'Tất cả' };
 
     const fetchNotifications = async () => {
         try {
@@ -59,17 +64,27 @@ export default function Notifications() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSending(true);
+        setError('');
+        setSuccess('');
         try {
-            await axiosClient.post('/notifications', form);
+            await axiosClient.post('/notifications', {
+                ...form,
+                targetRole: form.targetRole === '' ? null : form.targetRole,
+            });
             setForm({ title: '', body: '', targetRole: 'USER' });
+            setSuccess('Thông báo đã được gửi thành công!');
             await fetchNotifications();
         } catch (err) {
             setError(err.message || 'Không thể gửi thông báo.');
+        } finally {
+            setSending(false);
         }
     };
 
     return (
         <div className="mx-auto max-w-5xl space-y-6">
+            <Toast error={error} success={success} onClose={() => { setError(''); setSuccess(''); }} />
             {canSend && (
                 <section className="rounded-lg border border-blue-100 bg-white p-8 shadow-sm">
                     <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Gửi thông báo</h2>
@@ -79,10 +94,13 @@ export default function Notifications() {
                             <select className="input-custom" value={form.targetRole} onChange={(e) => setForm({ ...form, targetRole: e.target.value })}>
                                 <option value="USER">Người tham gia</option>
                                 <option value="STAFF">Staff</option>
+                                <option value="">Tất cả người dùng</option>
                             </select>
                         </div>
                         <textarea required rows="4" className="input-custom" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Nội dung thông báo" />
-                        <button type="submit" className="btn-primary">Gửi thông báo</button>
+                        <button type="submit" disabled={sending} className="btn-primary disabled:opacity-60">
+                            {sending ? 'Đang gửi...' : 'Gửi thông báo'}
+                        </button>
                     </form>
                 </section>
             )}
@@ -95,7 +113,7 @@ export default function Notifications() {
                         <button type="button" onClick={fetchNotifications} title="Làm mới thông báo" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
                     </div>
                 </div>
-                <Toast error={error} onClose={() => setError('')} />
+                <Toast error={error} onClose={() => { setError(''); setSuccess(''); }} />
                 <div className="divide-y divide-blue-50">
                     {loading ? (
                         <div className="p-8 text-center text-slate-500">Đang tải...</div>
@@ -103,16 +121,28 @@ export default function Notifications() {
                         <div className="p-8 text-center text-slate-500">Chưa có thông báo.</div>
                     ) : notifications.map((item) => (
                         <article key={item.id} onClick={() => markAsRead(item.id)} className={`cursor-pointer px-6 py-5 ${item.read ? 'bg-white' : 'bg-blue-50/70'}`}>
-                            <div className="flex items-center justify-between">
-                                <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">{item.targetRole || 'Cá nhân'}</p>
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex items-center gap-2">
+                                    <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">
+                                        {ROLE_LABELS[item.targetRole] ?? item.targetRole ?? 'Cá nhân'}
+                                    </p>
+                                    {item.senderEmail && item.senderEmail === email && (
+                                        <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                            Đã gửi
+                                        </span>
+                                    )}
+                                    {item.senderEmail && item.senderEmail !== email && (
+                                        <span className="text-[10px] text-slate-400">← từ {item.senderEmail}</span>
+                                    )}
+                                </div>
                                 {item.actionUrl && (
                                     <a href={item.actionUrl} className="text-xs font-bold text-[#0f63c9] hover:underline flex items-center gap-1">
                                         Xem chi tiết &rarr;
                                     </a>
                                 )}
                             </div>
-                            <h3 className="mt-2 font-black text-slate-900">{item.title}</h3>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
+                            <h3 className="mt-2 font-black text-slate-900 break-words">{item.title}</h3>
+                            <p className="mt-2 text-sm leading-6 text-slate-600 break-words whitespace-pre-wrap">{item.body}</p>
                             <p className="mt-3 text-xs text-slate-400">{item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : ''}</p>
                         </article>
                     ))}

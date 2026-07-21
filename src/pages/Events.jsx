@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 import { demoEvent, getEventPhase } from '../utils/hackathon';
@@ -30,20 +30,29 @@ function getTimeLabel(event, phase) {
     return `Bắt đầu sau ${days} ngày`;
 }
 
-function MarketplaceEventCard({ event }) {
+function MarketplaceEventCard({ event, navigate }) {
     const phase = getEventPhase(event);
     const tracks = event.tracks || [];
+    const detailUrl = `/events/${event.id}`;
 
     return (
-        <article className={`market-event-card market-event-card--${phase.key}`}>
-            <Link to={`/events/${event.id}`} className="market-event-card__visual" aria-label={`Xem ${event.name}`}>
+        <article
+            className={`market-event-card market-event-card--${phase.key}`}
+            onClick={() => navigate(detailUrl)}
+        >
+            <Link
+                to={detailUrl}
+                className="market-event-card__visual"
+                aria-label={`Xem ${event.name}`}
+                onClick={e => e.stopPropagation()}
+            >
                 <span>SEAL</span>
                 <strong>{event.season || 'HACKATHON'}</strong>
                 <small>{event.year}</small>
             </Link>
 
             <div className="market-event-card__main">
-                <Link to={`/events/${event.id}`}><h2>{event.name}</h2></Link>
+                <Link to={detailUrl} onClick={e => e.stopPropagation()}><h2>{event.name}</h2></Link>
                 <div className="market-event-card__quick-info">
                     <span className={`market-phase market-phase--${phase.key}`}>{getTimeLabel(event, phase)}</span>
                     <span className="market-location"><span aria-hidden="true">⌖</span> Sự kiện SEAL</span>
@@ -53,10 +62,10 @@ function MarketplaceEventCard({ event }) {
                     <span><strong>{tracks.length}</strong> hạng mục thi</span>
                 </div>
                 <div className="market-event-card__actions">
-                    <Link to={`/events/${event.id}`} className="btn-primary">Xem chi tiết</Link>
+                    <Link to={detailUrl} className="btn-primary" onClick={e => e.stopPropagation()}>Xem chi tiết</Link>
                     {phase.key === 'ended'
-                        ? <Link to={`/events/${event.id}/results`} className="btn-secondary">Xem kết quả</Link>
-                        : phase.key === 'registration' && <Link to={`/my-team?eventId=${event.id}`} className="btn-secondary">Đăng ký đội</Link>}
+                        ? <Link to={`/events/${event.id}/results`} className="btn-secondary" onClick={e => e.stopPropagation()}>Xem kết quả</Link>
+                        : phase.key === 'registration' && <Link to={`/my-team?eventId=${event.id}`} className="btn-secondary" onClick={e => e.stopPropagation()}>Đăng ký đội</Link>}
                 </div>
             </div>
 
@@ -75,6 +84,7 @@ function MarketplaceEventCard({ event }) {
 }
 
 export default function Events() {
+    const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -201,7 +211,7 @@ export default function Events() {
                     {loading ? (
                         <div className="market-results__message">Đang tải danh sách sự kiện...</div>
                     ) : filteredEvents.length ? (
-                        <div className="market-event-list">{filteredEvents.map((event) => <MarketplaceEventCard event={event} key={event.id} />)}</div>
+                        <div className="market-event-list">{filteredEvents.map((event) => <MarketplaceEventCard event={event} key={event.id} navigate={navigate} />)}</div>
                     ) : (
                         <div className="market-results__message">Không tìm thấy hackathon phù hợp với bộ lọc hiện tại.</div>
                     )}

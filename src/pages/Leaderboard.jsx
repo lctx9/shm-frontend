@@ -4,7 +4,7 @@ import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 import { demoWinners } from '../utils/hackathon';
 
-function PodiumCard({ entry, mode }) {
+function PodiumCard({ entry, mode, isGlobal }) {
     if (!entry) return null;
 
     const isTeam = mode === 'TEAM';
@@ -69,7 +69,9 @@ function PodiumCard({ entry, mode }) {
                         </Link>
                     )}
                     <p className="text-xs text-[#536d75] mt-1 truncate">
-                        {isTeam ? (entry.track || 'Bảng chung') : `${entry.first} nhất · ${entry.second} nhì · ${entry.third} ba`}
+                        {isTeam
+                            ? (isGlobal && entry.eventName ? entry.eventName : (entry.track || 'Bảng chung'))
+                            : `${entry.first} nhất · ${entry.second} nhì · ${entry.third} ba`}
                     </p>
                 </div>
 
@@ -98,7 +100,7 @@ function PodiumCard({ entry, mode }) {
     );
 }
 
-function RankedList({ rows, mode }) {
+function RankedList({ rows, mode, isGlobal }) {
     if (!rows.length) return null;
 
     return (
@@ -118,7 +120,8 @@ function RankedList({ rows, mode }) {
                             <th className="py-3 px-5">
                                 {mode === 'TEAM' ? 'Đội thi & Thành viên' : 'Sinh viên'}
                             </th>
-                            {mode === 'TEAM' && <th className="py-3 px-5">Bảng đấu</th>}
+                            {mode === 'TEAM' && isGlobal && <th className="py-3 px-5">Giải đấu</th>}
+                            {mode === 'TEAM' && !isGlobal && <th className="py-3 px-5">Bảng đấu</th>}
                             <th className="py-3 px-5 text-right pr-6">
                                 {mode === 'TEAM' ? 'Điểm số' : 'Số giải đạt được'}
                             </th>
@@ -157,7 +160,14 @@ function RankedList({ rows, mode }) {
                                         </div>
                                     )}
                                 </td>
-                                {mode === 'TEAM' && (
+                                {mode === 'TEAM' && isGlobal && (
+                                    <td className="py-3.5 px-5 font-semibold text-[#536d75]">
+                                        <span className="text-[10px] font-bold text-[#1474cb] bg-[#e8f4ff] px-2 py-0.5 rounded">
+                                            {entry.eventName || 'Tổng hợp'}
+                                        </span>
+                                    </td>
+                                )}
+                                {mode === 'TEAM' && !isGlobal && (
                                     <td className="py-3.5 px-5 font-semibold text-[#536d75]">
                                         {entry.track || 'Bảng chung'}
                                     </td>
@@ -185,22 +195,33 @@ function RankedList({ rows, mode }) {
 export default function Leaderboard() {
     const [rankings, setRankings] = useState([]);
     const [events, setEvents] = useState([]);
-    const [selectedEventId, setSelectedEventId] = useState('LATEST');
+    const [selectedEventId, setSelectedEventId] = useState('');
     const [mode, setMode] = useState('TEAM');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const fetchLeaderboard = async () => {
+    // Step 1: load events list once on mount
+    useEffect(() => {
+        axiosClient.get('/events')
+            .then(res => {
+                const list = [...(res.result || [])].sort((a, b) => (b.id || 0) - (a.id || 0));
+                setEvents(list);
+                // Auto-select the latest event
+                if (list.length > 0) setSelectedEventId(String(list[0].id));
+            })
+            .catch(() => setEvents([]));
+    }, []);
+
+    // Step 2: load leaderboard whenever selectedEventId changes
+    const fetchLeaderboard = async (evId) => {
+        const id = evId ?? selectedEventId;
+        if (!id) return;
         try {
             setLoading(true);
-            const [rankRes, eventRes] = await Promise.allSettled([
-                axiosClient.get('/leaderboard'),
-                axiosClient.get('/events'),
-            ]);
-            if (rankRes.status === 'fulfilled') setRankings(rankRes.value.result || []);
-            if (eventRes.status === 'fulfilled') setEvents(eventRes.value.result || []);
-            if (rankRes.status === 'rejected') throw rankRes.reason;
             setError('');
+            const url = id === 'ALL' ? '/leaderboard/all' : `/leaderboard?eventId=${id}`;
+            const res = await axiosClient.get(url);
+            setRankings(res.result || []);
         } catch (err) {
             setError(err.message || 'Không thể tải dữ liệu bảng xếp hạng.');
         } finally {
@@ -209,35 +230,23 @@ export default function Leaderboard() {
     };
 
     useEffect(() => {
-        fetchLeaderboard();
-    }, []);
+        if (selectedEventId) fetchLeaderboard(selectedEventId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedEventId]);
 
-    const displayRows = rankings.length ? rankings : demoWinners;
-    
-    const eventOptions = useMemo(() => {
-        return [...events].sort((a, b) => (b.year || 0) - (a.year || 0));
-    }, [events]);
-
-    const activeEventId = useMemo(() => {
-        if (selectedEventId !== 'LATEST') return selectedEventId;
-        if (eventOptions.length > 0) return String(eventOptions[0].id);
-        return '';
-    }, [selectedEventId, eventOptions]);
+    const displayRows = rankings.length ? rankings : (selectedEventId ? [] : demoWinners);
 
     const selectedEventName = useMemo(() => {
-        const found = eventOptions.find(e => String(e.id) === String(activeEventId));
-        return found ? found.name : 'Giải gần nhất';
-    }, [eventOptions, activeEventId]);
+        const found = events.find(e => String(e.id) === String(selectedEventId));
+        return found ? found.name : 'Giải đấu';
+    }, [events, selectedEventId]);
 
     const teamRows = useMemo(() => {
         if (displayRows === demoWinners) {
             return displayRows.map((row, index) => ({ ...row, rank: row.rank || index + 1 }));
         }
-
-        return displayRows
-            .filter((row) => !activeEventId || !row.eventId || String(row.eventId) === String(activeEventId))
-            .map((row, index) => ({ ...row, rank: row.rank || index + 1 }));
-    }, [displayRows, activeEventId]);
+        return displayRows.map((row, index) => ({ ...row, rank: row.rank || index + 1 }));
+    }, [displayRows]);
 
     const individualRows = useMemo(() => {
         const stats = new Map();
@@ -295,14 +304,14 @@ export default function Leaderboard() {
                                     onChange={(e) => setSelectedEventId(e.target.value)}
                                     className="bg-white border border-[#afc0c6] rounded px-3 py-1.5 text-xs font-bold text-[#102d38] focus:border-[var(--dp-blue)] focus:outline-none min-w-[220px]"
                                 >
-                                    <option value="LATEST">Giải đấu mới nhất</option>
-                                    {eventOptions.map((evt) => <option key={evt.id} value={evt.id}>{evt.name}</option>)}
+                                    {events.length === 0 && <option value="">Đang tải...</option>}
+                                    <option value="ALL">Tổng hợp toàn hệ thống</option>
+                                    {events.map((evt) => <option key={evt.id} value={String(evt.id)}>{evt.name}</option>)}
                                 </select>
                             </div>
                         ) : (
-                            <div className="inline-flex items-center gap-2 text-xs font-extrabold text-white bg-[#1fa58f] border border-[#178a76] rounded px-3.5 py-2 shadow-sm">
-                                <span>🏆</span>
-                                <span className="text-white">BXH Cá nhân tự động tích lũy điểm qua tất cả giải đấu</span>
+                            <div className="inline-flex items-center text-xs font-extrabold text-white border rounded px-3.5 py-2 shadow-sm" style={{ background: 'linear-gradient(115deg,#062f3b,#0d5c6e)', borderColor: '#0e5362' }}>
+                                <span>BXH Cá nhân tự động tích lũy điểm qua tất cả giải đấu</span>
                             </div>
                         )}
                     </div>
@@ -327,7 +336,7 @@ export default function Leaderboard() {
                         </div>
 
                         <button 
-                            onClick={fetchLeaderboard} 
+                            onClick={() => fetchLeaderboard(selectedEventId)} 
                             title="Làm mới dữ liệu" 
                             className="h-9 w-9 flex items-center justify-center rounded border border-[#afc0c6] bg-white text-[#1474cb] hover:bg-[#e8f4ff] font-bold text-sm transition-all shadow-sm" 
                             type="button"
@@ -350,13 +359,13 @@ export default function Leaderboard() {
                     <div className="space-y-6">
                         {/* Top 3 Podium Grid */}
                         <div className="grid gap-6 sm:grid-cols-3 items-end max-w-5xl mx-auto pt-2">
-                            <PodiumCard entry={podiumEntries[0]} mode={mode} />
-                            <PodiumCard entry={podiumEntries[1]} mode={mode} />
-                            <PodiumCard entry={podiumEntries[2]} mode={mode} />
+                            <PodiumCard entry={podiumEntries[0]} mode={mode} isGlobal={selectedEventId === 'ALL'} />
+                            <PodiumCard entry={podiumEntries[1]} mode={mode} isGlobal={selectedEventId === 'ALL'} />
+                            <PodiumCard entry={podiumEntries[2]} mode={mode} isGlobal={selectedEventId === 'ALL'} />
                         </div>
 
                         {/* Table of Ranks 4+ */}
-                        <RankedList rows={remainingRows} mode={mode} />
+                        <RankedList rows={remainingRows} mode={mode} isGlobal={selectedEventId === 'ALL'} />
                     </div>
                 ) : (
                     <div className="market-results__message">
