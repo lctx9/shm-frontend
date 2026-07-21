@@ -95,7 +95,7 @@ export default function EventDetail() {
                         <h1>{event.name}</h1>
                         <p className="devpost-detail-summary">{event.description || 'Thông tin giới thiệu chi tiết của sự kiện đang được ban tổ chức cập nhật.'}</p>
                         <div className="devpost-detail-participate">
-                            {canJoin && <Link to={`/my-team?eventId=${event.id}`} className="btn-primary">Tham gia hackathon</Link>}
+                            {canJoin && <Link to={`/my-team?registerEventId=${event.id}`} className="btn-primary">Tham gia hackathon</Link>}
                             {ended && <Link to={`/events/${event.id}/results`} className="btn-primary">Xem kết quả</Link>}
                             <div><strong>Ai có thể tham gia?</strong><span>Sinh viên đăng ký theo đội và lựa chọn một hạng mục thi phù hợp.</span></div>
                         </div>
@@ -123,7 +123,7 @@ export default function EventDetail() {
                 <div>
                     <strong>{event.name}</strong>
                     <span>Deadline: {formatDateTime(deadline)}</span>
-                    {canJoin && <Link to={`/my-team?eventId=${event.id}`}>Tham gia hackathon</Link>}
+                    {canJoin && <Link to={`/my-team?registerEventId=${event.id}`}>Tham gia hackathon</Link>}
                     {ended && <Link to={`/events/${event.id}/results`}>Xem kết quả</Link>}
                 </div>
             </nav>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import { getEventPhase } from '../utils/hackathon';
 import Toast from '../components/Toast';
 
 const staffRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
@@ -128,6 +129,7 @@ export default function TeamExplorer() {
     const [joinActionStatus, setJoinActionStatus] = useState({ teamId: null, message: '', type: '' });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '' });
     const isMentor = role === 'STAFF' || role === 'MENTOR';
     const canJoin = !staffRoles.has(role);
 
@@ -155,6 +157,10 @@ export default function TeamExplorer() {
     }, []);
 
     const matrices = useMemo(() => events.flatMap((event) => event.matrices || []), [events]);
+
+    const registrationEvents = useMemo(() => {
+        return events.filter((event) => getEventPhase(event).key === 'registration');
+    }, [events]);
 
     const assignedTrackIds = useMemo(() => {
         if (!isMentor) return new Set();
@@ -196,13 +202,22 @@ export default function TeamExplorer() {
             await fetchData();
             setJoinActionStatus({ teamId, message: 'Đã gửi yêu cầu gia nhập đội. Vui lòng chờ Leader duyệt.', type: 'success' });
         } catch (err) {
-            setJoinActionStatus({ teamId, message: err.message || 'Không thể gia nhập đội.', type: 'error' });
+            setJoinActionStatus({ teamId: null, message: '', type: '' });
+            setAlertModal({
+                isOpen: true,
+                title: 'Thông báo lỗi',
+                message: err.message || 'Không thể gia nhập đội.'
+            });
         }
     };
 
     const handleJoinPrivate = async (e) => {
         e.preventDefault();
         if (!joinTeam) return;
+        if (!/^\d{4}$/.test(joinPassword)) {
+            setJoinError('Mật khẩu đội phải gồm đúng 4 số.');
+            return;
+        }
         setJoinError('');
 
         try {
@@ -251,10 +266,10 @@ export default function TeamExplorer() {
             </section>
 
             <div className="rounded-lg border border-blue-100 bg-white p-4">
-                <label className="mb-1 block text-sm font-bold text-slate-700">Lọc theo giải đấu</label>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Lọc theo giải đấu (đang mở đăng ký)</label>
                 <select className="input-custom max-w-md" value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
                     <option value="ALL">Tất cả giải đấu</option>
-                    {events.map((event) => (
+                    {registrationEvents.map((event) => (
                         <option key={event.id} value={event.id}>{event.name}</option>
                     ))}
                 </select>
@@ -342,15 +357,44 @@ export default function TeamExplorer() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
                     <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
                         <h3 className="text-lg font-black tracking-wide text-slate-900">Gia nhập {joinTeam.name}</h3>
-                        <p className="mt-2 text-sm text-slate-600">Đội riêng tư yêu cầu mật khẩu do Team Leader cung cấp.</p>
+                        <p className="mt-2 text-sm text-slate-600">Đội riêng tư yêu cầu mật khẩu gồm 4 chữ số do Team Leader cung cấp.</p>
                         <form onSubmit={handleJoinPrivate} className="mt-5 space-y-4">
-                            <input required className="input-custom" value={joinPassword} onChange={(e) => { setJoinPassword(e.target.value); setJoinError(''); }} placeholder="Mật khẩu đội" />
+                            <input 
+                                required 
+                                className="input-custom" 
+                                inputMode="numeric"
+                                maxLength={4}
+                                value={joinPassword} 
+                                onChange={(e) => { 
+                                    setJoinPassword(e.target.value.replace(/\D/g, '')); 
+                                    setJoinError(''); 
+                                }} 
+                                placeholder="Mật khẩu đội (4 số)" 
+                            />
                             {joinError && <p className="mt-2 text-sm font-semibold text-red-600">{joinError}</p>}
                             <div className="flex gap-3">
                                 <button type="button" onClick={() => { setJoinTeam(null); setJoinPassword(''); setJoinError(''); }} className="btn-secondary flex-1">Hủy</button>
                                 <button type="submit" className="btn-primary flex-1">Xác nhận</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {alertModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+                    <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-red-200">
+                        <h3 className="text-lg font-black uppercase tracking-[0.08em] text-red-600">{alertModal.title}</h3>
+                        <p className="mt-4 text-sm text-slate-600 leading-relaxed">{alertModal.message}</p>
+                        <div className="mt-6 flex gap-3">
+                            <button 
+                                type="button" 
+                                onClick={() => setAlertModal({ isOpen: false, title: '', message: '' })} 
+                                className="btn-primary flex-1"
+                            >
+                                Đồng ý
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
