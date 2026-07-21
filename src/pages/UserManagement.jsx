@@ -56,6 +56,9 @@ export default function UserManagement() {
 
     const toggleStatus = async (user) => {
         const status = user.status === 'APPROVED' ? 'REJECTED' : 'APPROVED';
+        const actionText = status === 'REJECTED' ? 'khóa' : 'kích hoạt';
+        if (!window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của ${user.fullName} không?`)) return;
+
         try {
             await axiosClient.put(`/admin/users/${user.id}/status`, { status, reason: status === 'REJECTED' ? 'Tài khoản bị khóa bởi Admin' : '' });
             setUsers((current) => current.map((item) => item.id === user.id ? { ...item, status } : item));

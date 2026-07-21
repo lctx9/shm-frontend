@@ -56,6 +56,9 @@ export default function StaffManagement() {
     };
 
     const handleStatus = async (userId, status) => {
+        const actionText = status === 'REJECTED' ? 'khóa' : 'mở khóa';
+        if (!window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản này không?`)) return;
+
         try {
             setError('');
             await axiosClient.put(`/users/${userId}/status`, { status, reason: status === 'REJECTED' ? 'Tài khoản bị khóa bởi Coordinator' : '' });
