@@ -124,6 +124,7 @@ export default function TeamExplorer() {
     const [joinTeam, setJoinTeam] = useState(null);
     const [joinPassword, setJoinPassword] = useState('');
     const [joinError, setJoinError] = useState('');
+    const [joinActionStatus, setJoinActionStatus] = useState({ teamId: null, message: '', type: '' });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const isMentor = role === 'STAFF' || role === 'MENTOR';
@@ -188,12 +189,13 @@ export default function TeamExplorer() {
     }, [filteredTeams, submissions]);
 
     const handleJoinPublic = async (teamId) => {
+        setJoinActionStatus({ teamId, message: 'Đang gửi yêu cầu...', type: 'info' });
         try {
             await axiosClient.post(`/teams/${teamId}/join-request`);
             await fetchData();
-            alert('Đã gửi yêu cầu gia nhập đội. Vui lòng chờ Leader duyệt.');
+            setJoinActionStatus({ teamId, message: 'Đã gửi yêu cầu gia nhập đội. Vui lòng chờ Leader duyệt.', type: 'success' });
         } catch (err) {
-            alert(err.message || 'Không thể gia nhập đội.');
+            setJoinActionStatus({ teamId, message: err.message || 'Không thể gia nhập đội.', type: 'error' });
         }
     };
 
@@ -297,18 +299,25 @@ export default function TeamExplorer() {
                                     </div>
                                 </dl>
 
-                                <div className="mt-auto pt-6 grid gap-2 sm:grid-cols-2">
-                                    <button type="button" onClick={() => setSelectedTeam(team)} className="btn-secondary">Chi tiết</button>
-                                    {isMentor || staffRoles.has(role) ? (
-                                        <button type="button" onClick={() => openChatForTeam(team)} className="btn-primary">Trao đổi</button>
-                                    ) : canJoin && (
-                                        <button
-                                            type="button"
-                                            onClick={() => team.type === 'PUBLIC' ? handleJoinPublic(team.id) : setJoinTeam(team)}
-                                            className="btn-primary"
-                                        >
-                                            {team.type === 'PUBLIC' ? 'Xin gia nhập' : 'Nhập mật khẩu'}
-                                        </button>
+                                <div className="mt-auto pt-6">
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                        <button type="button" onClick={() => setSelectedTeam(team)} className="btn-secondary">Chi tiết</button>
+                                        {isMentor || staffRoles.has(role) ? (
+                                            <button type="button" onClick={() => openChatForTeam(team)} className="btn-primary">Trao đổi</button>
+                                        ) : canJoin && (
+                                            <button
+                                                type="button"
+                                                onClick={() => team.type === 'PUBLIC' ? handleJoinPublic(team.id) : setJoinTeam(team)}
+                                                className="btn-primary"
+                                            >
+                                                {team.type === 'PUBLIC' ? 'Xin gia nhập' : 'Nhập mật khẩu'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {joinActionStatus.teamId === team.id && (
+                                        <p className={`mt-3 text-xs font-bold text-center ${joinActionStatus.type === 'success' ? 'text-green-600' : joinActionStatus.type === 'info' ? 'text-[#0f63c9]' : 'text-red-600'}`}>
+                                            {joinActionStatus.message}
+                                        </p>
                                     )}
                                 </div>
                             </article>

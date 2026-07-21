@@ -23,6 +23,16 @@ export default function MyTeam() {
     const [privateTeam, setPrivateTeam] = useState(null);
     const [joinError, setJoinError] = useState('');
     const [message, setMessage] = useState({ text: '', type: '' });
+    const [createError, setCreateError] = useState('');
+    const [createSuccess, setCreateSuccess] = useState('');
+    const [pinError, setPinError] = useState('');
+    const [emailsError, setEmailsError] = useState('');
+    const [lobbyActionStatus, setLobbyActionStatus] = useState({ teamId: null, message: '', type: '' });
+    const [inviteError, setInviteError] = useState('');
+    const [inviteSuccess, setInviteSuccess] = useState('');
+    const [actionMessage, setActionMessage] = useState({ text: '', type: '' });
+    const [submitError, setSubmitError] = useState('');
+    const [submitSuccess, setSubmitSuccess] = useState('');
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
     const [savingSubmission, setSavingSubmission] = useState(false);
@@ -138,19 +148,27 @@ export default function MyTeam() {
 
     const handleCreateTeam = async (e) => {
         e.preventDefault();
+        setCreateError('');
+        setCreateSuccess('');
+        setPinError('');
+        setEmailsError('');
+
+        let hasErr = false;
         if (formData.type === 'PRIVATE' && !/^\d{4}$/.test(formData.joinPassword)) {
-            alert('Mã PIN đội private phải gồm đúng 4 số.');
-            return;
+            setPinError('Mã PIN đội private phải gồm đúng 4 số.');
+            hasErr = true;
         }
         const nonNullEmails = memberEmails.filter(email => email.trim() !== '');
         if (nonNullEmails.length < 2) {
-            alert('Bạn phải điền tối thiểu 2 email của thành viên khác.');
-            return;
+            setEmailsError('Bạn phải điền tối thiểu 2 email của thành viên khác.');
+            hasErr = true;
         }
         if (nonNullEmails.includes(currentEmail)) {
-            alert('Bạn không thể tự mời chính mình vào đội.');
-            return;
+            setEmailsError('Bạn không thể tự mời chính mình vào đội.');
+            hasErr = true;
         }
+
+        if (hasErr) return;
 
         try {
             setCreating(true);
@@ -164,30 +182,28 @@ export default function MyTeam() {
                 memberEmails: nonNullEmails,
             });
             setTeam(response.result);
-            alert('Tạo đội thành công!');
-            setMessage({ text: 'Tạo đội thành công.', type: 'success' });
+            setCreateSuccess('Tạo đội thành công!');
             await fetchData();
         } catch (err) {
-            alert(err.message || 'Không thể tạo đội thi.');
-            setMessage({ text: err.message || 'Không thể tạo đội thi.', type: 'error' });
+            setCreateError(err.message || 'Không thể tạo đội thi.');
         } finally {
             setCreating(false);
         }
     };
 
     const handleJoin = async (targetTeam) => {
+        setLobbyActionStatus({ teamId: targetTeam.id, message: 'Đang gửi yêu cầu...', type: 'info' });
         try {
             if (targetTeam.type === 'PRIVATE') {
                 setPrivateTeam(targetTeam);
+                setLobbyActionStatus({ teamId: null, message: '', type: '' });
                 return;
             }
             await axiosClient.post(`/teams/${targetTeam.id}/join-request`);
-            alert('Đã gửi yêu cầu gia nhập thành công. Đang chờ Leader duyệt.');
-            setMessage({ text: 'Đã gửi yêu cầu tham gia đội public.', type: 'success' });
+            setLobbyActionStatus({ teamId: targetTeam.id, message: 'Đã gửi yêu cầu gia nhập thành công. Đang chờ Leader duyệt.', type: 'success' });
             await fetchData();
         } catch (err) {
-            alert(err.message || 'Không thể gửi yêu cầu tham gia đội.');
-            setMessage({ text: err.message || 'Không thể tham gia đội.', type: 'error' });
+            setLobbyActionStatus({ teamId: targetTeam.id, message: err.message || 'Không thể gửi yêu cầu tham gia đội.', type: 'error' });
         }
     };
 
@@ -196,10 +212,10 @@ export default function MyTeam() {
         setJoinError('');
         try {
             await axiosClient.post(`/teams/${privateTeam.id}/join-private`, { password: joinPassword });
-            alert('Gia nhập đội thành công!');
             setPrivateTeam(null);
             setJoinPassword('');
             await fetchData();
+            setMessage({ text: 'Gia nhập đội thành công!', type: 'success' });
         } catch (err) {
             setJoinError(err.message || 'Mã PIN không đúng hoặc không thể tham gia đội.');
         }
@@ -207,13 +223,15 @@ export default function MyTeam() {
 
     const handleInvite = async (e) => {
         e.preventDefault();
+        setInviteError('');
+        setInviteSuccess('');
         try {
             const response = await axiosClient.post(`/teams/${team.id}/invite`, { email: inviteEmail });
             setTeam(response.result);
             setInviteEmail('');
-            alert('Mời thành viên thành công!');
+            setInviteSuccess('Mời thành viên thành công!');
         } catch (err) {
-            alert(err.message || 'Không thể mời thành viên.');
+            setInviteError(err.message || 'Không thể mời thành viên.');
         }
     };
 
@@ -221,12 +239,13 @@ export default function MyTeam() {
         if (!window.confirm("Bạn có chắc chắn muốn chuyển quyền Trưởng nhóm cho thành viên này?")) {
             return;
         }
+        setActionMessage({ text: '', type: '' });
         try {
             const response = await axiosClient.put(`/teams/${team.id}/leader/${memberId}`);
             setTeam(response.result);
-            alert('Chuyển quyền Trưởng nhóm thành công!');
+            setActionMessage({ text: 'Chuyển quyền Trưởng nhóm thành công!', type: 'success' });
         } catch (err) {
-            alert(err.message || 'Không thể chuyển quyền Trưởng nhóm.');
+            setActionMessage({ text: err.message || 'Không thể chuyển quyền Trưởng nhóm.', type: 'error' });
         }
     };
 
@@ -239,33 +258,36 @@ export default function MyTeam() {
         if (!window.confirm(confirmMsg)) {
             return;
         }
+        setActionMessage({ text: '', type: '' });
         try {
             await axiosClient.delete(`/teams/${team.id}/members/${memberId}`);
-            alert('Xóa thành viên khỏi đội thành công!');
+            setActionMessage({ text: 'Xóa thành viên khỏi đội thành công!', type: 'success' });
             await fetchData();
         } catch (err) {
-            alert(err.message || 'Không thể xóa thành viên.');
+            setActionMessage({ text: err.message || 'Không thể xóa thành viên.', type: 'error' });
         }
     };
 
     const handleApproveRequest = async (requestId) => {
+        setActionMessage({ text: '', type: '' });
         try {
             const response = await axiosClient.post(`/teams/${team.id}/join-requests/${requestId}/approve`);
             setTeam(response.result);
             setJoinRequests((current) => current.filter((request) => request.id !== requestId));
-            alert('Đã duyệt yêu cầu tham gia!');
+            setActionMessage({ text: 'Đã duyệt yêu cầu tham gia!', type: 'success' });
         } catch (err) {
-            alert(err.message || 'Không thể duyệt yêu cầu.');
+            setActionMessage({ text: err.message || 'Không thể duyệt yêu cầu.', type: 'error' });
         }
     };
 
     const handleRejectRequest = async (requestId) => {
+        setActionMessage({ text: '', type: '' });
         try {
             await axiosClient.post(`/teams/${team.id}/join-requests/${requestId}/reject`);
             setJoinRequests((current) => current.filter((request) => request.id !== requestId));
-            alert('Đã từ chối yêu cầu tham gia.');
+            setActionMessage({ text: 'Đã từ chối yêu cầu tham gia.', type: 'success' });
         } catch (err) {
-            alert(err.message || 'Không thể từ chối yêu cầu.');
+            setActionMessage({ text: err.message || 'Không thể từ chối yêu cầu.', type: 'error' });
         }
     };
 
@@ -275,8 +297,10 @@ export default function MyTeam() {
         );
         const memberCount = team?.members?.length || 0;
 
+        setActionMessage({ text: '', type: '' });
+
         if (isLeaderOfTeam) {
-            alert("Bạn là Trưởng nhóm. Bạn phải chuyển quyền Trưởng nhóm cho thành viên khác trước khi rời đội.");
+            setActionMessage({ text: "Bạn là Trưởng nhóm. Bạn phải chuyển quyền Trưởng nhóm cho thành viên khác trước khi rời đội.", type: 'error' });
             return;
         }
 
@@ -291,18 +315,20 @@ export default function MyTeam() {
 
         try {
             await axiosClient.post('/teams/leave');
-            alert('Rời khỏi đội thành công!');
             setTeam(null);
+            setMessage({ text: 'Rời khỏi đội thành công!', type: 'success' });
             await fetchData();
         } catch (err) {
-            alert(err.message || 'Không thể rời đội.');
+            setActionMessage({ text: err.message || 'Không thể rời đội.', type: 'error' });
         }
     };
 
     const handleSubmission = async (e) => {
         e.preventDefault();
+        setSubmitError('');
+        setSubmitSuccess('');
         if (!isLeader) {
-            alert('Chỉ Team Leader được nộp hoặc cập nhật bài.');
+            setSubmitError('Chỉ Team Leader được nộp hoặc cập nhật bài.');
             return;
         }
         try {
@@ -312,11 +338,9 @@ export default function MyTeam() {
                 ? await axiosClient.put(`/submissions/${submission.id}`, payload)
                 : await axiosClient.post('/submissions', payload);
             setSubmission(response.result);
-            alert('Lưu bài nộp thành công!');
-            setMessage({ text: 'Lưu bài nộp thành công.', type: 'success' });
+            setSubmitSuccess('Lưu bài nộp thành công!');
         } catch (err) {
-            alert(err.message || 'Không thể lưu bài nộp.');
-            setMessage({ text: err.message || 'Không thể lưu bài nộp.', type: 'error' });
+            setSubmitError(err.message || 'Không thể lưu bài nộp.');
         } finally {
             setSavingSubmission(false);
         }
@@ -415,10 +439,12 @@ export default function MyTeam() {
                                             </select>
                                         </div>
                                     </div>
+
                                     {formData.type === 'PRIVATE' && (
                                         <div>
                                             <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mã PIN 4 số</label>
-                                            <input className="input-custom max-w-xs" inputMode="numeric" maxLength={4} value={formData.joinPassword} onChange={(e) => setFormData({ ...formData, joinPassword: e.target.value.replace(/\D/g, '') })} />
+                                            <input className="input-custom max-w-xs" inputMode="numeric" maxLength={4} value={formData.joinPassword} onChange={(e) => { setFormData({ ...formData, joinPassword: e.target.value.replace(/\D/g, '') }); setPinError(''); }} />
+                                            {pinError && <p className="mt-1 text-xs font-semibold text-red-600">{pinError}</p>}
                                         </div>
                                     )}
 
@@ -440,6 +466,7 @@ export default function MyTeam() {
                                                             const newEmails = [...memberEmails];
                                                             newEmails[index] = e.target.value;
                                                             setMemberEmails(newEmails);
+                                                            setEmailsError('');
                                                         }}
                                                     />
                                                     {memberEmails.length > 2 && (
@@ -449,6 +476,7 @@ export default function MyTeam() {
                                                             onClick={() => {
                                                                 const newEmails = memberEmails.filter((_, i) => i !== index);
                                                                 setMemberEmails(newEmails);
+                                                                setEmailsError('');
                                                             }}
                                                         >
                                                             Xóa
@@ -465,9 +493,12 @@ export default function MyTeam() {
                                                     + Thêm ô nhập email
                                                 </button>
                                             )}
+                                            {emailsError && <p className="mt-1.5 text-xs font-semibold text-red-600">{emailsError}</p>}
                                         </div>
                                     </div>
 
+                                    {createError && <p className="text-sm font-semibold text-red-600">{createError}</p>}
+                                    {createSuccess && <p className="text-sm font-semibold text-green-600">{createSuccess}</p>}
                                     <button type="submit" disabled={creating} className="btn-primary w-full">{creating ? 'Đang tạo...' : 'Tạo đội'}</button>
                                 </form>
                             )}
@@ -553,6 +584,8 @@ export default function MyTeam() {
                                     <button type="submit" disabled={savingSubmission || !isLeader} className="btn-primary w-full">
                                         {!isLeader ? 'Chỉ leader được nộp bài' : savingSubmission ? 'Đang lưu...' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
                                     </button>
+                                    {submitError && <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p>}
+                                    {submitSuccess && <p className="mt-2 text-sm font-semibold text-green-600">{submitSuccess}</p>}
                                 </form>
                             )}
                         </div>
@@ -574,6 +607,11 @@ export default function MyTeam() {
                                     </button>
                                 </div>
                             </div>
+                            {actionMessage.text && (
+                                <p className={`mt-3 text-sm font-semibold ${actionMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {actionMessage.text}
+                                </p>
+                            )}
                             <div className="mt-5 divide-y divide-[#d7e6f8]">
                                 {(team.members || []).map((member) => (
                                     <div key={member.id} className="py-4">
@@ -611,10 +649,14 @@ export default function MyTeam() {
                                         </div>
                                     </div>
 
-                                    <form onSubmit={handleInvite} className="flex gap-2">
-                                        <input required type="email" className="input-custom" placeholder="Email thành viên" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-                                        <button type="submit" className="btn-primary">Mời</button>
-                                    </form>
+                                    <div>
+                                        <form onSubmit={handleInvite} className="flex gap-2">
+                                            <input required type="email" className="input-custom" placeholder="Email thành viên" value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); setInviteSuccess(''); }} />
+                                            <button type="submit" className="btn-primary">Mời</button>
+                                        </form>
+                                        {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
+                                        {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
+                                    </div>
                                 </div>
                             )}
                         </div>
