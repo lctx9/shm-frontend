@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const defaultCriteria = [
     { id: 'presentation', label: 'Trình bày', description: 'Storytelling và trả lời câu hỏi', maxScore: 100, weight: 25 },
@@ -178,7 +179,7 @@ export default function ScoringConfiguration() {
                 </div>
             </section>
 
-            {message && <div className={`rounded-xl border p-4 text-sm font-bold ${message.type === 'success' ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>{message.text}</div>}
+            <Toast message={message} onClose={() => setMessage(null)} />
 
             {!selectedEvent ? (
                 <section className="rounded-2xl border border-blue-100 bg-white p-10 text-center text-slate-500">Chưa có sự kiện. Hãy tạo sự kiện trước khi cấu hình chấm điểm.</section>

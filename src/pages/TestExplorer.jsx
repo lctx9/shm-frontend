@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 export default function TeamExplorer() {
     const [teams, setTeams] = useState([]);
@@ -61,11 +62,7 @@ export default function TeamExplorer() {
                 <p className="text-sm text-gray-500 mt-1">Tìm kiếm và xin gia nhập vào các đội thi đang thiếu thành viên.</p>
             </div>
 
-            {message.text && (
-                <div className={`p-4 text-sm rounded-lg border ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                    {message.text}
-                </div>
-            )}
+            <Toast message={message} onClose={() => setMessage({ text: '', type: '' })} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {teams.length === 0 ? (
