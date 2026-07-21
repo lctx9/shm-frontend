@@ -9,7 +9,7 @@ const defaultCriteria = [
     { id: 'business', label: 'Tính ứng dụng', description: 'Độ phù hợp và khả năng mở rộng', maxScore: 100, weight: 20 },
 ];
 
-const emptyForm = () => ({ guidelineUrl: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
+const emptyForm = () => ({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
 
 function parseCriteria(value) {
     if (!value) return defaultCriteria;
@@ -24,6 +24,7 @@ function parseCriteria(value) {
 function formFromMatrix(matrix) {
     return matrix ? {
         guidelineUrl: matrix.guidelineUrl || '',
+        submissionStartDate: matrix.submissionStartDate?.slice(0, 16) || '',
         submissionDeadline: matrix.submissionDeadline?.slice(0, 16) || '',
         topN: matrix.topN || 10,
         judgeIds: matrix.judges?.map((judge) => judge.id) || [],
@@ -114,6 +115,9 @@ export default function ScoringConfiguration() {
     const validate = () => {
         if (!selectedMatrix) return 'Hãy chọn một vòng đấu.';
         if (!form.submissionDeadline) return 'Hãy đặt deadline cho vòng đấu.';
+        if (form.submissionStartDate && form.submissionDeadline && new Date(form.submissionStartDate) > new Date(form.submissionDeadline)) {
+            return 'Thời gian mở nộp bài không được sau hạn nộp bài.';
+        }
         if (form.judgeIds.length < 2 || form.judgeIds.length > 4) return 'Mỗi vòng đấu cần từ 2 đến 4 Judge.';
         if (!form.criteria.length || form.criteria.some((criterion) => !criterion.label.trim() || Number(criterion.maxScore) <= 0 || Number(criterion.weight) <= 0)) return 'Mỗi tiêu chí cần tên, điểm tối đa và trọng số hợp lệ.';
         if (totalWeight !== 100) return `Tổng trọng số hiện là ${totalWeight}%. Hãy điều chỉnh về 100%.`;
@@ -122,6 +126,7 @@ export default function ScoringConfiguration() {
 
     const payloadFor = (matrix) => ({
         guidelineUrl: form.guidelineUrl,
+        submissionStartDate: form.submissionStartDate || null,
         submissionDeadline: form.submissionDeadline,
         judgeIds: form.judgeIds.map(Number),
         topN: matrix.finalRound ? null : Math.max(1, Number(form.topN)),
@@ -200,7 +205,7 @@ export default function ScoringConfiguration() {
 
                         {activeStep === 'setup' && <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
                             <div className="border-b border-blue-100 pb-4"><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Bước 1/3</p><h3 className="mt-1 text-lg font-black text-slate-900">Thiết lập vòng đấu</h3><p className="mt-1 text-sm text-slate-500">Đặt tài liệu, thời hạn nộp và số đội được đi tiếp.</p></div>
-                            <div className="mt-5 grid gap-4 md:grid-cols-2"><label className="text-sm font-bold text-slate-700">Guideline / đề bài<input className="input-custom mt-2" placeholder="Link PDF, Drive hoặc tài liệu" value={form.guidelineUrl} onChange={(event) => setForm({ ...form, guidelineUrl: event.target.value })} /></label><label className="text-sm font-bold text-slate-700">Deadline vòng đấu<input type="datetime-local" className="input-custom mt-2" value={form.submissionDeadline} onChange={(event) => setForm({ ...form, submissionDeadline: event.target.value })} /></label></div>
+                            <div className="mt-5 grid gap-4 md:grid-cols-3"><label className="text-sm font-bold text-slate-700">Guideline / đề bài<input className="input-custom mt-2" placeholder="Link PDF, Drive hoặc tài liệu" value={form.guidelineUrl} onChange={(event) => setForm({ ...form, guidelineUrl: event.target.value })} /></label><label className="text-sm font-bold text-slate-700">Thời gian mở nộp bài<input type="datetime-local" className="input-custom mt-2" value={form.submissionStartDate} onChange={(event) => setForm({ ...form, submissionStartDate: event.target.value })} /></label><label className="text-sm font-bold text-slate-700">Deadline vòng đấu<input type="datetime-local" className="input-custom mt-2" value={form.submissionDeadline} onChange={(event) => setForm({ ...form, submissionDeadline: event.target.value })} /></label></div>
                             {!selectedMatrix?.finalRound && <label className="mt-4 block max-w-xs text-sm font-bold text-slate-700">Số đội đi tiếp (Top N)<input type="number" min="1" className="input-custom mt-2" value={form.topN} onChange={(event) => setForm({ ...form, topN: event.target.value })} /></label>}
                         </section>}
 
