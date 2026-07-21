@@ -20,7 +20,8 @@ export default function MyTeam() {
     const [joinRequests, setJoinRequests] = useState([]);
     const [myInvitations, setMyInvitations] = useState([]);
     const [sentInvitations, setSentInvitations] = useState([]);
-    const [submission, setSubmission] = useState(null);
+    const [submission, setSubmission] = useState(null);        // submission của vòng đang chọn
+    const [submissionsMap, setSubmissionsMap] = useState({});   // { matrixId: SubmissionResponse }
     const [mode, setMode] = useState('CREATE');
     const [teamFilter, setTeamFilter] = useState('ALL');
     const [showActions, setShowActions] = useState(false);
@@ -45,6 +46,7 @@ export default function MyTeam() {
     const [savingSubmission, setSavingSubmission] = useState(false);
     const [memberEmails, setMemberEmails] = useState(['', '']);
     const [showPin, setShowPin] = useState(false);
+    const [submissionValues, setSubmissionValues] = useState({}); // { fieldId: value } theo submissionFormSchema
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -182,15 +184,33 @@ export default function MyTeam() {
                     setMatrices(teamMatrices);
                     
                     const loadedSubmissions = submissionRes.status === 'fulfilled' ? submissionRes.value.result || [] : [];
-                    const loadedSubmission = Array.isArray(loadedSubmissions) ? loadedSubmissions.find(s => String(s.teamId) === String(currentEventTeam.id)) || null : null;
-                    setSubmission(loadedSubmission);
+                    // Key tất cả submissions theo matrixId để tìm kiếm O(1)
+                    const newSubmissionsMap = {};
+                    if (Array.isArray(loadedSubmissions)) {
+                        loadedSubmissions
+                            .filter(s => String(s.teamId) === String(currentEventTeam.id))
+                            .forEach(s => { newSubmissionsMap[String(s.matrixId)] = s; });
+                    }
+                    setSubmissionsMap(newSubmissionsMap);
+
+                    const firstMatrixId = Object.keys(newSubmissionsMap)[0] || teamMatrices[0]?.id || '';
+                    const roundSubmission = newSubmissionsMap[String(firstMatrixId)] || null;
+                    setSubmission(roundSubmission);
                     
                     setJoinRequests(requestRes.status === 'fulfilled' ? requestRes.value.result || [] : []);
                     setSentInvitations(sentInvRes.status === 'fulfilled' ? sentInvRes.value.result || [] : []);
+
+                    // Parse dữ liệu form từ submission của vòng đầu tiên (nếu có)
+                    let initialValues = {};
+                    if (roundSubmission?.submissionDataJson) {
+                        try { initialValues = JSON.parse(roundSubmission.submissionDataJson); } catch {}
+                    }
+                    setSubmissionValues(initialValues);
+
                     setFormData((current) => ({
                         ...current,
-                        matrixId: loadedSubmission?.matrixId || teamMatrices[0]?.id || '',
-                        fileUrl: loadedSubmission?.fileUrl || '',
+                        matrixId: firstMatrixId,
+                        fileUrl: roundSubmission?.fileUrl || '',
                     }));
                 } catch (error) {
                     console.error("Error fetching data for team", error);
@@ -240,6 +260,33 @@ export default function MyTeam() {
         if (!prevMatrix || !prevMatrix.submissionDeadline) return true;
         return new Date() >= new Date(prevMatrix.submissionDeadline);
     }, [selectedMatrix, matrices]);
+
+    // Parse submissionFormSchema của sự kiện hiện tại
+    const submissionSchema = useMemo(() => {
+        const raw = currentEvent?.submissionFormSchema;
+        if (!raw) return null;
+        try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+        } catch {
+            return null;
+        }
+    }, [currentEvent]);
+
+    // Khi đổi vòng thi → cập nhật submission và pre-fill form values từ vòng đó
+    useEffect(() => {
+        if (!formData.matrixId) return;
+        const roundSub = submissionsMap[String(formData.matrixId)] || null;
+        setSubmission(roundSub);
+        let vals = {};
+        if (roundSub?.submissionDataJson) {
+            try { vals = JSON.parse(roundSub.submissionDataJson); } catch {}
+        }
+        setSubmissionValues(vals);
+        setFormData(prev => ({ ...prev, fileUrl: roundSub?.fileUrl || '' }));
+        setSubmitError('');
+        setSubmitSuccess('');
+    }, [formData.matrixId, submissionsMap]);
 
     const isSubmissionStarted = useMemo(() => {
         if (!selectedMatrix?.submissionStartDate) return true;
@@ -529,11 +576,38 @@ export default function MyTeam() {
         }
         try {
             setSavingSubmission(true);
-            const payload = { teamId: team.id, matrixId: Number(formData.matrixId), fileUrl: formData.fileUrl };
+
+            let fileUrl = formData.fileUrl;
+            let submissionDataJson = null;
+
+            if (submissionSchema && submissionSchema.length > 0) {
+                // Validate các trường required từ schema
+                for (const field of submissionSchema) {
+                    if (field.required && !submissionValues[field.id]?.trim()) {
+                        setSubmitError(`Vui lòng điền đầy đủ trường "${field.label}"`);
+                        return;
+                    }
+                }
+                submissionDataJson = JSON.stringify(submissionValues);
+                // Dùng field đầu tiên có type url làm fileUrl legacy cho backward compat
+                const firstUrlField = submissionSchema.find(f => f.type === 'url');
+                if (firstUrlField) fileUrl = submissionValues[firstUrlField.id] || '';
+            }
+
+            const payload = {
+                teamId: team.id,
+                matrixId: Number(formData.matrixId),
+                fileUrl,
+                submissionDataJson,
+            };
+
             const response = submission
                 ? await axiosClient.put(`/submissions/${submission.id}`, payload)
                 : await axiosClient.post('/submissions', payload);
-            setSubmission(response.result);
+
+            const saved = response.result;
+            setSubmission(saved);
+            setSubmissionsMap(prev => ({ ...prev, [String(formData.matrixId)]: saved }));
             setSubmitSuccess('Lưu bài nộp thành công!');
         } catch (err) {
             setSubmitError(err.message || 'Không thể lưu bài nộp.');
@@ -594,7 +668,7 @@ export default function MyTeam() {
                                 </div>
                                 <strong>Realtime</strong>
                             </div>
-                            <TeamChat embedded />
+                            <TeamChat embedded teamId={team.id} />
                         </div>
                         <div className="team-submission-panel rounded-lg border border-[#d7e6f8] bg-white p-6">
                             <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Đề thi và nộp bài</h2>
@@ -635,7 +709,42 @@ export default function MyTeam() {
                                             Đã quá hạn nộp bài của vòng thi này.
                                         </div>
                                     )}
-                                    <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
+
+                                    {/* === DYNAMIC FORM FIELDS từ submissionFormSchema === */}
+                                    {submissionSchema && submissionSchema.length > 0 ? (
+                                        <div className="space-y-4">
+                                            {submissionSchema.map((field) => (
+                                                <div key={field.id}>
+                                                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">
+                                                        {field.label}
+                                                        {field.required && <span className="ml-1 text-red-500">*</span>}
+                                                    </label>
+                                                    {field.type === 'textarea' ? (
+                                                        <textarea
+                                                            className="input-custom min-h-[80px] resize-y"
+                                                            placeholder={field.placeholder || ''}
+                                                            value={submissionValues[field.id] || ''}
+                                                            disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
+                                                            onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
+                                                        />
+                                                    ) : (
+                                                        <input
+                                                            type={field.type || 'text'}
+                                                            className="input-custom"
+                                                            placeholder={field.type === 'url' ? 'https://' : (field.placeholder || '')}
+                                                            value={submissionValues[field.id] || ''}
+                                                            disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
+                                                            onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
+                                                        />
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        /* Fallback: form cũ — event chưa cấu hình schema */
+                                        <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
+                                    )}
+
                                     <button type="submit" disabled={savingSubmission || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
                                         {!isLeader ? 'Chỉ leader được nộp bài' : savingSubmission ? 'Đang lưu...' : !isEventStarted ? 'Giải đấu chưa bắt đầu' : !isPreviousRoundEnded ? 'Vòng trước chưa kết thúc' : !isSubmissionStarted ? 'Cổng nộp bài chưa mở' : isSubmissionEnded ? 'Đã hết hạn nộp bài' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
                                     </button>
