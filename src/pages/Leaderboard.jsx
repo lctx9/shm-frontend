@@ -327,11 +327,11 @@ export default function Leaderboard() {
 
                         <button 
                             onClick={fetchLeaderboard} 
-                            className="events-marketplace__search button text-xs border border-[#afc0c6] rounded bg-white text-[#1474cb] hover:bg-[#e8f4ff] font-bold px-3 py-2 transition-all min-w-0" 
-                            style={{ minWidth: 'auto', minHeight: '36px' }}
+                            title="Làm mới dữ liệu" 
+                            className="h-9 w-9 flex items-center justify-center rounded border border-[#afc0c6] bg-white text-[#1474cb] hover:bg-[#e8f4ff] font-bold text-sm transition-all shadow-sm" 
                             type="button"
                         >
-                            ↻ Làm mới
+                            ↻
                         </button>
                     </div>
                 </div>
@@ -339,15 +339,6 @@ export default function Leaderboard() {
 
             {/* Main Content Body - Synchronized with Events Page Body */}
             <div className="events-marketplace__body flex-col space-y-5" style={{ gridTemplateColumns: '1fr' }}>
-                <div className="market-results__toolbar">
-                    <p className="text-xs font-extrabold uppercase tracking-wider text-[#102d38]">
-                        Đang xem: <strong className="text-[#1474cb]">{mode === 'TEAM' ? 'Thành tích đội thi' : 'Thành tích cá nhân'}</strong>
-                    </p>
-                    <p className="text-xs text-[#56717a] font-bold">
-                        {rankedRows.length} thứ hạng · {mode === 'TEAM' ? selectedEventName : 'Tất cả giải đấu'}
-                    </p>
-                </div>
-
                 {error && (
                     <div className="market-results__message market-results__message--error">
                         {error}

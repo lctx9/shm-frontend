@@ -98,8 +98,8 @@ function OperationalDashboard() {
                             Chào mừng quay trở lại! Bạn đang làm việc với vai trò <span className="font-extrabold text-[var(--shield-blue)]">{roleCopy[role] || role || 'Khách'}</span>.
                         </p>
                     </div>
-                    <button type="button" onClick={fetchDashboardStats} disabled={loading} className="btn-secondary transition-all active:scale-95 flex items-center gap-2">
-                        {loading ? 'Đang làm mới...' : '↻ Làm mới dữ liệu'}
+                    <button type="button" onClick={fetchDashboardStats} disabled={loading} title="Làm mới dữ liệu" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold transition-all active:scale-95">
+                        {loading ? <span className="animate-spin">↻</span> : '↻'}
                     </button>
                 </div>
             </section>

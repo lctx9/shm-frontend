@@ -179,7 +179,7 @@ export default function Events() {
                         ))}
                     </fieldset>
 
-                    <button type="button" className="market-filters__refresh" onClick={fetchEvents}>↻ Làm mới dữ liệu</button>
+                    <button type="button" className="market-filters__refresh h-8 w-8 inline-flex items-center justify-center rounded border border-[#afc0c6] bg-white text-[#1474cb] hover:bg-[#e8f4ff] font-bold text-sm transition-all" onClick={fetchEvents} title="Làm mới dữ liệu">↻</button>
                 </aside>
 
                 <section className="market-results">

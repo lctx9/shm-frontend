@@ -231,7 +231,7 @@ export default function TeamExplorer() {
                             : 'Theo dõi các đội trong sự kiện, thành viên, track và trạng thái tham gia.'}
                     </p>
                 </div>
-                <button type="button" onClick={fetchData} className="btn-secondary">Làm mới</button>
+                <button type="button" onClick={fetchData} title="Làm mới dữ liệu" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             <section className="grid gap-4 md:grid-cols-3">

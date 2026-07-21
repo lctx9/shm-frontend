@@ -116,7 +116,7 @@ export default function ScoringStats() {
                         Theo dõi tiến độ chấm, điểm trung bình, độ đồng thuận khoa học (Inter-rater Reliability) và chỉ số Cohen's Kappa (κ).
                     </p>
                 </div>
-                <button type="button" onClick={fetchData} className="btn-secondary">Làm mới</button>
+                <button type="button" onClick={fetchData} title="Làm mới dữ liệu" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}

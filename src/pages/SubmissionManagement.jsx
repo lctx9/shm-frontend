@@ -42,7 +42,7 @@ export default function SubmissionManagement() {
                     <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Bài nộp của đội thi</h2>
                     <p className="mt-2 text-sm text-slate-600">Theo dõi bài đã nộp, trạng thái chấm và link tài liệu của từng đội.</p>
                 </div>
-                <button type="button" onClick={fetchSubmissions} className="btn-secondary">Làm mới</button>
+                <button type="button" onClick={fetchSubmissions} title="Làm mới bài nộp" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             <section className="grid gap-4 rounded-lg border border-blue-100 bg-white p-4 md:grid-cols-2">

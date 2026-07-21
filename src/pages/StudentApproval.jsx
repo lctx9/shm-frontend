@@ -164,7 +164,7 @@ export default function StudentApproval() {
                     <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Phê duyệt thí sinh</h2>
                     <p className="mt-2 text-sm text-slate-600">Bấm chi tiết để đối chiếu thông tin đăng ký và thẻ sinh viên đã upload.</p>
                 </div>
-                <button type="button" onClick={fetchUsers} className="btn-secondary">Làm mới</button>
+                <button type="button" onClick={fetchUsers} title="Làm mới danh sách" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}

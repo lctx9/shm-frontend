@@ -91,7 +91,7 @@ export default function Notifications() {
                     <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Thông báo của tôi</h2>
                     <div className="flex gap-2">
                         {notifications.some((item) => !item.read) && <button type="button" onClick={markAllAsRead} className="btn-secondary">Đọc tất cả</button>}
-                        <button type="button" onClick={fetchNotifications} className="btn-secondary">Làm mới</button>
+                        <button type="button" onClick={fetchNotifications} title="Làm mới thông báo" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
                     </div>
                 </div>
                 {error && <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">{error}</div>}
