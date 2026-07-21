@@ -171,8 +171,8 @@ export default function ScoringConfiguration() {
                     </div>
                     <label className="min-w-72 text-xs font-black uppercase tracking-wide text-teal-200">
                         Sự kiện
-                        <select className="input-custom mt-2 !border-white/30 !bg-white !text-slate-900 shadow-sm" value={selectedEventId} onChange={(event) => changeEvent(event.target.value)}>
-                            {events.map((event) => <option key={event.id} value={event.id}>{event.name} · {event.season} {event.year}</option>)}
+                        <select className="input-custom mt-2 !border-white/30 !bg-white !text-slate-900 shadow-sm" value={selectedEventId} onChange={(e) => changeEvent(e.target.value)}>
+                            {events.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
                         </select>
                     </label>
                 </div>
