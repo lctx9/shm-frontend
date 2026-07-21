@@ -197,11 +197,6 @@ export default function Events() {
                         </div>
                     </div>
 
-                    <div className="market-community-banner">
-                        <span>Sẵn sàng xây dựng, kết nối và chinh phục hackathon?</span>
-                        <Link to="/teams">Tìm đồng đội ngay</Link>
-                    </div>
-
                     <Toast error={error} onClose={() => setError('')} />
                     {loading ? (
                         <div className="market-results__message">Đang tải danh sách sự kiện...</div>
