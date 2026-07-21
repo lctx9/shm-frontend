@@ -58,7 +58,7 @@ export default function Header() {
                     <NavLink to="/about" className={navClass}>Về chúng tôi</NavLink>
                     {token && !isManager && <NavLink to="/my-team" className={navClass}>Đội của tôi</NavLink>}
                 </nav>
-
+ 
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
@@ -85,7 +85,7 @@ export default function Header() {
                                 </span>
                                 <span className="hidden max-w-36 truncate sm:inline">{displayName}</span>
                             </button>
-
+ 
                             {showDropdown && (
                                 <div className="absolute right-0 mt-2 w-52 rounded-lg border border-[#d7e6f8] bg-white py-2 shadow-lg">
                                     <Link to={isManager ? '/dashboard' : '/profile'} onClick={() => setShowDropdown(false)} className="block px-4 py-2 text-sm font-bold text-[#0b1f3f] hover:bg-[#eaf3ff]">

@@ -113,7 +113,7 @@ export default function Homepage() {
                     )}
 
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                        <Link to={isEnded ? '/leaderboard' : `/my-team?eventId=${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-[var(--shield-blue)] bg-white border border-[var(--shield-blue)] hover:bg-[var(--shield-blue-soft)] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                        <Link to={isEnded ? '/leaderboard' : `/my-team?registerEventId=${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-[var(--shield-blue)] bg-white border border-[var(--shield-blue)] hover:bg-[var(--shield-blue-soft)] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                             {isEnded ? 'Xem bảng xếp hạng' : 'Đăng ký tham gia ngay'}
                         </Link>
                         <Link to={`/events/${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-[var(--shield-blue)] bg-white border border-[var(--shield-line)] shadow-sm hover:bg-[var(--shield-blue-soft)] transition-all duration-200">

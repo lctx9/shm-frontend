@@ -55,7 +55,7 @@ function MarketplaceEventCard({ event }) {
                     <Link to={`/events/${event.id}`} className="btn-primary">Xem chi tiết</Link>
                     {phase.key === 'ended'
                         ? <Link to={`/events/${event.id}/results`} className="btn-secondary">Xem kết quả</Link>
-                        : phase.key === 'registration' && <Link to={`/my-team?eventId=${event.id}`} className="btn-secondary">Đăng ký đội</Link>}
+                        : phase.key === 'registration' && <Link to={`/my-team?registerEventId=${event.id}`} className="btn-secondary">Đăng ký đội</Link>}
                 </div>
             </div>
 
