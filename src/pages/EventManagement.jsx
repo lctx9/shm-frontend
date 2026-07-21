@@ -537,7 +537,6 @@ export default function EventManagement() {
         const trimmedName = templateName.trim();
         if (!trimmedName) {
             setMessage({ type: 'error', text: 'Vui lòng nhập tên template cần lưu.' });
-            alert('Vui lòng nhập tên template cần lưu.');
             return;
         }
         setLoading(true);

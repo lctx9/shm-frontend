@@ -33,6 +33,7 @@ export default function MyTeam() {
     const [actionMessage, setActionMessage] = useState({ text: '', type: '' });
     const [submitError, setSubmitError] = useState('');
     const [submitSuccess, setSubmitSuccess] = useState('');
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
     const [loading, setLoading] = useState(true);
     const [creating, setCreating] = useState(false);
     const [savingSubmission, setSavingSubmission] = useState(false);
@@ -244,17 +245,21 @@ export default function MyTeam() {
     };
 
     const handleTransfer = async (memberId) => {
-        if (!window.confirm("Bạn có chắc chắn muốn chuyển quyền Trưởng nhóm cho thành viên này?")) {
-            return;
-        }
         setActionMessage({ text: '', type: '' });
-        try {
-            const response = await axiosClient.put(`/teams/${team.id}/leader/${memberId}`);
-            setTeam(response.result);
-            setActionMessage({ text: 'Chuyển quyền Trưởng nhóm thành công!', type: 'success' });
-        } catch (err) {
-            setActionMessage({ text: err.message || 'Không thể chuyển quyền Trưởng nhóm.', type: 'error' });
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Chuyển quyền Trưởng nhóm',
+            message: 'Bạn có chắc chắn muốn chuyển quyền Trưởng nhóm cho thành viên này?',
+            onConfirm: async () => {
+                try {
+                    const response = await axiosClient.put(`/teams/${team.id}/leader/${memberId}`);
+                    setTeam(response.result);
+                    setActionMessage({ text: 'Chuyển quyền Trưởng nhóm thành công!', type: 'success' });
+                } catch (err) {
+                    setActionMessage({ text: err.message || 'Không thể chuyển quyền Trưởng nhóm.', type: 'error' });
+                }
+            }
+        });
     };
 
     const handleKick = async (memberId) => {
@@ -263,17 +268,21 @@ export default function MyTeam() {
         if (memberCount <= 3) {
             confirmMsg = "Đội hiện tại chỉ có 3 người. Nếu bạn xóa thành viên này, số thành viên sẽ dưới 3 và đội sẽ tự động bị GIẢI TÁN. Bạn có chắc chắn muốn xóa?";
         }
-        if (!window.confirm(confirmMsg)) {
-            return;
-        }
         setActionMessage({ text: '', type: '' });
-        try {
-            await axiosClient.delete(`/teams/${team.id}/members/${memberId}`);
-            setActionMessage({ text: 'Xóa thành viên khỏi đội thành công!', type: 'success' });
-            await fetchData();
-        } catch (err) {
-            setActionMessage({ text: err.message || 'Không thể xóa thành viên.', type: 'error' });
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Xóa thành viên',
+            message: confirmMsg,
+            onConfirm: async () => {
+                try {
+                    await axiosClient.delete(`/teams/${team.id}/members/${memberId}`);
+                    setActionMessage({ text: 'Xóa thành viên khỏi đội thành công!', type: 'success' });
+                    await fetchData();
+                } catch (err) {
+                    setActionMessage({ text: err.message || 'Không thể xóa thành viên.', type: 'error' });
+                }
+            }
+        });
     };
 
     const handleApproveRequest = async (requestId) => {
@@ -317,18 +326,21 @@ export default function MyTeam() {
             confirmMsg = "Đội của bạn hiện có 3 người. Khi bạn rời đi, số thành viên sẽ dưới 3 và đội sẽ tự động bị GIẢI TÁN. Bạn có chắc chắn muốn rời đội?";
         }
 
-        if (!window.confirm(confirmMsg)) {
-            return;
-        }
-
-        try {
-            await axiosClient.post('/teams/leave');
-            setTeam(null);
-            setMessage({ text: 'Rời khỏi đội thành công!', type: 'success' });
-            await fetchData();
-        } catch (err) {
-            setActionMessage({ text: err.message || 'Không thể rời đội.', type: 'error' });
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Rời đội',
+            message: confirmMsg,
+            onConfirm: async () => {
+                try {
+                    await axiosClient.post('/teams/leave');
+                    setTeam(null);
+                    setMessage({ text: 'Rời khỏi đội thành công!', type: 'success' });
+                    await fetchData();
+                } catch (err) {
+                    setActionMessage({ text: err.message || 'Không thể rời đội.', type: 'error' });
+                }
+            }
+        });
     };
 
     const handleSubmission = async (e) => {
@@ -694,6 +706,34 @@ export default function MyTeam() {
                             <button type="submit" className="btn-primary flex-1">Vào đội</button>
                         </div>
                     </form>
+                </div>
+            )}
+
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+                    <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-[#d7e6f8]">
+                        <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">{confirmModal.title}</h3>
+                        <p className="mt-4 text-sm text-[#5c6d83] leading-relaxed">{confirmModal.message}</p>
+                        <div className="mt-6 flex gap-3">
+                            <button 
+                                type="button" 
+                                onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} 
+                                className="btn-secondary flex-1"
+                            >
+                                Hủy
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={() => {
+                                    confirmModal.onConfirm?.();
+                                    setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+                                }} 
+                                className="btn-primary bg-red-600 hover:bg-red-700 text-white flex-1"
+                            >
+                                Đồng ý
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </main>
