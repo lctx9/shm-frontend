@@ -58,7 +58,7 @@ export default function MyTeam() {
         try {
             setLoading(true);
             const [teamRes, eventsRes, teamsRes] = await Promise.allSettled([
-                axiosClient.get('/teams/my-team'),
+                axiosClient.get(preselectedEventId ? `/teams/my-team?eventId=${preselectedEventId}` : '/teams/my-team'),
                 axiosClient.get('/events'),
                 axiosClient.get('/teams'),
             ]);
@@ -83,7 +83,7 @@ export default function MyTeam() {
             if (loadedTeam?.eventId) {
                 const [matrixRes, submissionRes, requestRes] = await Promise.allSettled([
                     axiosClient.get(`/events/${loadedTeam.eventId}/matrices`),
-                    axiosClient.get('/submissions/my-submission'),
+                    axiosClient.get(`/submissions/my-submission?teamId=${loadedTeam.id}`),
                     loadedTeam?.members?.some((member) => member.email === currentEmail && member.role === 'LEADER')
                         ? axiosClient.get(`/teams/${loadedTeam.id}/join-requests`)
                         : Promise.resolve({ result: [] }),
@@ -324,7 +324,7 @@ export default function MyTeam() {
             message: confirmMsg,
             onConfirm: async () => {
                 try {
-                    await axiosClient.post('/teams/leave');
+                    await axiosClient.post(`/teams/leave?teamId=${team.id}`);
                     setTeam(null);
                     setMessage({ text: 'Rời khỏi đội thành công!', type: 'success' });
                     await fetchData();
