@@ -49,19 +49,9 @@ const adminGroups = [
         ],
     },
     {
-        title: 'Vận hành cuộc thi',
-        items: [
-            { to: '/dashboard/events', label: 'Quản lý sự kiện' },
-            { to: '/dashboard/scoring-config', label: 'Cấu hình chấm điểm' },
-            { to: '/dashboard/submissions', label: 'Bài nộp' },
-        ],
-    },
-    {
         title: 'Chấm điểm & kết quả',
         items: [
-            { to: '/dashboard/grading', label: 'Chấm bài' },
             { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
-            { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
             { to: '/dashboard/audit-logs', label: 'Audit điểm' },
         ],
     },
