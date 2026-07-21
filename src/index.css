@@ -2218,3 +2218,25 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .dashboard-content th { color: #60777e !important; font-size: 10px !important; letter-spacing: .08em; text-transform: uppercase; }
 .dashboard-content :where(input,textarea,select) { background-color: white; }
 .dashboard-content :where(input,textarea,select):focus { border-color: var(--seal-600) !important; box-shadow: 0 0 0 3px rgba(22,137,155,.11) !important; }
+
+/* Custom premium date-time picker styles */
+input[type="datetime-local"] {
+    position: relative;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234b5563' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 14px center !important;
+    background-size: 18px !important;
+    padding-right: 38px !important;
+    cursor: pointer !important;
+}
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+}

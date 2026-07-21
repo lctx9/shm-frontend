@@ -122,6 +122,45 @@ export default function ScoringConfiguration() {
         if (form.submissionStartDate && form.submissionDeadline && new Date(form.submissionStartDate) > new Date(form.submissionDeadline)) {
             return 'Thời gian mở nộp bài không được sau hạn nộp bài.';
         }
+
+        const currentOrder = selectedMatrix.roundOrder;
+        const reqStart = form.submissionStartDate ? new Date(form.submissionStartDate) : null;
+        const reqEnd = form.submissionDeadline ? new Date(form.submissionDeadline) : null;
+
+        for (const other of selectedEvent.matrices || []) {
+            if (String(other.id) === String(selectedMatrixId)) continue;
+
+            if (other.roundOrder === currentOrder - 1) {
+                let isPreceding = false;
+                if (selectedMatrix.finalRound) {
+                    isPreceding = true;
+                } else if (!other.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isPreceding = true;
+                }
+
+                if (isPreceding && other.submissionDeadline && reqStart) {
+                    if (reqStart < new Date(other.submissionDeadline)) {
+                        return `Thời gian mở nộp không được trước deadline của vòng trước (${other.roundName}).`;
+                    }
+                }
+            }
+
+            if (other.roundOrder === currentOrder + 1) {
+                let isSucceeding = false;
+                if (other.finalRound) {
+                    isSucceeding = true;
+                } else if (!selectedMatrix.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isSucceeding = true;
+                }
+
+                if (isSucceeding && other.submissionStartDate && reqEnd) {
+                    if (reqEnd > new Date(other.submissionStartDate)) {
+                        return `Deadline không được sau thời gian mở nộp của vòng sau (${other.roundName}).`;
+                    }
+                }
+            }
+        }
+
         if (form.judgeIds.length < 2 || form.judgeIds.length > 4) return 'Mỗi vòng đấu cần từ 2 đến 4 Judge.';
         if (!form.criteria.length || form.criteria.some((criterion) => !criterion.label.trim() || Number(criterion.maxScore) <= 0 || Number(criterion.weight) <= 0)) return 'Mỗi tiêu chí cần tên, điểm tối đa và trọng số hợp lệ.';
         if (totalWeight !== 100) return `Tổng trọng số hiện là ${totalWeight}%. Hãy điều chỉnh về 100%.`;
