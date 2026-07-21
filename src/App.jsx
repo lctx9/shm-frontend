@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import PublicLayout from './components/PublicLayout';
 import DashboardLayout from './components/DashboardLayout';
 import Homepage from './pages/Homepage';
@@ -31,7 +31,8 @@ import ScoringConfiguration from './pages/ScoringConfiguration';
 
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('token');
-    if (!token) return <Navigate to="/login" replace />;
+    const location = useLocation();
+    if (!token) return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} replace />;
     return children;
 };
 
