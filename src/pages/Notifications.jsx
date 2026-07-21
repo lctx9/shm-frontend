@@ -102,7 +102,14 @@ export default function Notifications() {
                         <div className="p-8 text-center text-slate-500">Chưa có thông báo.</div>
                     ) : notifications.map((item) => (
                         <article key={item.id} onClick={() => markAsRead(item.id)} className={`cursor-pointer px-6 py-5 ${item.read ? 'bg-white' : 'bg-blue-50/70'}`}>
-                            <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">{item.targetRole || 'Cá nhân'}</p>
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">{item.targetRole || 'Cá nhân'}</p>
+                                {item.actionUrl && (
+                                    <a href={item.actionUrl} className="text-xs font-bold text-[#0f63c9] hover:underline flex items-center gap-1">
+                                        Xem chi tiết &rarr;
+                                    </a>
+                                )}
+                            </div>
                             <h3 className="mt-2 font-black text-slate-900">{item.title}</h3>
                             <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
                             <p className="mt-3 text-xs text-slate-400">{item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : ''}</p>
