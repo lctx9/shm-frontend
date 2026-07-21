@@ -19,12 +19,16 @@ export default function TeamChat({ embedded = false, teamId = null }) {
 
     const assignedTrackIds = useMemo(() => {
         if (!isMentor) return new Set();
-        return new Set(
-            events
-                .flatMap((event) => event.matrices || [])
-                .filter((matrix) => (matrix.mentors || []).some((mentor) => mentor.email === email))
-                .map((matrix) => String(matrix.trackId))
-        );
+        const ids = new Set();
+        events.forEach((event) => {
+            (event.tracks || []).forEach((track) => {
+                const isAssigned = (track.mentors || []).some((m) => m.email === email);
+                if (isAssigned) {
+                    ids.add(String(track.id));
+                }
+            });
+        });
+        return ids;
     }, [email, events, isMentor]);
 
     const visibleTeams = useMemo(() => {
@@ -58,12 +62,21 @@ export default function TeamChat({ embedded = false, teamId = null }) {
                 setTeams(allTeams);
                 setEvents(allEvents);
 
-                const trackIds = new Set(
-                    allEvents
-                        .flatMap((event) => event.matrices || [])
-                        .filter((matrix) => (matrix.mentors || []).some((mentor) => mentor.email === email))
-                        .map((matrix) => String(matrix.trackId))
-                );
+                const trackIds = new Set();
+                allEvents.forEach((event) => {
+                    (event.tracks || []).forEach((track) => {
+                        const isAssigned = (track.mentors || []).some((m) => m.email === email);
+                        if (isAssigned) {
+                            trackIds.add(String(track.id));
+                        }
+                    });
+                    (event.matrices || []).forEach((matrix) => {
+                        const isAssigned = (matrix.mentors || []).some((m) => m.email === email);
+                        if (isAssigned) {
+                            trackIds.add(String(matrix.trackId));
+                        }
+                    });
+                });
                 const targetTeamId = teamId || allTeams.find((team) => trackIds.has(String(team.trackId)))?.id || '';
                 setSelectedTeamId(targetTeamId);
                 if (targetTeamId) await fetchMessages(targetTeamId);
