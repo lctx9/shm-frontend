@@ -29,8 +29,8 @@ const emptyEvent = () => ({
     submissionDeadline: '',
     roundCount: 3,
     tracks: [
-        { name: 'Bảng A', mentorIds: [] },
-        { name: 'Bảng B', mentorIds: [] },
+        { name: 'Bảng A', mentorIds: [], maxTeams: null },
+        { name: 'Bảng B', mentorIds: [], maxTeams: null },
     ],
     submissionFields: defaultSubmissionFields,
     competitionRules: [
@@ -74,8 +74,8 @@ function eventToForm(event) {
         submissionDeadline: toLocalInput(event.defaultSubmissionDeadline),
         roundCount: Math.max(event.roundCount || 2, 2),
         tracks: event.tracks?.length
-            ? event.tracks.map((track) => ({ name: track.name, mentorIds: track.mentors?.map((mentor) => mentor.id) || [] }))
-            : [{ name: 'Bảng A', mentorIds: [] }],
+            ? event.tracks.map((track) => ({ name: track.name, mentorIds: track.mentors?.map((mentor) => mentor.id) || [], maxTeams: track.maxTeams || null }))
+            : [{ name: 'Bảng A', mentorIds: [], maxTeams: null }],
         submissionFields: parseJson(event.submissionFormSchema, defaultSubmissionFields),
         competitionRules: event.competitionRules || '',
         ruleDocumentUrl: event.ruleDocumentUrl || '',
@@ -154,6 +154,9 @@ export default function EventManagement() {
     const [showCreate, setShowCreate] = useState(false);
     const [eventQuery, setEventQuery] = useState('');
     const [eventFilter, setEventFilter] = useState('all');
+    const [templates, setTemplates] = useState([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState('');
+    const [newTemplateName, setNewTemplateName] = useState('');
     const didBootstrap = useRef(false);
 
     const selectedEvent = useMemo(
@@ -208,10 +211,11 @@ export default function EventManagement() {
     };
 
     const fetchAll = async (preferredEventId = '') => {
-        const [eventRes, teamRes, staffRes] = await Promise.all([
+        const [eventRes, teamRes, staffRes, templateRes] = await Promise.all([
             axiosClient.get('/events'),
             axiosClient.get('/teams').catch(() => ({ result: [] })),
             axiosClient.get('/users/role/STAFF').catch(() => ({ result: [] })),
+            axiosClient.get('/rule-templates').catch(() => ({ result: [] })),
         ]);
 
         const loadedEvents = eventRes.result || [];
@@ -222,6 +226,7 @@ export default function EventManagement() {
         setTeams(teamRes.result || []);
         setMentors(staffRes.result || []);
         setJudges(staffRes.result || []);
+        setTemplates(templateRes.result || []);
         setSelectedEventId(nextEventId);
         setSelectedMatrixId((currentMatrixId) => {
             const keepMatrix = nextEvent?.matrices?.find((matrix) => String(matrix.id) === String(currentMatrixId));
@@ -328,7 +333,7 @@ export default function EventManagement() {
         tracks: form.tracks.map((track) => track.name.trim()).filter(Boolean),
         trackConfigs: form.tracks
             .filter((track) => track.name.trim())
-            .map((track) => ({ name: track.name.trim(), mentorIds: track.mentorIds.map(Number) })),
+            .map((track) => ({ name: track.name.trim(), mentorIds: track.mentorIds.map(Number), maxTeams: track.maxTeams || null })),
         submissionFormSchema: JSON.stringify(form.submissionFields),
         competitionRules: form.competitionRules,
         ruleDocumentUrl: form.ruleDocumentUrl,
@@ -508,6 +513,65 @@ export default function EventManagement() {
             await fetchAll(selectedEventId);
         } catch (err) {
             setMessage({ type: 'error', text: err.message || 'Không thể áp dụng cấu hình hàng loạt.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const applyTemplate = (templateId) => {
+        setSelectedTemplateId(templateId);
+        if (!templateId) return;
+        const found = templates.find((t) => String(t.id) === String(templateId));
+        if (found) {
+            setForm((current) => ({ ...current, competitionRules: found.content }));
+        }
+    };
+
+    const saveTemplate = async () => {
+        if (!form.competitionRules.trim()) {
+            setMessage({ type: 'error', text: 'Nội dung thể lệ trống, không thể lưu.' });
+            return;
+        }
+        const templateName = window.prompt('Nhập tên mẫu thể lệ mới:');
+        if (templateName === null) return; // User cancelled
+        const trimmedName = templateName.trim();
+        if (!trimmedName) {
+            setMessage({ type: 'error', text: 'Vui lòng nhập tên template cần lưu.' });
+            alert('Vui lòng nhập tên template cần lưu.');
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await axiosClient.post('/rule-templates', {
+                name: trimmedName,
+                content: form.competitionRules
+            });
+            setMessage({ type: 'success', text: 'Đã lưu thể lệ mẫu thành công!' });
+            const templateRes = await axiosClient.get('/rule-templates');
+            setTemplates(templateRes.result || []);
+            setSelectedTemplateId(res.result?.id || '');
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message || 'Không thể lưu thể lệ mẫu.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const deleteTemplate = async () => {
+        if (!selectedTemplateId) return;
+        const found = templates.find((t) => String(t.id) === String(selectedTemplateId));
+        if (!found) return;
+        if (!window.confirm(`Bạn có chắc chắn muốn xóa template mẫu "${found.name}"?`)) return;
+
+        setLoading(true);
+        try {
+            await axiosClient.delete(`/rule-templates/${selectedTemplateId}`);
+            setMessage({ type: 'success', text: 'Đã xóa thể lệ mẫu.' });
+            setSelectedTemplateId('');
+            const templateRes = await axiosClient.get('/rule-templates');
+            setTemplates(templateRes.result || []);
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message || 'Không thể xóa thể lệ mẫu.' });
         } finally {
             setLoading(false);
         }
@@ -731,7 +795,7 @@ export default function EventManagement() {
                                         <h2 className="mt-2 text-2xl font-black text-slate-900">Bảng đấu và mentor</h2>
                                         <p className="mt-2 text-sm text-slate-500">Thêm bảng tùy ý; mỗi bảng chọn 1–2 mentor đúng một lần.</p>
                                     </div>
-                                    <button type="button" className="btn-primary" onClick={() => setForm((current) => ({ ...current, tracks: [...current.tracks, { name: `Bảng ${String.fromCharCode(65 + current.tracks.length)}`, mentorIds: [] }] }))}>+ Thêm bảng đấu</button>
+                                    <button type="button" className="btn-primary" onClick={() => setForm((current) => ({ ...current, tracks: [...current.tracks, { name: `Bảng ${String.fromCharCode(65 + current.tracks.length)}`, mentorIds: [], maxTeams: null }] }))}>+ Thêm bảng đấu</button>
                                 </div>
                                 <div className="grid gap-4 lg:grid-cols-2">
                                     {form.tracks.map((track, index) => (
@@ -741,6 +805,17 @@ export default function EventManagement() {
                                                 <input className="input-custom font-black" value={track.name} onChange={(e) => updateTrack(index, { name: e.target.value })} placeholder="Tên bảng đấu" />
                                                 <button type="button" className="btn-secondary" disabled={form.tracks.length <= 1} onClick={() => setForm((current) => ({ ...current, tracks: current.tracks.filter((_, itemIndex) => itemIndex !== index) }))}>Xóa</button>
                                             </div>
+                                            <label className="mt-3 block text-xs font-bold text-slate-700">
+                                                Giới hạn số đội đăng ký (0 hoặc bỏ trống = không giới hạn)
+                                                <input 
+                                                    type="number" 
+                                                    min="0" 
+                                                    className="input-custom mt-1.5" 
+                                                    value={track.maxTeams || ''} 
+                                                    onChange={(e) => updateTrack(index, { maxTeams: e.target.value ? Number(e.target.value) : null })} 
+                                                    placeholder="Ví dụ: 15"
+                                                />
+                                            </label>
                                             <div className="mt-4 flex items-center justify-between">
                                                 <p className="text-xs font-black uppercase tracking-wide text-slate-500">Chọn Staff làm Mentor</p>
                                                 <span className={`rounded-full px-2 py-1 text-xs font-black ${track.mentorIds.length >= 1 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{track.mentorIds.length}/2</span>
@@ -774,6 +849,42 @@ export default function EventManagement() {
                                     <p className="mt-2 text-sm text-slate-500">Thêm giải ngay bây giờ hoặc quản lý sau khi cuộc thi được tạo.</p>
                                 </div>
                                 <WizardField label="Thể lệ / ghi chú">
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4 mb-4">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                                            <div className="flex-1">
+                                                <span className="text-xs font-black uppercase tracking-wide text-slate-500 block mb-1.5">Chọn mẫu thể lệ đã lưu</span>
+                                                <select 
+                                                    className="input-custom bg-white font-medium text-slate-800" 
+                                                    value={selectedTemplateId} 
+                                                    onChange={(e) => applyTemplate(e.target.value)}
+                                                >
+                                                    <option value="">-- Chọn template mẫu --</option>
+                                                    {templates.map((t) => (
+                                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            {selectedTemplateId && (
+                                                <button 
+                                                    type="button" 
+                                                    className="rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 text-sm font-black hover:bg-red-100 transition shadow-sm h-[42px]"
+                                                    onClick={deleteTemplate}
+                                                >
+                                                    Xóa mẫu
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end border-t border-slate-200 pt-3">
+                                            <button 
+                                                type="button" 
+                                                className="btn-secondary h-[42px] px-5 w-full sm:w-auto"
+                                                onClick={saveTemplate}
+                                            >
+                                                Lưu thể lệ hiện tại thành mẫu mới
+                                            </button>
+                                        </div>
+                                    </div>
                                     <textarea rows="5" className="input-custom" value={form.competitionRules} onChange={(e) => setForm({ ...form, competitionRules: e.target.value })} placeholder="Quy định nộp bài, cách xử lý vi phạm..." />
                                 </WizardField>
                                 <div>
@@ -919,7 +1030,7 @@ export default function EventManagement() {
                                             <p className="text-sm font-black text-slate-800">3. Bảng đấu và Mentor phụ trách</p>
                                             <p className="mt-1 text-xs text-slate-500">Mỗi bảng chọn từ 1–2 Staff được giao nhiệm vụ Mentor.</p>
                                         </div>
-                                        <button type="button" className="btn-secondary" disabled={selectedEvent?.structureInitialized} onClick={() => setForm((current) => ({ ...current, tracks: [...current.tracks, { name: `Bảng ${String.fromCharCode(65 + current.tracks.length)}`, mentorIds: [] }] }))}>Thêm bảng</button>
+                                        <button type="button" className="btn-secondary" disabled={selectedEvent?.structureInitialized} onClick={() => setForm((current) => ({ ...current, tracks: [...current.tracks, { name: `Bảng ${String.fromCharCode(65 + current.tracks.length)}`, mentorIds: [], maxTeams: null }] }))}>Thêm bảng</button>
                                     </div>
                                     <div className="mt-4 grid gap-4 lg:grid-cols-2">
                                         {form.tracks.map((track, index) => (
@@ -928,6 +1039,18 @@ export default function EventManagement() {
                                                     <input required className="input-custom font-bold" value={track.name} onChange={(e) => updateTrack(index, { name: e.target.value })} placeholder="Tên bảng đấu" />
                                                     <button type="button" className="btn-secondary" disabled={selectedEvent?.structureInitialized || form.tracks.length <= 1} onClick={() => setForm((current) => ({ ...current, tracks: current.tracks.filter((_, itemIndex) => itemIndex !== index) }))}>Xóa</button>
                                                 </div>
+                                                <label className="mt-3 block text-xs font-bold text-slate-700">
+                                                    Giới hạn số đội đăng ký (0 hoặc bỏ trống = không giới hạn)
+                                                    <input 
+                                                        type="number" 
+                                                        min="0" 
+                                                        className="input-custom mt-1.5" 
+                                                        value={track.maxTeams || ''} 
+                                                        onChange={(e) => updateTrack(index, { maxTeams: e.target.value ? Number(e.target.value) : null })} 
+                                                        placeholder="Ví dụ: 15"
+                                                        disabled={selectedEvent?.structureInitialized}
+                                                    />
+                                                </label>
                                                 <p className="mb-2 mt-4 text-xs font-black uppercase tracking-wide text-[#0f63c9]">Chọn Mentor phụ trách ({track.mentorIds.length}/2)</p>
                                                 <div className="max-h-36 space-y-2 overflow-auto">
                                                     {mentors.map((user) => (
@@ -1052,6 +1175,44 @@ export default function EventManagement() {
                             <Section title="Thể lệ cuộc thi" eyebrow="Quy định dành cho đội thi">
                                 <form onSubmit={saveEvent} className="space-y-4">
                                     <input className="input-custom" placeholder="Link tai lieu quy che PDF/Drive" value={form.ruleDocumentUrl} onChange={(e) => setForm({ ...form, ruleDocumentUrl: e.target.value })} />
+                                    
+                                    <div className="rounded-xl border border-blue-100 bg-slate-50 p-4 space-y-4">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                                            <div className="flex-1">
+                                                <span className="text-xs font-black uppercase tracking-wide text-slate-500 block mb-1.5">Chọn mẫu thể lệ đã lưu</span>
+                                                <select 
+                                                    className="input-custom bg-white font-medium text-slate-800" 
+                                                    value={selectedTemplateId} 
+                                                    onChange={(e) => applyTemplate(e.target.value)}
+                                                >
+                                                    <option value="">-- Chọn template mẫu --</option>
+                                                    {templates.map((t) => (
+                                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            {selectedTemplateId && (
+                                                <button 
+                                                    type="button" 
+                                                    className="rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 text-sm font-black hover:bg-red-100 transition shadow-sm h-[42px]"
+                                                    onClick={deleteTemplate}
+                                                >
+                                                    Xóa mẫu
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end border-t border-slate-200 pt-3">
+                                            <button 
+                                                type="button" 
+                                                className="btn-secondary h-[42px] px-5 w-full sm:w-auto"
+                                                onClick={saveTemplate}
+                                            >
+                                                Lưu thể lệ hiện tại thành mẫu mới
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     <textarea rows="8" className="input-custom" value={form.competitionRules} onChange={(e) => setForm({ ...form, competitionRules: e.target.value })} placeholder="Nhap quy che, dieu kien nop bai, cach xu ly vi pham..." />
                                     <button type="submit" className="btn-primary" disabled={loading || !form.name}>Lưu thể lệ</button>
                                 </form>
