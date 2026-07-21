@@ -59,8 +59,8 @@ export default function MyTeam() {
 
             const activeOrUpcoming = loadedEvents.filter((event) => {
                 if (!event.active) return false;
-                if (event.eventEndDate) {
-                    const endDate = new Date(event.eventEndDate);
+                if (event.regEndDate) {
+                    const endDate = new Date(event.regEndDate);
                     const now = new Date();
                     if (endDate < now) return false;
                 }
@@ -102,14 +102,15 @@ export default function MyTeam() {
     };
 
     useEffect(() => {
+        window.scrollTo(0, 0);
         fetchData();
     }, [preselectedEventId]);
 
     const activeOrUpcomingEvents = useMemo(() => {
         return events.filter((event) => {
             if (!event.active) return false;
-            if (event.eventEndDate) {
-                const endDate = new Date(event.eventEndDate);
+            if (event.regEndDate) {
+                const endDate = new Date(event.regEndDate);
                 const now = new Date();
                 if (endDate < now) return false;
             }
