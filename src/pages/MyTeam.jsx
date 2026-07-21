@@ -59,8 +59,8 @@ export default function MyTeam() {
 
             const activeOrUpcoming = loadedEvents.filter((event) => {
                 if (!event.active) return false;
-                if (event.eventEndDate) {
-                    const endDate = new Date(event.eventEndDate);
+                if (event.regEndDate) {
+                    const endDate = new Date(event.regEndDate);
                     const now = new Date();
                     if (endDate < now) return false;
                 }
@@ -109,8 +109,8 @@ export default function MyTeam() {
     const activeOrUpcomingEvents = useMemo(() => {
         return events.filter((event) => {
             if (!event.active) return false;
-            if (event.eventEndDate) {
-                const endDate = new Date(event.eventEndDate);
+            if (event.regEndDate) {
+                const endDate = new Date(event.regEndDate);
                 const now = new Date();
                 if (endDate < now) return false;
             }
@@ -340,10 +340,16 @@ export default function MyTeam() {
                     <div>
                         <h1 className="section-title">Đăng ký giải đấu</h1>
                         {selectedEvent && (
-                            <div className="mt-2">
-                                <p className="text-lg font-bold text-[#0f63c9]">{selectedEvent.name}</p>
-                                <Link to={`/events/${selectedEvent.id}`} className="mt-1 inline-block text-sm font-bold text-[#0b1f3f] underline hover:text-[#0f63c9]">
+                            <div className="mt-2 flex flex-col items-start gap-1">
+                                <p className="text-xl font-black text-[#0b1f3f]">{selectedEvent.name}</p>
+                                <Link to={`/events/${selectedEvent.id}`} className="group inline-flex items-center gap-1.5 rounded-full bg-[#f4f7fa] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0f63c9] transition-all hover:bg-[#e6eff8] hover:shadow-sm">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                                     Xem chi tiết sự kiện
+                                    <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                    </svg>
                                 </Link>
                             </div>
                         )}
