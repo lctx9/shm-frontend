@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import Toast from '../components/Toast';
 
 const defaultSubmissionFields = [
     { id: 'projectName', label: 'Ten du an', type: 'text', required: true },
@@ -639,7 +640,7 @@ export default function EventManagement() {
                     </div>
                 </section>
 
-                {message && <div className={`rounded-xl border p-4 text-sm font-bold ${message.type === 'success' ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>{message.text}</div>}
+                <Toast message={message} onClose={() => setMessage(null)} />
 
                 <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {[
@@ -697,11 +698,7 @@ export default function EventManagement() {
         const matchCount = form.tracks.length * (Number(form.roundCount) - 1) + 1;
         return (
             <div className="mx-auto max-w-6xl pb-8">
-                    {message && (
-                        <div className={`mb-5 rounded-xl border p-4 text-sm font-bold ${message.type === 'success' ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-                            {message.text}
-                        </div>
-                    )}
+                    <Toast message={message} onClose={() => setMessage(null)} />
 
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-300/60">
                     <header className="bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] px-6 py-7 text-white md:px-10">
@@ -921,11 +918,7 @@ export default function EventManagement() {
 
     return (
         <div className="mx-auto max-w-7xl space-y-6">
-            {message && (
-                <div className={`rounded-lg border p-4 text-sm font-bold ${message.type === 'success' ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-                    {message.text}
-                </div>
-            )}
+            <Toast message={message} onClose={() => setMessage(null)} />
 
             <div className="space-y-6">
                 <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] p-6 text-white shadow-lg md:p-8">

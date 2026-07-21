@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { formatDateTime, getCountdownParts, getEventPhase } from '../utils/hackathon';
 import TeamChat from './TeamChat';
+import Toast from '../components/Toast';
 
 export default function MyTeam() {
     const [searchParams] = useSearchParams();
@@ -372,11 +373,7 @@ export default function MyTeam() {
 
     return (
         <main className="section-shell">
-            {message.text && (
-                <div className={`mb-6 rounded-lg border p-4 text-sm font-semibold ${message.type === 'success' ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-                    {message.text}
-                </div>
-            )}
+            <Toast message={message} onClose={() => setMessage({ text: '', type: '' })} />
 
             {!team ? (
                 <div className="space-y-6">
