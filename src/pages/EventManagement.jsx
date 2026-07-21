@@ -479,6 +479,46 @@ export default function EventManagement() {
             return;
         }
 
+        const currentOrder = selectedMatrix.roundOrder;
+        const reqStart = matrixForm.submissionStartDate ? new Date(matrixForm.submissionStartDate) : null;
+        const reqEnd = matrixForm.submissionDeadline ? new Date(matrixForm.submissionDeadline) : null;
+
+        for (const other of selectedEvent.matrices || []) {
+            if (String(other.id) === String(selectedMatrixId)) continue;
+
+            if (other.roundOrder === currentOrder - 1) {
+                let isPreceding = false;
+                if (selectedMatrix.finalRound) {
+                    isPreceding = true;
+                } else if (!other.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isPreceding = true;
+                }
+
+                if (isPreceding && other.submissionDeadline && reqStart) {
+                    if (reqStart < new Date(other.submissionDeadline)) {
+                        setMessage({ type: 'error', text: `Thời gian mở nộp không được trước deadline của vòng trước (${other.roundName}).` });
+                        return;
+                    }
+                }
+            }
+
+            if (other.roundOrder === currentOrder + 1) {
+                let isSucceeding = false;
+                if (other.finalRound) {
+                    isSucceeding = true;
+                } else if (!selectedMatrix.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isSucceeding = true;
+                }
+
+                if (isSucceeding && other.submissionStartDate && reqEnd) {
+                    if (reqEnd > new Date(other.submissionStartDate)) {
+                        setMessage({ type: 'error', text: `Deadline không được sau thời gian mở nộp của vòng sau (${other.roundName}).` });
+                        return;
+                    }
+                }
+            }
+        }
+
         setLoading(true);
         try {
             await axiosClient.put(`/events/matrices/${selectedMatrixId}`, {
@@ -506,6 +546,44 @@ export default function EventManagement() {
         if (matrixForm.submissionStartDate && matrixForm.submissionDeadline && new Date(matrixForm.submissionStartDate) > new Date(matrixForm.submissionDeadline)) {
             setMessage({ type: 'error', text: 'Thời gian mở nộp bài không được sau hạn nộp bài.' });
             return;
+        }
+
+        const currentOrder = selectedMatrix.roundOrder;
+        const reqStart = matrixForm.submissionStartDate ? new Date(matrixForm.submissionStartDate) : null;
+        const reqEnd = matrixForm.submissionDeadline ? new Date(matrixForm.submissionDeadline) : null;
+
+        for (const other of selectedEvent.matrices || []) {
+            if (other.roundOrder === currentOrder - 1) {
+                let isPreceding = false;
+                if (selectedMatrix.finalRound) {
+                    isPreceding = true;
+                } else if (!other.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isPreceding = true;
+                }
+
+                if (isPreceding && other.submissionDeadline && reqStart) {
+                    if (reqStart < new Date(other.submissionDeadline)) {
+                        setMessage({ type: 'error', text: `Thời gian mở nộp không được trước deadline của vòng trước (${other.roundName}).` });
+                        return;
+                    }
+                }
+            }
+
+            if (other.roundOrder === currentOrder + 1) {
+                let isSucceeding = false;
+                if (other.finalRound) {
+                    isSucceeding = true;
+                } else if (!selectedMatrix.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
+                    isSucceeding = true;
+                }
+
+                if (isSucceeding && other.submissionStartDate && reqEnd) {
+                    if (reqEnd > new Date(other.submissionStartDate)) {
+                        setMessage({ type: 'error', text: `Deadline không được sau thời gian mở nộp của vòng sau (${other.roundName}).` });
+                        return;
+                    }
+                }
+            }
         }
 
         const sameRoundMatrices = (selectedEvent?.matrices || []).filter(
