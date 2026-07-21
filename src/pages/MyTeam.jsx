@@ -15,6 +15,8 @@ export default function MyTeam() {
     const [teams, setTeams] = useState([]);
     const [matrices, setMatrices] = useState([]);
     const [joinRequests, setJoinRequests] = useState([]);
+    const [myInvitations, setMyInvitations] = useState([]);
+    const [sentInvitations, setSentInvitations] = useState([]);
     const [submission, setSubmission] = useState(null);
     const [mode, setMode] = useState('CREATE');
     const [teamFilter, setTeamFilter] = useState('ALL');
@@ -86,11 +88,15 @@ export default function MyTeam() {
             }));
 
             if (loadedTeam?.eventId) {
-                const [matrixRes, submissionRes, requestRes] = await Promise.allSettled([
+                const isLeaderRole = loadedTeam?.members?.some((member) => member.email === currentEmail && member.role === 'LEADER');
+                const [matrixRes, submissionRes, requestRes, sentInvRes] = await Promise.allSettled([
                     axiosClient.get(`/events/${loadedTeam.eventId}/matrices`),
                     axiosClient.get('/submissions/my-submission'),
-                    loadedTeam?.members?.some((member) => member.email === currentEmail && member.role === 'LEADER')
+                    isLeaderRole
                         ? axiosClient.get(`/teams/${loadedTeam.id}/join-requests`)
+                        : Promise.resolve({ result: [] }),
+                    isLeaderRole
+                        ? axiosClient.get(`/teams/${loadedTeam.id}/sent-invitations`)
                         : Promise.resolve({ result: [] }),
                 ]);
                 const teamMatrices = matrixRes.status === 'fulfilled'
@@ -100,11 +106,19 @@ export default function MyTeam() {
                 const loadedSubmission = submissionRes.status === 'fulfilled' ? submissionRes.value.result : null;
                 setSubmission(loadedSubmission);
                 setJoinRequests(requestRes.status === 'fulfilled' ? requestRes.value.result || [] : []);
+                setSentInvitations(sentInvRes.status === 'fulfilled' ? sentInvRes.value.result || [] : []);
                 setFormData((current) => ({
                     ...current,
                     matrixId: loadedSubmission?.matrixId || teamMatrices[0]?.id || '',
                     fileUrl: loadedSubmission?.fileUrl || '',
                 }));
+            } else {
+                try {
+                    const invRes = await axiosClient.get('/teams/my-invitations');
+                    setMyInvitations(invRes.result || []);
+                } catch {
+                    setMyInvitations([]);
+                }
             }
         } catch (err) {
             setMessage({ text: err.message || 'Không thể tải dữ liệu đội thi.', type: 'error' });
@@ -192,7 +206,7 @@ export default function MyTeam() {
                 memberEmails: nonNullEmails,
             });
             setTeam(response.result);
-            setCreateSuccess('Tạo đội thành công!');
+            setCreateSuccess('Tạo đội thành công! Lời mời gia nhập đã được gửi tới các thành viên được mời.');
             await fetchData();
         } catch (err) {
             setCreateError(err.message || 'Không thể tạo đội thi.');
@@ -239,9 +253,32 @@ export default function MyTeam() {
             const response = await axiosClient.post(`/teams/${team.id}/invite`, { email: inviteEmail });
             setTeam(response.result);
             setInviteEmail('');
-            setInviteSuccess('Mời thành viên thành công!');
+            setInviteSuccess('Đã gửi lời mời đến thành viên! Đang chờ thành viên đồng ý.');
+            await fetchData();
         } catch (err) {
             setInviteError(err.message || 'Không thể mời thành viên.');
+        }
+    };
+
+    const handleAcceptInvitation = async (requestId) => {
+        setMessage({ text: '', type: '' });
+        try {
+            await axiosClient.post(`/teams/invitations/${requestId}/accept`);
+            setMessage({ text: 'Chấp nhận lời mời gia nhập đội thành công!', type: 'success' });
+            await fetchData();
+        } catch (err) {
+            setMessage({ text: err.message || 'Không thể chấp nhận lời mời.', type: 'error' });
+        }
+    };
+
+    const handleRejectInvitation = async (requestId) => {
+        setMessage({ text: '', type: '' });
+        try {
+            await axiosClient.post(`/teams/invitations/${requestId}/reject`);
+            setMyInvitations((prev) => prev.filter((item) => item.id !== requestId));
+            setMessage({ text: 'Đã từ chối lời mời gia nhập đội.', type: 'success' });
+        } catch (err) {
+            setMessage({ text: err.message || 'Không thể từ chối lời mời.', type: 'error' });
         }
     };
 
@@ -377,6 +414,60 @@ export default function MyTeam() {
 
             {!team ? (
                 <div className="space-y-6">
+                    {myInvitations.length > 0 && (
+                        <section className="rounded-lg border-2 border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-md">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-black uppercase tracking-[0.06em] text-[#071936] flex items-center gap-2">
+                                        <span className="flex h-3 w-3 rounded-full bg-blue-600 animate-ping"></span>
+                                        Lời mời gia nhập đội ({myInvitations.length})
+                                    </h2>
+                                    <p className="text-xs text-[#5c6d83] mt-1">
+                                        Bạn có lời mời tham gia đội thi. Bạn có quyền chấp nhận hoặc từ chối lời mời bên dưới.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                {myInvitations.map((inv) => (
+                                    <div key={inv.id} className="rounded-lg border border-[#d7e6f8] bg-white p-4 shadow-sm flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h3 className="font-black text-[#071936] text-base">{inv.teamName}</h3>
+                                                <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-[#0f63c9]">
+                                                    {inv.trackName || 'Hạng mục'}
+                                                </span>
+                                            </div>
+                                            <p className="mt-1 text-xs text-[#5c6d83]">
+                                                Giải đấu: <strong className="text-[#071936]">{inv.eventName || 'Sự kiện'}</strong>
+                                            </p>
+                                            {inv.inviterName && (
+                                                <p className="mt-0.5 text-xs text-[#5c6d83]">
+                                                    Người mời: <strong className="text-[#071936]">{inv.inviterName}</strong>
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="mt-4 flex gap-2 pt-3 border-t border-[#f0f4f8]">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAcceptInvitation(inv.id)}
+                                                className="btn-primary py-1.5 px-4 text-xs bg-emerald-600 hover:bg-emerald-700 flex-1"
+                                            >
+                                                ✓ Chấp nhận
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRejectInvitation(inv.id)}
+                                                className="btn-secondary py-1.5 px-4 text-xs text-red-600 border-red-200 hover:bg-red-50 flex-1"
+                                            >
+                                                ✕ Từ chối
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
                     <div>
                         <h1 className="section-title">Đăng ký giải đấu</h1>
                         {selectedEvent && (
@@ -686,6 +777,27 @@ export default function MyTeam() {
                                         {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
                                         {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
                                     </div>
+
+                                    {sentInvitations.length > 0 && (
+                                        <div className="border-t border-[#d7e6f8] pt-5">
+                                            <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936] mb-3">
+                                                Lời mời đã gửi (Đang chờ phản hồi)
+                                            </h3>
+                                            <div className="space-y-2">
+                                                {sentInvitations.map((inv) => (
+                                                    <div key={inv.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3 flex items-center justify-between">
+                                                        <div>
+                                                            <p className="font-bold text-[#071936] text-sm">{inv.fullName || inv.email}</p>
+                                                            <p className="text-xs text-[#5c6d83]">{inv.email}</p>
+                                                        </div>
+                                                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                                                            Đang chờ phản hồi
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="border-t border-[#d7e6f8] pt-5">
                                         <div className="flex items-center justify-between">
