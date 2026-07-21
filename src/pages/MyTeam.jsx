@@ -59,8 +59,8 @@ export default function MyTeam() {
 
             const activeOrUpcoming = loadedEvents.filter((event) => {
                 if (!event.active) return false;
-                if (event.regEndDate) {
-                    const endDate = new Date(event.regEndDate);
+                if (event.eventEndDate) {
+                    const endDate = new Date(event.eventEndDate);
                     const now = new Date();
                     if (endDate < now) return false;
                 }
@@ -109,8 +109,8 @@ export default function MyTeam() {
     const activeOrUpcomingEvents = useMemo(() => {
         return events.filter((event) => {
             if (!event.active) return false;
-            if (event.regEndDate) {
-                const endDate = new Date(event.regEndDate);
+            if (event.eventEndDate) {
+                const endDate = new Date(event.eventEndDate);
                 const now = new Date();
                 if (endDate < now) return false;
             }
@@ -393,7 +393,7 @@ export default function MyTeam() {
                                     <div className="grid gap-5 md:grid-cols-2">
                                         <div>
                                             <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Tên team</label>
-                                            <input required className="input-custom" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                                            <input required className="input-custom" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} disabled={selectedEvent && getEventPhase(selectedEvent).key !== 'registration'} />
                                         </div>
                                         <div>
                                             <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Giải đấu</label>
@@ -402,38 +402,45 @@ export default function MyTeam() {
                                             </select>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mô tả</label>
-                                        <textarea className="input-custom min-h-28" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
-                                    </div>
-                                    <div className="grid gap-5 md:grid-cols-2">
-                                        <div>
-                                            <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Hạng mục</label>
-                                            <select required className="input-custom" value={formData.trackId} onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}>
-                                                {(selectedEvent?.tracks || []).map((track) => <option key={track.id} value={track.id}>{track.name}</option>)}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Chế độ</label>
-                                            <select className="input-custom" value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
-                                                <option value="PUBLIC">Public</option>
-                                                <option value="PRIVATE">Private</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    {formData.type === 'PRIVATE' && (
-                                        <div>
-                                            <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mã PIN 4 số</label>
-                                            <input className="input-custom max-w-xs" inputMode="numeric" maxLength={4} value={formData.joinPassword} onChange={(e) => setFormData({ ...formData, joinPassword: e.target.value.replace(/\D/g, '') })} />
-                                        </div>
-                                    )}
 
-                                    <div>
-                                        <label className="mb-2 block text-sm font-bold text-[#0b1f3f]">
-                                            Mời thành viên khác (Tối thiểu 2 người, tối tối đa 4)
-                                        </label>
-                                        <p className="text-xs text-[#5c6d83] mb-2">Đội của bạn phải có ít nhất 3 thành viên khi tạo (bản thân bạn và ít nhất 2 thành viên khác).</p>
-                                        <div className="space-y-3">
+                                    {selectedEvent && getEventPhase(selectedEvent).key !== 'registration' ? (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                                            Sự kiện này đã đóng cổng đăng ký đội. Bạn chỉ có thể xem lobby các đội đã tham gia.
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mô tả</label>
+                                                <textarea className="input-custom min-h-28" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+                                            </div>
+                                            <div className="grid gap-5 md:grid-cols-2">
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Hạng mục</label>
+                                                    <select required className="input-custom" value={formData.trackId} onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}>
+                                                        {(selectedEvent?.tracks || []).map((track) => <option key={track.id} value={track.id}>{track.name}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Chế độ</label>
+                                                    <select className="input-custom" value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
+                                                        <option value="PUBLIC">Public</option>
+                                                        <option value="PRIVATE">Private</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            {formData.type === 'PRIVATE' && (
+                                                <div>
+                                                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mã PIN 4 số</label>
+                                                    <input className="input-custom max-w-xs" inputMode="numeric" maxLength={4} value={formData.joinPassword} onChange={(e) => setFormData({ ...formData, joinPassword: e.target.value.replace(/\D/g, '') })} />
+                                                </div>
+                                            )}
+
+                                            <div>
+                                                <label className="mb-2 block text-sm font-bold text-[#0b1f3f]">
+                                                    Mời thành viên khác (Tối thiểu 2 người, tối tối đa 4)
+                                                </label>
+                                                <p className="text-xs text-[#5c6d83] mb-2">Đội của bạn phải có ít nhất 3 thành viên khi tạo (bản thân bạn và ít nhất 2 thành viên khác).</p>
+                                                <div className="space-y-3">
                                             {memberEmails.map((email, index) => (
                                                 <div key={index} className="flex items-center gap-2">
                                                     <input
@@ -475,6 +482,8 @@ export default function MyTeam() {
                                     </div>
 
                                     <button type="submit" disabled={creating} className="btn-primary w-full">{creating ? 'Đang tạo...' : 'Tạo đội'}</button>
+                                        </>
+                                    )}
                                 </form>
                             )}
                         </section>
