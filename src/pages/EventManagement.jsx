@@ -946,7 +946,7 @@ export default function EventManagement() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                             <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-[#071936] px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#071936', color: '#ffffff' }}>Xem trang công khai</Link>
-                            <Link to="/dashboard/scoring-config" className="rounded-xl border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#ffffff', color: '#0b3d49' }}>Cấu hình chấm điểm</Link>
+                            <Link to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="rounded-xl border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#ffffff', color: '#0b3d49' }}>Cấu hình chấm điểm</Link>
                         </div>
                     </div>
                 </section>
@@ -979,7 +979,7 @@ export default function EventManagement() {
                                     {managementSteps.map((step, index) => {
                                         const content = <><span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black ${step.done ? 'bg-emerald-500 text-white' : 'bg-blue-100 text-[#0f63c9]'}`}>{step.done ? '✓' : index + 1}</span><span className="min-w-0 flex-1 text-left"><span className="block font-black text-slate-900">{step.label}</span><span className="mt-1 block text-sm leading-5 text-slate-500">{step.description}</span></span><span className="shrink-0 text-sm font-black text-[#0f63c9]">{step.done ? 'Xem lại' : 'Thiết lập'} →</span></>;
                                         return step.id === 'scoring'
-                                            ? <Link key={step.id} to="/dashboard/scoring-config" className="flex items-center gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/50">{content}</Link>
+                                            ? <Link key={step.id} to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="flex items-center gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/50">{content}</Link>
                                             : <button key={step.id} type="button" onClick={() => setActiveTab(step.id)} className="flex w-full items-center gap-4 rounded-xl border border-slate-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/50">{content}</button>;
                                     })}
                                 </div>
