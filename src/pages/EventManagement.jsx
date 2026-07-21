@@ -145,7 +145,7 @@ export default function EventManagement() {
     const [selectedEventId, setSelectedEventId] = useState('');
     const [selectedMatrixId, setSelectedMatrixId] = useState('');
     const [form, setForm] = useState(emptyEvent);
-    const [matrixForm, setMatrixForm] = useState({ guidelineUrl: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
+    const [matrixForm, setMatrixForm] = useState({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
     const [prizeForm, setPrizeForm] = useState(emptyPrize);
     const [activeTab, setActiveTab] = useState('overview');
     const [createStep, setCreateStep] = useState(0);
@@ -249,12 +249,13 @@ export default function EventManagement() {
 
     useEffect(() => {
         if (!selectedMatrix) {
-            setMatrixForm({ guidelineUrl: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
+            setMatrixForm({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
             return;
         }
 
         setMatrixForm({
             guidelineUrl: selectedMatrix.guidelineUrl || '',
+            submissionStartDate: toLocalInput(selectedMatrix.submissionStartDate),
             submissionDeadline: toLocalInput(selectedMatrix.submissionDeadline),
             topN: selectedMatrix.topN || 10,
             judgeIds: selectedMatrix.judges?.map((user) => user.id) || [],
@@ -473,10 +474,16 @@ export default function EventManagement() {
             return;
         }
 
+        if (matrixForm.submissionStartDate && matrixForm.submissionDeadline && new Date(matrixForm.submissionStartDate) > new Date(matrixForm.submissionDeadline)) {
+            setMessage({ type: 'error', text: 'Thời gian mở nộp bài không được sau hạn nộp bài.' });
+            return;
+        }
+
         setLoading(true);
         try {
             await axiosClient.put(`/events/matrices/${selectedMatrixId}`, {
                 guidelineUrl: matrixForm.guidelineUrl,
+                submissionStartDate: matrixForm.submissionStartDate || null,
                 submissionDeadline: matrixForm.submissionDeadline || null,
                 judgeIds: matrixForm.judgeIds.map(Number),
                 topN: selectedMatrix?.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
@@ -496,6 +503,10 @@ export default function EventManagement() {
             setMessage({ type: 'error', text: 'Hãy chọn từ 2 đến 4 giám khảo trước khi áp dụng hàng loạt.' });
             return;
         }
+        if (matrixForm.submissionStartDate && matrixForm.submissionDeadline && new Date(matrixForm.submissionStartDate) > new Date(matrixForm.submissionDeadline)) {
+            setMessage({ type: 'error', text: 'Thời gian mở nộp bài không được sau hạn nộp bài.' });
+            return;
+        }
 
         const sameRoundMatrices = (selectedEvent?.matrices || []).filter(
             (matrix) => matrix.roundOrder === selectedMatrix.roundOrder
@@ -505,6 +516,7 @@ export default function EventManagement() {
         try {
             await Promise.all(sameRoundMatrices.map((matrix) => axiosClient.put(`/events/matrices/${matrix.id}`, {
                 guidelineUrl: matrixForm.guidelineUrl,
+                submissionStartDate: matrixForm.submissionStartDate || null,
                 submissionDeadline: matrixForm.submissionDeadline || null,
                 judgeIds: matrixForm.judgeIds.map(Number),
                 topN: matrix.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
@@ -1118,9 +1130,19 @@ export default function EventManagement() {
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <input className="input-custom" placeholder="Guideline / de bai / link quy che rieng" value={matrixForm.guidelineUrl} onChange={(e) => setMatrixForm({ ...matrixForm, guidelineUrl: e.target.value })} />
-                                        <input type="datetime-local" className="input-custom" value={matrixForm.submissionDeadline} onChange={(e) => setMatrixForm({ ...matrixForm, submissionDeadline: e.target.value })} />
+                                    <div className="grid gap-4 md:grid-cols-3">
+                                        <div>
+                                            <label className="mb-1 block text-xs font-bold text-slate-700">Guideline / Đề bài</label>
+                                            <input className="input-custom" placeholder="Guideline / de bai / link quy che rieng" value={matrixForm.guidelineUrl} onChange={(e) => setMatrixForm({ ...matrixForm, guidelineUrl: e.target.value })} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-bold text-slate-700">Thời gian mở nộp bài</label>
+                                            <input type="datetime-local" className="input-custom" value={matrixForm.submissionStartDate} onChange={(e) => setMatrixForm({ ...matrixForm, submissionStartDate: e.target.value })} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-bold text-slate-700">Hạn nộp bài (Deadline)</label>
+                                            <input type="datetime-local" className="input-custom" value={matrixForm.submissionDeadline} onChange={(e) => setMatrixForm({ ...matrixForm, submissionDeadline: e.target.value })} />
+                                        </div>
                                     </div>
                                     {!selectedMatrix?.finalRound && (
                                         <label className="block rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-900">

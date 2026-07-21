@@ -137,6 +137,14 @@ export default function MyTeam() {
     const selectedEvent = useMemo(() => events.find((event) => String(event.id) === String(formData.eventId)), [events, formData.eventId]);
     const currentEvent = useMemo(() => events.find((event) => String(event.id) === String(team?.eventId)), [events, team]);
     const selectedMatrix = useMemo(() => matrices.find((matrix) => String(matrix.id) === String(formData.matrixId)), [matrices, formData.matrixId]);
+    const isSubmissionStarted = useMemo(() => {
+        if (!selectedMatrix?.submissionStartDate) return true;
+        return new Date() >= new Date(selectedMatrix.submissionStartDate);
+    }, [selectedMatrix]);
+    const isSubmissionEnded = useMemo(() => {
+        if (!selectedMatrix?.submissionDeadline) return false;
+        return new Date() > new Date(selectedMatrix.submissionDeadline);
+    }, [selectedMatrix]);
     const eventPhase = currentEvent ? getEventPhase(currentEvent) : null;
     const startCountdown = getCountdownParts(currentEvent?.eventStartDate);
 
@@ -704,10 +712,25 @@ export default function MyTeam() {
                                         </select>
                                     </div>
                                     {selectedMatrix?.guidelineUrl && <a href={selectedMatrix.guidelineUrl} target="_blank" rel="noreferrer" className="btn-secondary">Tải đề thi / quy chế</a>}
-                                    <p className="text-sm font-semibold text-[#5c6d83]">Deadline: {formatDateTime(selectedMatrix?.submissionDeadline)}</p>
-                                    <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={!isLeader} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
-                                    <button type="submit" disabled={savingSubmission || !isLeader} className="btn-primary w-full">
-                                        {!isLeader ? 'Chỉ leader được nộp bài' : savingSubmission ? 'Đang lưu...' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
+                                    <div className="space-y-1">
+                                        {selectedMatrix?.submissionStartDate && (
+                                            <p className="text-sm font-semibold text-[#5c6d83]">Mở nộp: {formatDateTime(selectedMatrix.submissionStartDate)}</p>
+                                        )}
+                                        <p className="text-sm font-semibold text-[#5c6d83]">Deadline: {formatDateTime(selectedMatrix?.submissionDeadline)}</p>
+                                    </div>
+                                    {!isSubmissionStarted && selectedMatrix?.submissionStartDate && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
+                                            Cổng nộp bài chưa mở. Vui lòng quay lại sau thời gian mở nộp bài.
+                                        </div>
+                                    )}
+                                    {isSubmissionEnded && (
+                                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800">
+                                            Đã quá hạn nộp bài của vòng thi này.
+                                        </div>
+                                    )}
+                                    <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={!isLeader || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
+                                    <button type="submit" disabled={savingSubmission || !isLeader || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
+                                        {!isLeader ? 'Chỉ leader được nộp bài' : savingSubmission ? 'Đang lưu...' : !isSubmissionStarted ? 'Cổng nộp bài chưa mở' : isSubmissionEnded ? 'Đã hết hạn nộp bài' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
                                     </button>
                                     {submitError && <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p>}
                                     {submitSuccess && <p className="mt-2 text-sm font-semibold text-green-600">{submitSuccess}</p>}

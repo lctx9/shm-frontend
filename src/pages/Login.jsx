@@ -9,15 +9,15 @@ export default function Login() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const redirect = searchParams.get('redirect') || '/';
+    const [formData, setFormData] = useState({ email: '', password: '' });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
     if (token && managerRoles.has(role)) {
         return <Navigate to="/dashboard" replace />;
     }
-    const [formData, setFormData] = useState({ email: '', password: '' });
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
