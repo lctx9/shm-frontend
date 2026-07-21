@@ -167,6 +167,14 @@ export default function MyTeam() {
             setEmailsError('Bạn không thể tự mời chính mình vào đội.');
             hasErr = true;
         }
+        const selectedTrack = (selectedEvent?.tracks || []).find((t) => String(t.id) === String(formData.trackId));
+        if (selectedTrack && selectedTrack.maxTeams && selectedTrack.maxTeams > 0) {
+            const currentTeams = selectedTrack.currentTeamsCount || 0;
+            if (currentTeams >= selectedTrack.maxTeams) {
+                setCreateError(`Bảng đấu ${selectedTrack.name} đã đạt giới hạn tối đa ${selectedTrack.maxTeams} đội tham gia.`);
+                hasErr = true;
+            }
+        }
 
         if (hasErr) return;
 
@@ -427,8 +435,18 @@ export default function MyTeam() {
                                     <div className="grid gap-5 md:grid-cols-2">
                                         <div>
                                             <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Hạng mục</label>
-                                            <select required className="input-custom" value={formData.trackId} onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}>
-                                                {(selectedEvent?.tracks || []).map((track) => <option key={track.id} value={track.id}>{track.name}</option>)}
+                                            <select required className="input-custom font-medium" value={formData.trackId} onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}>
+                                                {(selectedEvent?.tracks || []).map((track) => {
+                                                    const isFull = track.maxTeams && track.maxTeams > 0 && (track.currentTeamsCount || 0) >= track.maxTeams;
+                                                    const label = track.maxTeams && track.maxTeams > 0
+                                                        ? `${track.name} (Đã có ${track.currentTeamsCount || 0}/${track.maxTeams} đội${isFull ? ' - ĐÃ ĐẦY' : ''})`
+                                                        : `${track.name} (Đang có ${track.currentTeamsCount || 0} đội)`;
+                                                    return (
+                                                        <option key={track.id} value={track.id} disabled={isFull}>
+                                                            {label}
+                                                        </option>
+                                                    );
+                                                })}
                                             </select>
                                         </div>
                                         <div>
