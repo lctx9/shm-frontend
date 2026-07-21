@@ -445,6 +445,18 @@ export default function MyTeam() {
         }
     };
 
+    const handleReInvite = async (email) => {
+        setInviteError('');
+        setInviteSuccess('');
+        try {
+            await axiosClient.post(`/teams/${team.id}/invite`, { email });
+            setInviteSuccess(`Đã gửi lời mời lại cho ${email}!`);
+            await fetchData();
+        } catch (err) {
+            setInviteError(err.message || 'Không thể gửi lời mời lại.');
+        }
+    };
+
     const handleAcceptInvitation = async (requestId) => {
         setMessage({ text: '', type: '' });
         try {
@@ -819,18 +831,33 @@ export default function MyTeam() {
                                     {sentInvitations.length > 0 && (
                                         <div className="border-t border-[#d7e6f8] pt-5">
                                             <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936] mb-3">
-                                                Lời mời đã gửi (Đang chờ phản hồi)
+                                                Lời mời đã gửi ({sentInvitations.length})
                                             </h3>
                                             <div className="space-y-2">
                                                 {sentInvitations.map((inv) => (
-                                                    <div key={inv.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3 flex items-center justify-between">
-                                                        <div>
-                                                            <p className="font-bold text-[#071936] text-sm">{inv.fullName || inv.email}</p>
-                                                            <p className="text-xs text-[#5c6d83]">{inv.email}</p>
+                                                    <div key={inv.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3 flex items-center justify-between gap-3">
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-[#071936] text-sm truncate">{inv.fullName || inv.email}</p>
+                                                            <p className="text-xs text-[#5c6d83] truncate">{inv.email}</p>
                                                         </div>
-                                                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
-                                                            Đang chờ phản hồi
-                                                        </span>
+                                                        {inv.status === 'REJECTED' ? (
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600">
+                                                                    Đã từ chối
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleReInvite(inv.email)}
+                                                                    className="btn-primary py-1 px-3 text-xs shrink-0"
+                                                                >
+                                                                    Mời lại
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700 shrink-0">
+                                                                Đang chờ phản hồi
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
