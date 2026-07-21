@@ -2036,6 +2036,58 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .judge-grading-summary span { display: block; color: #b8d8dd; font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .judge-grading-summary strong { display: block; margin-top: 4px; color: white; font-size: 25px; }
 .judge-grading-error { margin-bottom: 20px; border: 1px solid #efb5b5; background: #fff3f3; padding: 14px 17px; color: #a93535; font-size: 13px; font-weight: 700; }
+/* Judge workspace top-right floating toasts */
+.judge-toast-container {
+    position: fixed;
+    top: 85px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 420px;
+    width: calc(100% - 48px);
+    pointer-events: none;
+}
+.judge-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    font-size: 13px;
+    line-height: 1.45;
+    animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes toastSlideIn {
+    from { opacity: 0; transform: translateX(80px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+.judge-toast--error {
+    border: 1px solid #f87171;
+    background: #991b1b;
+    color: #fef2f2;
+}
+.judge-toast--success {
+    border: 1px solid #34d399;
+    background: #065f46;
+    color: #ecfdf5;
+}
+.judge-toast__close {
+    background: transparent;
+    border: 0;
+    color: currentColor;
+    opacity: 0.8;
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+.judge-toast__close:hover { opacity: 1; }
 .judge-grading-workspace { display: grid; min-height: 680px; grid-template-columns: 330px minmax(0,1fr); gap: 22px; }
 
 .judge-queue { position: sticky; top: 88px; overflow: hidden; align-self: start; border: 1px solid var(--dp-line); background: white; }
