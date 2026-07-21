@@ -675,41 +675,41 @@ export default function MyTeam() {
                                     </div>
                                 ))}
                             </div>
-                            {showActions && isLeader && (
-                                <div className="mt-5 border-t border-[#d7e6f8] pt-5">
-                                    <h3 className="mb-3 text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Mời thành viên</h3>
-                                    <form onSubmit={handleInvite} className="flex gap-2">
-                                        <input required type="email" className="input-custom" placeholder="Email thành viên" value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); setInviteSuccess(''); }} />
-                                        <button type="submit" className="btn-primary">Mời</button>
-                                    </form>
-                                    {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
-                                    {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
-                                </div>
-                            )}
-
                             {isLeader && (
-                                <div className="mt-6 border-t border-[#d7e6f8] pt-5">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Yêu cầu tham gia</h3>
-                                        {joinRequests.length > 0 && (
-                                            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600 animate-pulse">
-                                                {joinRequests.length} mới
-                                            </span>
-                                        )}
+                                <div className="mt-6 border-t border-[#d7e6f8] pt-5 space-y-6">
+                                    <div>
+                                        <h3 className="mb-3 text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Mời thành viên</h3>
+                                        <form onSubmit={handleInvite} className="flex gap-2">
+                                            <input required type="email" className="input-custom" placeholder="Email thành viên" value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); setInviteSuccess(''); }} />
+                                            <button type="submit" className="btn-primary">Mời</button>
+                                        </form>
+                                        {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
+                                        {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
                                     </div>
-                                    <div className="mt-3 space-y-3">
-                                        {joinRequests.length ? joinRequests.map((request) => (
-                                            <div key={request.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                                <div>
-                                                    <p className="font-bold text-[#071936]">{request.fullName || request.email}</p>
-                                                    <p className="text-sm text-[#5c6d83]">{request.email}</p>
+
+                                    <div className="border-t border-[#d7e6f8] pt-5">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Yêu cầu tham gia</h3>
+                                            {joinRequests.length > 0 && (
+                                                <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600 animate-pulse">
+                                                    {joinRequests.length} mới
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="mt-3 space-y-3">
+                                            {joinRequests.length ? joinRequests.map((request) => (
+                                                <div key={request.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                    <div>
+                                                        <p className="font-bold text-[#071936]">{request.fullName || request.email}</p>
+                                                        <p className="text-sm text-[#5c6d83]">{request.email}</p>
+                                                    </div>
+                                                    <div className="flex gap-2 shrink-0">
+                                                        <button type="button" onClick={() => handleApproveRequest(request.id)} className="btn-primary py-1.5 px-3 text-xs">Duyệt</button>
+                                                        <button type="button" onClick={() => handleRejectRequest(request.id)} className="btn-secondary py-1.5 px-3 text-xs">Từ chối</button>
+                                                    </div>
                                                 </div>
-                                                <div className="flex gap-2 shrink-0">
-                                                    <button type="button" onClick={() => handleApproveRequest(request.id)} className="btn-primary py-1.5 px-3 text-xs">Duyệt</button>
-                                                    <button type="button" onClick={() => handleRejectRequest(request.id)} className="btn-secondary py-1.5 px-3 text-xs">Từ chối</button>
-                                                </div>
-                                            </div>
-                                        )) : <p className="text-sm text-[#5c6d83]">Chưa có yêu cầu tham gia nào.</p>}
+                                            )) : <p className="text-sm text-[#5c6d83]">Chưa có yêu cầu tham gia nào.</p>}
+                                        </div>
                                     </div>
                                 </div>
                             )}
