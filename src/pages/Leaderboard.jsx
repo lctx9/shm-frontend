@@ -105,7 +105,7 @@ function RankedList({ rows, mode }) {
         <div className="bg-white rounded-lg border border-[#c6d3d7] overflow-hidden">
             <div className="px-5 py-3.5 bg-[#f8fafb] border-b border-[#c6d3d7] flex items-center justify-between">
                 <h2 className="text-xs font-extrabold text-[#102d38] uppercase tracking-wider">Thứ hạng tiếp theo</h2>
-                <span className="bg-[#e8f4ff] text-[#1474cb] text-[10px] font-extrabold px-2.5 py-0.5 rounded uppercase tracking-wider">
+                <span className="bg-[#1fa58f] text-white text-[10px] font-extrabold px-2.5 py-1 rounded uppercase tracking-wider shadow-sm">
                     Từ hạng 4 trở xuống
                 </span>
             </div>
@@ -164,7 +164,7 @@ function RankedList({ rows, mode }) {
                                 )}
                                 <td className="py-3.5 px-5 text-right pr-6">
                                     {mode === 'TEAM' ? (
-                                        <span className="font-extrabold text-[#1474cb] bg-[#e8f4ff] px-2.5 py-1 rounded text-xs">
+                                        <span className="font-extrabold text-white bg-[#1fa58f] px-2.5 py-1 rounded text-xs shadow-sm">
                                             {entry.score || 0} điểm
                                         </span>
                                     ) : (
@@ -278,8 +278,8 @@ export default function Leaderboard() {
         <main className="events-marketplace">
             {/* Hero Section - Synchronized with Events Page */}
             <header className="events-marketplace__hero">
-                <h1>Bảng xếp hạng giải đấu SEAL</h1>
-                <p>Vinh danh thành tích các đội thi và cá nhân xuất sắc nhất qua các mùa giải hackathon.</p>
+                <h1 style={{ color: '#ffffff' }}>Bảng xếp hạng giải đấu SEAL</h1>
+                <p style={{ color: '#c7dce2' }}>Vinh danh thành tích các đội thi và cá nhân xuất sắc nhất qua các mùa giải hackathon.</p>
             </header>
 
             {/* Filter & Controls section - Synchronized with Events Page Search Wrap */}
@@ -300,9 +300,9 @@ export default function Leaderboard() {
                                 </select>
                             </div>
                         ) : (
-                            <div className="inline-flex items-center gap-2 text-xs font-extrabold text-[#1474cb] bg-[#e8f4ff] border border-[#c7d4d8] rounded px-3 py-1.5">
+                            <div className="inline-flex items-center gap-2 text-xs font-extrabold text-white bg-[#1fa58f] border border-[#178a76] rounded px-3.5 py-2 shadow-sm">
                                 <span>🏆</span>
-                                <span>BXH Cá nhân tự động tích lũy điểm qua tất cả giải đấu</span>
+                                <span className="text-white">BXH Cá nhân tự động tích lũy điểm qua tất cả giải đấu</span>
                             </div>
                         )}
                     </div>
