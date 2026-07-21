@@ -658,39 +658,58 @@ export default function MyTeam() {
                                             <span className="rounded-full bg-[#f8fbff] px-3 py-1 text-xs font-black text-[#0f63c9]">{member.role}</span>
                                         </div>
                                         {showActions && isLeader && member.role !== 'LEADER' && (
-                                            <div className="mt-3 flex flex-wrap gap-2">
-                                                <button type="button" onClick={() => handleTransfer(member.id)} className="btn-secondary">Chuyển leader</button>
-                                                <button type="button" onClick={() => handleKick(member.id)} className="btn-secondary">Kick</button>
+                                            <div className="mt-3 flex items-center gap-2">
+                                                <button type="button" onClick={() => handleTransfer(member.id)} className="btn-secondary text-xs py-1 px-3">Chuyển leader</button>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => handleKick(member.id)} 
+                                                    title="Xóa thành viên khỏi đội" 
+                                                    className="flex items-center justify-center rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 p-1.5 transition-all duration-200 cursor-pointer"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.3 20c-2.282 0-4.47-.6-6.42-1.656z" />
+                                                    </svg>
+                                                </button>
                                             </div>
                                         )}
                                     </div>
                                 ))}
                             </div>
                             {showActions && isLeader && (
-                                <div className="mt-5 space-y-5">
-                                    <div>
-                                        <h3 className="mb-3 text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Yêu cầu tham gia</h3>
-                                        <div className="space-y-3">
-                                            {joinRequests.length ? joinRequests.map((request) => (
-                                                <div key={request.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3">
+                                <div className="mt-5 border-t border-[#d7e6f8] pt-5">
+                                    <h3 className="mb-3 text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Mời thành viên</h3>
+                                    <form onSubmit={handleInvite} className="flex gap-2">
+                                        <input required type="email" className="input-custom" placeholder="Email thành viên" value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); setInviteSuccess(''); }} />
+                                        <button type="submit" className="btn-primary">Mời</button>
+                                    </form>
+                                    {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
+                                    {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
+                                </div>
+                            )}
+
+                            {isLeader && (
+                                <div className="mt-6 border-t border-[#d7e6f8] pt-5">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Yêu cầu tham gia</h3>
+                                        {joinRequests.length > 0 && (
+                                            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600 animate-pulse">
+                                                {joinRequests.length} mới
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="mt-3 space-y-3">
+                                        {joinRequests.length ? joinRequests.map((request) => (
+                                            <div key={request.id} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                <div>
                                                     <p className="font-bold text-[#071936]">{request.fullName || request.email}</p>
                                                     <p className="text-sm text-[#5c6d83]">{request.email}</p>
-                                                    <div className="mt-3 flex gap-2">
-                                                        <button type="button" onClick={() => handleApproveRequest(request.id)} className="btn-primary">Duyệt</button>
-                                                        <button type="button" onClick={() => handleRejectRequest(request.id)} className="btn-secondary">Từ chối</button>
-                                                    </div>
                                                 </div>
-                                            )) : <p className="text-sm text-[#5c6d83]">Chưa có yêu cầu tham gia nào.</p>}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <form onSubmit={handleInvite} className="flex gap-2">
-                                            <input required type="email" className="input-custom" placeholder="Email thành viên" value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); setInviteSuccess(''); }} />
-                                            <button type="submit" className="btn-primary">Mời</button>
-                                        </form>
-                                        {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
-                                        {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
+                                                <div className="flex gap-2 shrink-0">
+                                                    <button type="button" onClick={() => handleApproveRequest(request.id)} className="btn-primary py-1.5 px-3 text-xs">Duyệt</button>
+                                                    <button type="button" onClick={() => handleRejectRequest(request.id)} className="btn-secondary py-1.5 px-3 text-xs">Từ chối</button>
+                                                </div>
+                                            </div>
+                                        )) : <p className="text-sm text-[#5c6d83]">Chưa có yêu cầu tham gia nào.</p>}
                                     </div>
                                 </div>
                             )}
