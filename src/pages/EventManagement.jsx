@@ -41,6 +41,7 @@ const emptyEvent = () => ({
     ].join('\n'),
     ruleDocumentUrl: '',
     active: true,
+    resultsPublished: false,
     draftPrizes: [{ name: 'Giải Nhất', description: '' }],
 });
 
@@ -81,6 +82,7 @@ function eventToForm(event) {
         competitionRules: event.competitionRules || '',
         ruleDocumentUrl: event.ruleDocumentUrl || '',
         active: event.active !== false,
+        resultsPublished: Boolean(event.resultsPublished),
         draftPrizes: [],
     };
 }
@@ -340,6 +342,7 @@ export default function EventManagement() {
         competitionRules: form.competitionRules,
         ruleDocumentUrl: form.ruleDocumentUrl,
         active: form.active,
+        resultsPublished: form.resultsPublished || false,
     });
 
     const validateCreateStep = (step) => {
@@ -447,6 +450,35 @@ export default function EventManagement() {
             }
         } catch (err) {
             setMessage({ type: 'error', text: err.message || 'Không thể thực hiện yêu cầu.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const togglePublishResults = async () => {
+        if (!selectedEventId || !selectedEvent) return;
+        const newStatus = !selectedEvent.resultsPublished;
+        const confirmMsg = newStatus
+            ? 'Bạn có chắc chắn muốn CÔNG BỐ KẾT QUẢ của sự kiện này? Bảng xếp hạng sẽ hiển thị công khai cho mọi người.'
+            : 'Bạn có chắc chắn muốn HỦY CÔNG BỐ KẾT QUẢ của sự kiện này? Bảng xếp hạng sẽ bị ẩn đi.';
+            
+        if (!window.confirm(confirmMsg)) return;
+
+        setLoading(true);
+        setMessage(null);
+        try {
+            const payload = {
+                ...eventPayload(),
+                resultsPublished: newStatus
+            };
+            await axiosClient.put(`/events/${selectedEventId}`, payload);
+            setMessage({ 
+                type: 'success', 
+                text: newStatus ? 'Đã công bố kết quả sự kiện thành công!' : 'Đã hủy công bố kết quả sự kiện.' 
+            });
+            await fetchAll(selectedEventId);
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message || 'Không thể thay đổi trạng thái công bố.' });
         } finally {
             setLoading(false);
         }
@@ -1025,6 +1057,20 @@ export default function EventManagement() {
                         <div className="flex flex-wrap gap-2">
                             <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-[#071936] px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#071936', color: '#ffffff' }}>Xem trang công khai</Link>
                             <Link to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="rounded-xl border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#ffffff', color: '#0b3d49' }}>Cấu hình chấm điểm</Link>
+                            {selectedEvent && eventLifecycle(selectedEvent).id === 'ended' && (
+                                <button
+                                    type="button"
+                                    onClick={togglePublishResults}
+                                    disabled={loading}
+                                    className="rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white"
+                                    style={{
+                                        backgroundColor: selectedEvent.resultsPublished ? '#dc2626' : '#16a34a',
+                                        borderColor: selectedEvent.resultsPublished ? '#dc2626' : '#16a34a'
+                                    }}
+                                >
+                                    {selectedEvent.resultsPublished ? 'Hủy công bố kết quả' : 'Công bố kết quả'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </section>
