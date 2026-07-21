@@ -7,7 +7,9 @@ export default function Notifications() {
     const [notifications, setNotifications] = useState([]);
     const [form, setForm] = useState({ title: '', body: '', targetRole: 'USER' });
     const [loading, setLoading] = useState(true);
+    const [sending, setSending] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     const canSend = role === 'COORDINATOR' || role === 'ADMIN';
 
@@ -59,17 +61,24 @@ export default function Notifications() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSending(true);
+        setError('');
+        setSuccess('');
         try {
             await axiosClient.post('/notifications', form);
             setForm({ title: '', body: '', targetRole: 'USER' });
+            setSuccess('Thông báo đã được gửi thành công!');
             await fetchNotifications();
         } catch (err) {
             setError(err.message || 'Không thể gửi thông báo.');
+        } finally {
+            setSending(false);
         }
     };
 
     return (
         <div className="mx-auto max-w-5xl space-y-6">
+            <Toast error={error} success={success} onClose={() => { setError(''); setSuccess(''); }} />
             {canSend && (
                 <section className="rounded-lg border border-blue-100 bg-white p-8 shadow-sm">
                     <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Gửi thông báo</h2>
@@ -82,7 +91,9 @@ export default function Notifications() {
                             </select>
                         </div>
                         <textarea required rows="4" className="input-custom" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} placeholder="Nội dung thông báo" />
-                        <button type="submit" className="btn-primary">Gửi thông báo</button>
+                        <button type="submit" disabled={sending} className="btn-primary disabled:opacity-60">
+                            {sending ? 'Đang gửi...' : 'Gửi thông báo'}
+                        </button>
                     </form>
                 </section>
             )}
@@ -95,7 +106,7 @@ export default function Notifications() {
                         <button type="button" onClick={fetchNotifications} title="Làm mới thông báo" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
                     </div>
                 </div>
-                <Toast error={error} onClose={() => setError('')} />
+                <Toast error={error} onClose={() => { setError(''); setSuccess(''); }} />
                 <div className="divide-y divide-blue-50">
                     {loading ? (
                         <div className="p-8 text-center text-slate-500">Đang tải...</div>
@@ -111,8 +122,8 @@ export default function Notifications() {
                                     </a>
                                 )}
                             </div>
-                            <h3 className="mt-2 font-black text-slate-900">{item.title}</h3>
-                            <p className="mt-2 text-sm leading-6 text-slate-600">{item.body}</p>
+                            <h3 className="mt-2 font-black text-slate-900 break-words">{item.title}</h3>
+                            <p className="mt-2 text-sm leading-6 text-slate-600 break-words whitespace-pre-wrap">{item.body}</p>
                             <p className="mt-3 text-xs text-slate-400">{item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : ''}</p>
                         </article>
                     ))}
