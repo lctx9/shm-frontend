@@ -131,15 +131,19 @@ export default function Grading() {
 
         try {
             setSaving(true);
-            await axiosClient.post(`/teams/${disqualifyingTeam.id}/propose-disqualify`, { reason: finalReason });
-            alert(`Đã gửi đề xuất loại đội "${disqualifyingTeam.name}" lên Coordinator duyệt.`);
+            const teamId = disqualifyingTeam.id;
+            const teamName = disqualifyingTeam.name;
+            await axiosClient.post(`/teams/${teamId}/propose-disqualify`, { reason: finalReason });
             setShowDisqualifyModal(false);
             setDisqualifyingTeam(null);
             setDisqualifyCustomReason('');
-            setSelectedSub(null);
-            fetchData();
+            setSuccessMsg(`Đã loại đội "${teamName}" khỏi giải đấu và lưu nhật ký Audit Log thành công.`);
+            if (selectedSub && String(selectedSub.teamId) === String(teamId)) {
+                setSelectedSub(null);
+            }
+            await fetchDataQuiet();
         } catch (err) {
-            alert(err.message || 'Không thể gửi đề xuất loại đội thi.');
+            setError(err.message || 'Không thể gửi đề xuất loại đội thi.');
         } finally {
             setSaving(false);
         }
@@ -181,8 +185,17 @@ export default function Grading() {
                 axiosClient.get('/submissions'),
                 axiosClient.get('/events').catch(() => ({ result: [] })),
             ]);
-            setSubmissions(submissionRes.result || []);
+            const newSubs = submissionRes.result || [];
+            setSubmissions(newSubs);
             setEvents(eventRes.result || []);
+
+            setSelectedSub((prevSub) => {
+                if (prevSub && !newSubs.some((s) => String(s.id) === String(prevSub.id))) {
+                    setError('Đội thi này vừa bị loại khỏi giải đấu.');
+                    return null;
+                }
+                return prevSub;
+            });
         } catch {
             // Silently ignore background poll failures
         }
@@ -190,8 +203,8 @@ export default function Grading() {
 
     useEffect(() => {
         fetchData();
-        // Poll every 15 seconds so PENDING dim is reflected for all judges in real-time
-        const pollId = window.setInterval(() => fetchDataQuiet(), 15000);
+        // Poll every 4 seconds to reflect disqualifications in real-time across all judges
+        const pollId = window.setInterval(() => fetchDataQuiet(), 4000);
         return () => window.clearInterval(pollId);
     }, []);
 
@@ -373,8 +386,8 @@ export default function Grading() {
                 <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}>
                     <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', width: '100%', maxWidth: '480px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <div>
-                            <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>Đề xuất loại đội thi</h3>
-                            <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Bạn đang đề xuất loại đội <strong>"{disqualifyingTeam.name}"</strong> khỏi giải đấu.</p>
+                            <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>Xác nhận loại đội thi</h3>
+                            <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Bạn đang thực hiện loại đội <strong>"{disqualifyingTeam.name}"</strong> khỏi giải đấu.</p>
                         </div>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -423,7 +436,7 @@ export default function Grading() {
                                 onClick={handleConfirmDisqualify}
                                 style={{ flex: 1, backgroundColor: '#dc2626', color: '#ffffff', border: '1px solid #b91c1c', borderRadius: '8px', padding: '10px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
                             >
-                                Gửi đề xuất
+                                Xác nhận
                             </button>
                         </div>
                     </div>
