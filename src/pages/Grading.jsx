@@ -346,6 +346,32 @@ export default function Grading() {
                                 </div>
                             )}
 
+                            {/* Multi-field parsed submission data */}
+                            {selectedSub.submissionDataJson && (
+                                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
+                                    <h4 style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginBottom: '8px' }}>📋 Nội dung nộp bài chi tiết từ thí sinh</h4>
+                                    <div style={{ display: 'grid', gap: '10px', fontSize: '13px' }}>
+                                        {(() => {
+                                            try {
+                                                const parsed = JSON.parse(selectedSub.submissionDataJson);
+                                                return Object.entries(parsed).map(([key, val]) => (
+                                                    <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '2px', backgroundColor: '#ffffff', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                                                        <span style={{ fontSize: '11px', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>{key}</span>
+                                                        {typeof val === 'string' && val.startsWith('http') ? (
+                                                            <a href={val} target="_blank" rel="noreferrer" style={{ color: '#0f63c9', fontWeight: '700', wordBreak: 'break-all' }}>{val} ↗</a>
+                                                        ) : (
+                                                            <span style={{ color: '#0f172a', fontWeight: '600' }}>{String(val)}</span>
+                                                        )}
+                                                    </div>
+                                                ));
+                                            } catch {
+                                                return null;
+                                            }
+                                        })()}
+                                    </div>
+                                </div>
+                            )}
+
                             <section className="judge-rubric__guide">
                                 <div><strong>Rubric chấm điểm</strong><span>{completedCriteria}/{criteriaScores.length} tiêu chí đã nhập · Tổng trọng số {totalWeight}%</span></div>
                                 <div><span style={{ width: `${criteriaScores.length ? completedCriteria / criteriaScores.length * 100 : 0}%` }} /></div>
