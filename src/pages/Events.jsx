@@ -65,7 +65,7 @@ function MarketplaceEventCard({ event, navigate }) {
                     <Link to={detailUrl} className="btn-primary" onClick={e => e.stopPropagation()}>Xem chi tiết</Link>
                     {phase.key === 'ended'
                         ? <Link to={`/events/${event.id}/results`} className="btn-secondary" onClick={e => e.stopPropagation()}>Xem kết quả</Link>
-                        : phase.key === 'registration' && <Link to={`/my-team?eventId=${event.id}`} className="btn-secondary" onClick={e => e.stopPropagation()}>Đăng ký đội</Link>}
+                        : phase.key === 'registration' && <Link to={`/my-team?registerEventId=${event.id}`} className="btn-secondary" onClick={e => e.stopPropagation()}>Đăng ký đội</Link>}
                 </div>
             </div>
 

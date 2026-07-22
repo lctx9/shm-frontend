@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 
-export default function TeamChat({ embedded = false }) {
+export default function TeamChat({ embedded = false, teamId = null }) {
     const storedRole = localStorage.getItem('role');
     const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const email = localStorage.getItem('email');
@@ -70,16 +70,28 @@ export default function TeamChat({ embedded = false }) {
                             trackIds.add(String(track.id));
                         }
                     });
+                    (event.matrices || []).forEach((matrix) => {
+                        const isAssigned = (matrix.mentors || []).some((m) => m.email === email);
+                        if (isAssigned) {
+                            trackIds.add(String(matrix.trackId));
+                        }
+                    });
                 });
-                const firstTeam = allTeams.find((team) => trackIds.has(String(team.trackId)));
-                setSelectedTeamId(firstTeam?.id || '');
-                if (firstTeam?.id) await fetchMessages(firstTeam.id);
+                const targetTeamId = teamId || allTeams.find((team) => trackIds.has(String(team.trackId)))?.id || '';
+                setSelectedTeamId(targetTeamId);
+                if (targetTeamId) await fetchMessages(targetTeamId);
             } else {
-                const teamRes = await axiosClient.get('/teams/my-team');
-                const team = teamRes.result;
-                setTeams(team ? [team] : []);
-                setSelectedTeamId(team?.id || '');
-                if (team?.id) await fetchMessages(team.id);
+                if (teamId) {
+                    setSelectedTeamId(teamId);
+                    await fetchMessages(teamId);
+                } else {
+                    const teamRes = await axiosClient.get('/teams/my-team');
+                    const list = Array.isArray(teamRes.result) ? teamRes.result : (teamRes.result ? [teamRes.result] : []);
+                    setTeams(list);
+                    const firstTeam = list[0];
+                    setSelectedTeamId(firstTeam?.id || '');
+                    if (firstTeam?.id) await fetchMessages(firstTeam.id);
+                }
             }
             setError('');
         } catch (err) {
@@ -91,7 +103,7 @@ export default function TeamChat({ embedded = false }) {
 
     useEffect(() => {
         bootstrap();
-    }, []);
+    }, [teamId]);
 
     const wsRef = useRef(null);
 

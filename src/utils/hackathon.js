@@ -81,6 +81,16 @@ export function getEventPhase(event) {
 
 export function pickFeaturedEvent(events = []) {
     if (!events.length) return demoEvent;
+    
+    // Ưu tiên 1: Sự kiện đang trong thời gian mở đăng ký
+    const regEvent = events.find(e => getEventPhase(e).key === 'registration');
+    if (regEvent) return regEvent;
+
+    // Ưu tiên 2: Sự kiện đang diễn ra hoặc sắp ra mắt
+    const activeEvent = events.find(e => ['running', 'upcoming'].includes(getEventPhase(e).key));
+    if (activeEvent) return activeEvent;
+
+    // Mặc định: Sắp xếp theo thời gian gần nhất
     return [...events].sort((a, b) => {
         const aTime = new Date(a.regEndDate || a.eventStartDate || 0).getTime();
         const bTime = new Date(b.regEndDate || b.eventStartDate || 0).getTime();
