@@ -729,86 +729,151 @@ export default function MyTeam() {
                             <TeamChat embedded teamId={team.id} />
                         </div>
                         <div className="team-submission-panel rounded-lg border border-[#d7e6f8] bg-white p-6">
-                            <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Đề thi và nộp bài</h2>
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                                <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Đề thi và nộp bài</h2>
+                                <span className="text-xs font-bold text-[#5c6d83] bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
+                                    Thành viên & Leader có thể chọn vòng để xem lại bài nộp
+                                </span>
+                            </div>
+
                             {matrices.length === 0 ? (
                                 <p className="mt-4 text-sm text-[#5c6d83]">Coordinator chưa thêm đề thi/guideline cho hạng mục này.</p>
                             ) : (
-                                <form onSubmit={handleSubmission} className="mt-5 space-y-5">
-                                    <div>
-                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Vòng thi</label>
-                                        <select className="input-custom" value={formData.matrixId} onChange={(e) => setFormData({ ...formData, matrixId: e.target.value })} disabled={!isLeader}>
-                                            {matrices.map((matrix) => <option key={matrix.id} value={matrix.id}>{matrix.roundName} - {matrix.trackName}</option>)}
-                                        </select>
+                                <div>
+                                    {/* === ROUND STEPPER / TABS BAR === */}
+                                    <div className="flex flex-wrap gap-2 mb-5 border-b border-[#cbd5e1] pb-3">
+                                        {matrices.map((matrix) => {
+                                            const isSelected = String(matrix.id) === String(formData.matrixId);
+                                            const sub = submissionsMap[String(matrix.id)];
+                                            const hasSub = Boolean(sub && sub.fileUrl);
+                                            const isGraded = Boolean(sub && sub.graded);
+
+                                            return (
+                                                <button
+                                                    key={matrix.id}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, matrixId: String(matrix.id) })}
+                                                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer border ${
+                                                        isSelected
+                                                            ? 'bg-[#0f63c9] text-white border-[#0f63c9] shadow-md scale-105'
+                                                            : 'bg-[#f8fafc] text-slate-700 border-slate-200 hover:bg-blue-50 hover:text-[#0f63c9]'
+                                                    }`}
+                                                >
+                                                    <span>{matrix.roundName}</span>
+                                                    {isGraded ? (
+                                                        <span className="text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-bold">✓ Đã chấm</span>
+                                                    ) : hasSub ? (
+                                                        <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-bold">✓ Đã nộp</span>
+                                                    ) : null}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                                    {selectedMatrix?.guidelineUrl && <a href={selectedMatrix.guidelineUrl} target="_blank" rel="noreferrer" className="btn-secondary">Tải đề thi / quy chế</a>}
-                                    <div className="space-y-1">
-                                        {selectedMatrix?.submissionStartDate && (
-                                            <p className="text-sm font-semibold text-[#5c6d83]">Mở nộp: {formatDateTime(selectedMatrix.submissionStartDate)}</p>
-                                        )}
-                                        <p className="text-sm font-semibold text-[#5c6d83]">Deadline: {formatDateTime(selectedMatrix?.submissionDeadline)}</p>
-                                    </div>
-                                    {!isEventStarted && currentEvent?.eventStartDate && (
-                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
-                                            Giải đấu chưa chính thức bắt đầu. Thời gian bắt đầu: {formatDateTime(currentEvent.eventStartDate)}.
-                                        </div>
-                                    )}
-                                    {isEventStarted && !isPreviousRoundEnded && (
-                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
-                                            Vui lòng đợi vòng thi trước kết thúc mới được nộp bài cho vòng này.
-                                        </div>
-                                    )}
-                                    {isEventStarted && isPreviousRoundEnded && !isSubmissionStarted && selectedMatrix?.submissionStartDate && (
-                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
-                                            Cổng nộp bài chưa mở. Vui lòng quay lại sau thời gian mở nộp bài.
-                                        </div>
-                                    )}
-                                    {isSubmissionEnded && (
-                                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800">
-                                            Đã quá hạn nộp bài của vòng thi này.
+
+                                    {/* === GUIDELINE / PROMPT DOWNLOAD CARD === */}
+                                    {selectedMatrix && (
+                                        <div className="mb-5 rounded-xl border border-blue-100 bg-[#f8fafc] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+                                            <div>
+                                                <p className="text-xs font-black uppercase text-[#0f63c9]">Đề bài {selectedMatrix.roundName}</p>
+                                                <p className="text-sm font-bold text-slate-800 mt-0.5">{selectedMatrix.trackName || 'Bảng thi'}</p>
+                                                {selectedMatrix.submissionDeadline && (
+                                                    <p className="text-xs font-semibold text-slate-500 mt-1">Hạn nộp: {formatDateTime(selectedMatrix.submissionDeadline)}</p>
+                                                )}
+                                            </div>
+                                            {selectedMatrix.guidelineUrl ? (
+                                                <a href={selectedMatrix.guidelineUrl} target="_blank" rel="noreferrer" className="btn-primary py-2 px-4 text-xs shrink-0 flex items-center gap-1.5">
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                                    Tải Đề bài / Quy chế Vòng này
+                                                </a>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 font-semibold italic">Chưa có link đề bài</span>
+                                            )}
                                         </div>
                                     )}
 
-                                    {/* === DYNAMIC FORM FIELDS từ submissionFormSchema === */}
-                                    {submissionSchema && submissionSchema.length > 0 ? (
-                                        <div className="space-y-4">
-                                            {submissionSchema.map((field) => (
-                                                <div key={field.id}>
-                                                    <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">
-                                                        {field.label}
-                                                        {field.required && <span className="ml-1 text-red-500">*</span>}
-                                                    </label>
-                                                    {field.type === 'textarea' ? (
-                                                        <textarea
-                                                            className="input-custom min-h-[80px] resize-y"
-                                                            placeholder={field.placeholder || ''}
-                                                            value={submissionValues[field.id] || ''}
-                                                            disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
-                                                            onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
-                                                        />
-                                                    ) : (
-                                                        <input
-                                                            type={field.type || 'text'}
-                                                            className="input-custom"
-                                                            placeholder={field.type === 'url' ? 'https://' : (field.placeholder || '')}
-                                                            value={submissionValues[field.id] || ''}
-                                                            disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
-                                                            onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
-                                                        />
-                                                    )}
+                                    {/* === PAST ROUND REVIEW CARD (If scored or graded) === */}
+                                    {submission && submission.graded && (
+                                        <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-black uppercase tracking-wider text-emerald-800">Kết quả chấm điểm Vòng này</span>
+                                                {submission.score != null && (
+                                                    <span className="text-sm font-black bg-emerald-600 text-white px-3 py-1 rounded-full shadow-xs">
+                                                        {submission.score} / 100 điểm
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {submission.feedback && (
+                                                <div className="mt-2 text-xs text-slate-700 bg-white p-3 rounded-lg border border-emerald-100">
+                                                    <strong>Nhận xét từ Giám khảo:</strong> {submission.feedback}
                                                 </div>
-                                            ))}
+                                            )}
                                         </div>
-                                    ) : (
-                                        /* Fallback: form cũ — event chưa cấu hình schema */
-                                        <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
                                     )}
 
-                                    <button type="submit" disabled={savingSubmission || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
-                                        {!isLeader ? 'Chỉ leader được nộp bài' : savingSubmission ? 'Đang lưu...' : !isEventStarted ? 'Giải đấu chưa bắt đầu' : !isPreviousRoundEnded ? 'Vòng trước chưa kết thúc' : !isSubmissionStarted ? 'Cổng nộp bài chưa mở' : isSubmissionEnded ? 'Đã hết hạn nộp bài' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
-                                    </button>
-                                    {submitError && <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p>}
-                                    {submitSuccess && <p className="mt-2 text-sm font-semibold text-green-600">{submitSuccess}</p>}
-                                </form>
+                                    <form onSubmit={handleSubmission} className="space-y-5">
+                                        {!isEventStarted && currentEvent?.eventStartDate && (
+                                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
+                                                Giải đấu chưa chính thức bắt đầu. Thời gian bắt đầu: {formatDateTime(currentEvent.eventStartDate)}.
+                                            </div>
+                                        )}
+                                        {isEventStarted && !isPreviousRoundEnded && (
+                                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
+                                                Vui lòng đợi vòng thi trước kết thúc mới được nộp bài cho vòng này.
+                                            </div>
+                                        )}
+                                        {isEventStarted && isPreviousRoundEnded && !isSubmissionStarted && selectedMatrix?.submissionStartDate && (
+                                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
+                                                Cổng nộp bài chưa mở. Vui lòng quay lại sau thời gian mở nộp bài.
+                                            </div>
+                                        )}
+                                        {isSubmissionEnded && (
+                                            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800">
+                                                Đã quá hạn nộp bài của vòng thi này.
+                                            </div>
+                                        )}
+
+                                        {/* === DYNAMIC FORM FIELDS từ submissionFormSchema === */}
+                                        {submissionSchema && submissionSchema.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {submissionSchema.map((field) => (
+                                                    <div key={field.id}>
+                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">
+                                                            {field.label}
+                                                            {field.required && <span className="ml-1 text-red-500">*</span>}
+                                                        </label>
+                                                        {field.type === 'textarea' ? (
+                                                            <textarea
+                                                                className="input-custom min-h-[80px] resize-y"
+                                                                placeholder={field.placeholder || ''}
+                                                                value={submissionValues[field.id] || ''}
+                                                                disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
+                                                                onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
+                                                            />
+                                                        ) : (
+                                                            <input
+                                                                type={field.type || 'text'}
+                                                                className="input-custom"
+                                                                placeholder={field.type === 'url' ? 'https://' : (field.placeholder || '')}
+                                                                value={submissionValues[field.id] || ''}
+                                                                disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
+                                                                onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            /* Fallback: form cũ — event chưa cấu hình schema */
+                                            <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
+                                        )}
+
+                                        <button type="submit" disabled={savingSubmission || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
+                                            {!isLeader ? 'Chỉ Team Leader mới được sửa / nộp bài' : savingSubmission ? 'Đang lưu...' : !isEventStarted ? 'Giải đấu chưa bắt đầu' : !isPreviousRoundEnded ? 'Vòng trước chưa kết thúc' : !isSubmissionStarted ? 'Cổng nộp bài chưa mở' : isSubmissionEnded ? 'Đã hết hạn nộp bài' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
+                                        </button>
+                                        {submitError && <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p>}
+                                        {submitSuccess && <p className="mt-2 text-sm font-semibold text-green-600">{submitSuccess}</p>}
+                                    </form>
+                                </div>
                             )}
                         </div>
 

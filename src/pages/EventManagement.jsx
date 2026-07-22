@@ -192,6 +192,20 @@ export default function EventManagement() {
         [selectedEvent, selectedMatrixId]
     );
 
+    const handlePublishAndAdvanceRound = async (matrixId) => {
+        if (!matrixId) return;
+        try {
+            setLoading(true);
+            const res = await axiosClient.post(`/matrices/${matrixId}/publish-and-advance`);
+            setMessage({ type: 'success', text: res.result || 'Đã công bố kết quả và mở vòng tiếp theo thành công!' });
+            await fetchEvents();
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message || 'Không thể công bố kết quả và mở vòng mới.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const eventTeams = useMemo(
         () => teams.filter((team) => String(team.eventId) === String(selectedEventId)),
         [teams, selectedEventId]
@@ -860,7 +874,6 @@ export default function EventManagement() {
         { id: 'event', label: 'Thông tin & lịch' },
         { id: 'submission', label: 'Form bài nộp' },
         { id: 'rules', label: 'Thể lệ & giải thưởng' },
-        { id: 'disqualifications', label: 'Đề xuất loại đội' },
     ];
     const managementSteps = [
         { id: 'event', label: 'Thông tin và lịch sự kiện', description: 'Tên, thời gian đăng ký, thời gian thi, bảng đấu và Mentor.', done: Boolean(form.name && form.regStartDate && form.regEndDate && form.eventStartDate && form.eventEndDate && form.tracks.length) },
@@ -1200,6 +1213,25 @@ export default function EventManagement() {
                         <div className="flex flex-wrap gap-2">
                             <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-[#071936] px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#071936', color: '#ffffff' }}>Xem trang công khai</Link>
                             <Link to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="rounded-xl border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#ffffff', color: '#0b3d49' }}>Cấu hình chấm điểm</Link>
+                            {selectedEvent && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const firstMatrix = selectedEvent.matrices?.[0];
+                                        if (firstMatrix) {
+                                            if (window.confirm(`Xác nhận công bố kết quả và mở vòng tiếp theo cho giải đấu "${selectedEvent.name}"?`)) {
+                                                handlePublishAndAdvanceRound(firstMatrix.id);
+                                            }
+                                        } else {
+                                            alert('Sự kiện chưa được cấu hình ma trận vòng đấu.');
+                                        }
+                                    }}
+                                    disabled={loading}
+                                    className="rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white bg-indigo-600 border-indigo-600 hover:bg-indigo-700 cursor-pointer flex items-center gap-1.5"
+                                >
+                                    <span>⚡ Công bố kết quả & Mở Vòng mới</span>
+                                </button>
+                            )}
                             {selectedEvent && eventLifecycle(selectedEvent).id === 'ended' && (
                                 <button
                                     type="button"
@@ -1527,57 +1559,6 @@ export default function EventManagement() {
                                         </div>
                                     ))}
                                     {prizes.length === 0 && <p className="p-4 text-sm text-slate-500">Chưa có giải thưởng.</p>}
-                                </div>
-                            </Section>
-                        </div>
-                    )}
-
-                    {activeTab === 'disqualifications' && (
-                        <div className="space-y-6">
-                            <Section title="Đề xuất loại đội thi (Disqualifications)" eyebrow="Duyệt kỷ luật từ Giám khảo">
-                                <div className="space-y-4">
-                                    {pendingDisqualifications.length === 0 ? (
-                                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-500">
-                                            Không có đề xuất loại đội thi nào đang chờ duyệt.
-                                        </div>
-                                    ) : (
-                                        <div className="grid gap-4 md:grid-cols-2">
-                                            {pendingDisqualifications.map((team) => (
-                                                <div key={team.id} className="rounded-xl border border-red-200 bg-white p-5 shadow-sm space-y-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <h4 className="text-lg font-black text-slate-900">{team.name}</h4>
-                                                            <p className="text-xs font-bold text-slate-500 mt-0.5">{team.trackName || 'Bảng chung'}</p>
-                                                        </div>
-                                                        <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-1 text-xs font-black">Chờ duyệt</span>
-                                                    </div>
-
-                                                    <div className="rounded-lg bg-red-50/50 border border-red-100 p-3.5 space-y-2 text-sm">
-                                                        <p className="font-bold text-red-900">Chi tiết đề xuất loại:</p>
-                                                        <p className="text-slate-700 italic">"{team.disqualificationReason}"</p>
-                                                        <p className="text-xs text-slate-500 mt-2">Người đề xuất: <span className="font-semibold">{team.disqualifierEmail}</span></p>
-                                                    </div>
-
-                                                    <div className="flex gap-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleApproveDisqualify(team.id, team.name)}
-                                                            style={{ backgroundColor: '#dc2626', color: '#ffffff', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', flex: 1 }}
-                                                        >
-                                                            Đồng ý loại (Disqualify)
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleRejectDisqualify(team.id, team.name)}
-                                                            style={{ backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', padding: '10px 16px', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', flex: 1 }}
-                                                        >
-                                                            Từ chối loại (Reject)
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
                             </Section>
                         </div>
