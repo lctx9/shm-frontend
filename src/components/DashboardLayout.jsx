@@ -403,23 +403,6 @@ export default function DashboardLayout() {
                     <Link to="/dashboard/profile" className={`block rounded-lg px-3 py-2 text-sm font-bold ${navClass({ to: '/dashboard/profile' })}`}>
                         Hồ sơ
                     </Link>
-                    <button 
-                        type="button" 
-                        onClick={async () => {
-                            if (window.confirm("Bạn có chắc chắn muốn nạp lại toàn bộ dữ liệu mẫu (Reset Database)? Hành động này sẽ đưa hệ thống về trạng thái sạch ban đầu để test.")) {
-                                try {
-                                    const res = await axiosClient.post('/dev/reset-db');
-                                    alert(res || "Đã nạp lại dữ liệu mẫu thành công!");
-                                    window.location.reload();
-                                } catch (err) {
-                                    alert("Lỗi nạp dữ liệu: " + (err.message || err));
-                                }
-                            }
-                        }}
-                        className="w-full rounded-lg border border-[#a5f3fc]/20 bg-cyan-950 px-3 py-2 text-xs font-black uppercase tracking-wider text-[#a5f3fc] hover:bg-cyan-900 transition-all shadow-sm mb-2"
-                    >
-                        ⚡ Nạp DB mẫu (Reset)
-                    </button>
                     <button type="button" onClick={logout} className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-rose-600 hover:border-rose-500 transition-all shadow-sm">Đăng xuất</button>
                 </div>
             </aside>

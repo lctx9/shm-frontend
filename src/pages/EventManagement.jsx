@@ -198,7 +198,10 @@ export default function EventManagement() {
     );
 
     const pendingDisqualifications = useMemo(
-        () => teams.filter((team) => String(team.eventId) === String(selectedEventId) && team.disqualificationStatus === 'PENDING'),
+        () => teams.filter((team) => {
+            const matchesEvent = !selectedEventId || String(team.eventId) === String(selectedEventId);
+            return matchesEvent && team.disqualificationStatus === 'PENDING';
+        }),
         [teams, selectedEventId]
     );
 
@@ -247,7 +250,8 @@ export default function EventManagement() {
         ]);
 
         const loadedEvents = eventRes.result || [];
-        const nextEventId = preferredEventId || '';
+        const urlEventId = searchParams.get('eventId');
+        const nextEventId = preferredEventId || urlEventId || selectedEventId || loadedEvents[0]?.id || '';
         const nextEvent = loadedEvents.find((item) => String(item.id) === String(nextEventId));
 
         setEvents(loadedEvents);
@@ -255,7 +259,7 @@ export default function EventManagement() {
         setMentors(staffRes.result || []);
         setJudges(staffRes.result || []);
         setTemplates(templateRes.result || []);
-        setSelectedEventId(nextEventId);
+        setSelectedEventId(String(nextEventId));
         setSelectedMatrixId((currentMatrixId) => {
             const keepMatrix = nextEvent?.matrices?.find((matrix) => String(matrix.id) === String(currentMatrixId));
             return keepMatrix?.id || nextEvent?.matrices?.[0]?.id || '';
