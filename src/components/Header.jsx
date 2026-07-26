@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
+import logoFpt from '../assets/fpt.jpg';
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
@@ -18,6 +19,8 @@ function getStoredAccount() {
 
 export default function Header() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const pathname = location.pathname;
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     const email = localStorage.getItem('email');
@@ -26,7 +29,7 @@ export default function Header() {
 
     const account = getStoredAccount();
 
-    const displayName = account.fullName || email || 'Tài khoản';
+    const displayName = account.fullName || email || 'Account';
     const avatarUrl = account.avatarUrl || '';
     const isManager = managerRoles.has(role);
     const navClass = ({ isActive }) => (isActive ? 'nav-link-active' : 'nav-link-item');
@@ -40,24 +43,33 @@ export default function Header() {
         navigate('/', { replace: true });
     };
 
-    return (
-        <header className="site-header">
-            <div className="site-header-inner">
-                <Link to="/" className="flex items-center gap-3" aria-label="SEAL trang chủ">
-                    <span className="brand-mark"><span className="brand-mark-text">SEAL</span></span>
-                    <span className="hidden sm:block">
-                        <strong className="block text-sm font-extrabold tracking-[-0.02em] text-[#071936]">SEAL Hackathon</strong>
-                        <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#718096]">Build · Compete · Inspire</span>
-                    </span>
-                </Link>
+    const isPastelPage = pathname === '/' || pathname === '/events' || pathname === '/leaderboard' || pathname === '/about';
+    const headerStyle = {
+        backgroundColor: isPastelPage ? '#f8fafc' : 'rgba(255, 255, 255, 0.95)',
+        borderBottomColor: isPastelPage ? 'transparent' : 'var(--app-border)',
+        backdropFilter: isPastelPage ? 'none' : 'blur(16px)'
+    };
 
-                <nav className="hidden items-center gap-9 md:flex" aria-label="Điều hướng chính">
-                    <NavLink to="/" end className={navClass}>Trang chủ</NavLink>
-                    <NavLink to="/events" className={navClass}>Sự kiện</NavLink>
-                    <NavLink to="/leaderboard" className={navClass}>Bảng xếp hạng</NavLink>
-                    <NavLink to="/about" className={navClass}>Về chúng tôi</NavLink>
-                    {token && !isManager && <NavLink to="/my-team" className={navClass}>Đội của tôi</NavLink>}
-                </nav>
+    return (
+        <header className="site-header" style={headerStyle}>
+            <div className="site-header-inner">
+                <div className="flex items-center gap-[29px]">
+                    <Link to="/" className="flex items-center gap-3" aria-label="SEAL Home">
+                        <img src={logoFpt} alt="FPT University" className="object-contain rounded" style={{ width: '60px', height: '45px' }} />
+                        <span className="h-10 border-l border-slate-300" />
+                        <div className="flex items-baseline gap-1.5 relative -top-[1px]">
+                            <span className="brand-mark-text font-black text-[32px] tracking-tight text-slate-900 leading-none">seal.</span>
+                            <span className="hidden sm:block text-[16px] font-black uppercase tracking-widest text-slate-500 leading-none">Hackathon</span>
+                        </div>
+                    </Link>
+
+                    <nav className="hidden items-center gap-8 md:flex relative top-[1px]" aria-label="Main Navigation">
+                        <NavLink to="/events" className={navClass}>Events</NavLink>
+                        <NavLink to="/leaderboard" className={navClass}>Leaderboard</NavLink>
+                        <NavLink to="/about" className={navClass}>About Us</NavLink>
+                        {token && !isManager && <NavLink to="/my-team" className={navClass}>My Team</NavLink>}
+                    </nav>
+                </div>
  
                 <div className="flex items-center gap-2">
                     <button
@@ -66,7 +78,7 @@ export default function Header() {
                         onClick={() => setShowMobileNav((current) => !current)}
                         aria-expanded={showMobileNav}
                         aria-controls="mobile-navigation"
-                        aria-label="Mở điều hướng"
+                        aria-label="Open Navigation"
                     >
                         <span aria-hidden="true" className="text-xl leading-none">☰</span>
                     </button>
@@ -78,7 +90,7 @@ export default function Header() {
                                 type="button"
                                 onClick={() => setShowDropdown((current) => !current)}
                                 className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-[#d7e6f8] bg-[#0f63c9] text-xs font-black text-white hover:opacity-90 transition-all cursor-pointer"
-                                aria-label="Mở menu tài khoản"
+                                aria-label="Open User Menu"
                             >
                                 {avatarUrl ? <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" /> : getInitial(displayName)}
                             </button>
@@ -86,15 +98,15 @@ export default function Header() {
                             {showDropdown && (
                                 <div className="absolute right-0 mt-2 w-52 rounded-lg border border-[#d7e6f8] bg-white py-2 shadow-lg">
                                     <Link to={isManager ? '/dashboard' : '/profile'} onClick={() => setShowDropdown(false)} className="block px-4 py-2 text-sm font-bold text-[#0b1f3f] hover:bg-[#eaf3ff]">
-                                        {isManager ? 'Dashboard' : 'Hồ sơ cá nhân'}
+                                        {isManager ? 'Dashboard' : 'My Profile'}
                                     </Link>
                                     {!isManager && (
                                         <Link to="/my-team" onClick={() => setShowDropdown(false)} className="block px-4 py-2 text-sm font-bold text-[#0b1f3f] hover:bg-[#eaf3ff]">
-                                            Đội của tôi
+                                            My Team
                                         </Link>
                                     )}
                                     <button type="button" onClick={handleLogout} className="block w-full px-4 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50">
-                                        Đăng xuất
+                                        Sign Out
                                     </button>
                                 </div>
                             )}
@@ -102,19 +114,19 @@ export default function Header() {
                         </>
                     ) : (
                         <>
-                            <Link to="/login" className="btn-secondary">Đăng nhập</Link>
-                            <Link to="/register" className="btn-primary">Đăng ký</Link>
+                            <Link to="/login" className="btn-secondary">Sign In</Link>
+                            <Link to="/register" className="btn-primary">Sign Up</Link>
                         </>
                     )}
                 </div>
             </div>
             {showMobileNav && (
-                <nav id="mobile-navigation" className="mobile-navigation" aria-label="Điều hướng di động">
-                    <NavLink to="/" end className={navClass} onClick={() => setShowMobileNav(false)}>Trang chủ</NavLink>
-                    <NavLink to="/events" className={navClass} onClick={() => setShowMobileNav(false)}>Sự kiện</NavLink>
-                    <NavLink to="/leaderboard" className={navClass} onClick={() => setShowMobileNav(false)}>Bảng xếp hạng</NavLink>
-                    <NavLink to="/about" className={navClass} onClick={() => setShowMobileNav(false)}>Về chúng tôi</NavLink>
-                    {token && !isManager && <NavLink to="/my-team" className={navClass} onClick={() => setShowMobileNav(false)}>Đội của tôi</NavLink>}
+                <nav id="mobile-navigation" className="mobile-navigation" aria-label="Mobile Navigation">
+                    <NavLink to="/" end className={navClass} onClick={() => setShowMobileNav(false)}>Home</NavLink>
+                    <NavLink to="/events" className={navClass} onClick={() => setShowMobileNav(false)}>Events</NavLink>
+                    <NavLink to="/leaderboard" className={navClass} onClick={() => setShowMobileNav(false)}>Leaderboard</NavLink>
+                    <NavLink to="/about" className={navClass} onClick={() => setShowMobileNav(false)}>About Us</NavLink>
+                    {token && !isManager && <NavLink to="/my-team" className={navClass} onClick={() => setShowMobileNav(false)}>My Team</NavLink>}
                 </nav>
             )}
         </header>
