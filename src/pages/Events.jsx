@@ -5,80 +5,121 @@ import Toast from '../components/Toast';
 import { demoEvent, getEventPhase } from '../utils/hackathon';
 
 const PHASE_OPTIONS = [
-    { key: 'upcoming', label: 'Sắp mở đăng ký', dot: 'orange' },
-    { key: 'registration', label: 'Đang mở đăng ký', dot: 'green' },
-    { key: 'running', label: 'Đang diễn ra', dot: 'blue' },
-    { key: 'ended', label: 'Đã kết thúc', dot: 'gray' },
+    { key: 'all', label: 'All' },
+    { key: 'running', label: 'Ongoing', dot: 'sky' },
+    { key: 'upcoming', label: 'Upcoming', dot: 'orange' },
+    { key: 'ended', label: 'Finished', dot: 'gray' },
 ];
 
 function formatShortDate(value) {
-    if (!value) return 'Chưa cập nhật';
-    return new Date(value).toLocaleDateString('vi-VN', {
+    if (!value) return 'TBD';
+    return new Date(value).toLocaleDateString('en-US', {
+        month: 'short',
         day: '2-digit',
-        month: '2-digit',
         year: 'numeric',
     });
 }
 
+// English time labels
 function getTimeLabel(event, phase) {
     const target = phase.key === 'registration' ? event.regEndDate : event.eventStartDate;
-    if (!target || phase.key === 'ended') return phase.label;
+    if (!target || phase.key === 'ended') return 'Finished';
 
     const days = Math.ceil((new Date(target).getTime() - Date.now()) / 86400000);
-    if (days <= 0) return phase.label;
-    if (phase.key === 'registration') return `Còn ${days} ngày đăng ký`;
-    return `Bắt đầu sau ${days} ngày`;
+    if (days <= 0) return 'Ongoing';
+    if (phase.key === 'registration') return `${days} days left to register`;
+    return `Starts in ${days} days`;
+}
+
+// Function to map event season/metadata to a beautiful Unsplash cover image
+function getEventCoverImage(event) {
+    const season = (event.season || '').toUpperCase();
+    if (season === 'SUMMER') {
+        return 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&auto=format&fit=crop&q=60';
+    } else if (season === 'SPRING') {
+        return 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=600&auto=format&fit=crop&q=60';
+    } else if (season === 'FALL') {
+        return 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=600&auto=format&fit=crop&q=60';
+    } else {
+        return 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&auto=format&fit=crop&q=60';
+    }
 }
 
 function MarketplaceEventCard({ event, navigate }) {
     const phase = getEventPhase(event);
     const tracks = event.tracks || [];
     const detailUrl = `/events/${event.id}`;
+    const coverImage = getEventCoverImage(event);
+
+    const phaseStyles = {
+        registration: 'bg-[#e6f0fa] text-[#1c4d7e] border-[#cce0f5]',
+        running: 'bg-[#eef6fc] text-[#225c87] border-[#d8ebf8]',
+        upcoming: 'bg-[#fef4eb] text-[#b45309] border-[#fde3cf]',
+        ended: 'bg-slate-50 text-slate-500 border-slate-200',
+    };
+
+    const phaseLabels = {
+        registration: 'Registration Open',
+        running: 'Ongoing',
+        upcoming: 'Upcoming',
+        ended: 'Ended',
+    };
 
     return (
         <article
-            className={`market-event-card market-event-card--${phase.key}`}
+            className="flex flex-col bg-white border border-slate-200 rounded-none overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-1 cursor-pointer group"
             onClick={() => navigate(detailUrl)}
         >
-            <Link
-                to={detailUrl}
-                className="market-event-card__visual"
-                aria-label={`Xem ${event.name}`}
-                onClick={e => e.stopPropagation()}
-            >
-                <span>SEAL</span>
-                <strong>{event.season || 'HACKATHON'}</strong>
-                <small>{event.year}</small>
-            </Link>
-
-            <div className="market-event-card__main">
-                <Link to={detailUrl} onClick={e => e.stopPropagation()}><h2>{event.name}</h2></Link>
-                <div className="market-event-card__quick-info">
-                    <span className={`market-phase market-phase--${phase.key}`}>{getTimeLabel(event, phase)}</span>
-                    <span className="market-location"><span aria-hidden="true">⌖</span> Sự kiện SEAL</span>
-                </div>
-                <div className="market-event-card__numbers">
-                    <span><strong>{event.teamCount || 0}</strong> đội tham gia</span>
-                    <span><strong>{tracks.length}</strong> hạng mục thi</span>
-                </div>
-                <div className="market-event-card__actions">
-                    <Link to={detailUrl} className="btn-primary" onClick={e => e.stopPropagation()}>Xem chi tiết</Link>
-                    {phase.key === 'ended'
-                        ? <Link to={`/events/${event.id}/results`} className="btn-secondary" onClick={e => e.stopPropagation()}>Xem kết quả</Link>
-                        : phase.key === 'registration' && <Link to={`/my-team?registerEventId=${event.id}`} className="btn-secondary" onClick={e => e.stopPropagation()}>Đăng ký đội</Link>}
-                </div>
+            {/* Card Cover Image */}
+            <div className="relative aspect-[16/10] overflow-hidden bg-slate-100 border-b border-slate-100 animate-none">
+                <img 
+                    src={coverImage} 
+                    alt={event.name} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm border border-slate-200 text-[10px] font-black tracking-wider text-slate-700 uppercase px-2 py-0.5 rounded shadow-sm">
+                    {event.season} {event.year}
+                </span>
             </div>
 
-            <aside className="market-event-card__meta">
-                <p className="market-season"><span aria-hidden="true">⚑</span><span>{event.season} {event.year}</span></p>
-                <p><span aria-hidden="true">▣</span><span>{formatShortDate(event.eventStartDate)} – {event.formattedEventEndDate || formatShortDate(event.eventEndDate)}</span></p>
-                <p><span className="market-seal-mark">S</span><span>Được tổ chức bởi SEAL</span></p>
-                {tracks.length > 0 && (
-                    <div className="market-tags">
-                        {tracks.slice(0, 3).map((track) => <span key={track.id || track.name}>{track.name}</span>)}
+            {/* Card Content Body */}
+            <div className="flex-1 p-5 flex flex-col justify-between">
+                <div>
+                    {/* Status & Online Tag */}
+                    <div className="flex items-center justify-between gap-2">
+                        <span className={`px-2.5 py-0.5 border text-[10px] font-extrabold uppercase tracking-wider rounded ${phaseStyles[phase.key] || 'bg-slate-50 text-slate-600'}`}>
+                            {phaseLabels[phase.key] || 'Active'}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {getTimeLabel(event, phase)}
+                        </span>
                     </div>
-                )}
-            </aside>
+
+                    {/* Organizer & Title */}
+                    <p className="text-[10px] font-black text-slate-400 tracking-wider uppercase mt-4">
+                        SEAL Hackathon Series
+                    </p>
+                    <h2 className="text-lg font-black text-slate-900 mt-1 leading-snug group-hover:text-[#2c4e66] transition-colors line-clamp-2">
+                        {event.name}
+                    </h2>
+
+                    {/* Description */}
+                    <p className="text-xs text-slate-500 mt-2 line-clamp-3 leading-relaxed">
+                        {event.description || 'Join this exciting hackathon challenge and turn your innovative concepts into functional software prototypes.'}
+                    </p>
+                </div>
+
+                {/* Card footer details */}
+                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex gap-4 text-xs font-bold text-slate-400">
+                        <span><strong>{event.teamCount || 0}</strong> Teams</span>
+                        <span><strong>{tracks.length}</strong> Tracks</span>
+                    </div>
+                    <span className="text-xs font-bold text-[#2c4e66] group-hover:translate-x-1 transition-transform duration-200 flex items-center gap-1">
+                        Learn More <span className="text-sm font-semibold">→</span>
+                    </span>
+                </div>
+            </div>
         </article>
     );
 }
@@ -90,8 +131,7 @@ export default function Events() {
     const [error, setError] = useState('');
     const [searchInput, setSearchInput] = useState('');
     const [query, setQuery] = useState('');
-    const [phaseFilters, setPhaseFilters] = useState([]);
-    const [seasonFilters, setSeasonFilters] = useState([]);
+    const [selectedPhase, setSelectedPhase] = useState('all');
     const [sortBy, setSortBy] = useState('relevant');
 
     const fetchEvents = async () => {
@@ -101,7 +141,7 @@ export default function Events() {
             setEvents(response.result || []);
             setError('');
         } catch (err) {
-            setError(err.message || 'Không thể tải danh sách sự kiện.');
+            setError(err.message || 'Unable to load events list.');
         } finally {
             setLoading(false);
         }
@@ -112,35 +152,27 @@ export default function Events() {
     }, []);
 
     const displayEvents = useMemo(() => (events.length ? events : [demoEvent]), [events]);
-    const seasons = useMemo(() => [...new Set(displayEvents.map((event) => event.season).filter(Boolean))].sort(), [displayEvents]);
-    const activeFilterCount = phaseFilters.length + seasonFilters.length;
 
     const filteredEvents = useMemo(() => {
         const keyword = query.trim().toLowerCase();
-        const result = displayEvents.filter((event) => {
+        return displayEvents.filter((event) => {
             const matchesSearch = !keyword || `${event.name} ${event.season} ${event.year} ${(event.tracks || []).map((track) => track.name).join(' ')}`.toLowerCase().includes(keyword);
-            const matchesPhase = !phaseFilters.length || phaseFilters.includes(getEventPhase(event).key);
-            const matchesSeason = !seasonFilters.length || seasonFilters.includes(event.season);
-            return matchesSearch && matchesPhase && matchesSeason;
-        });
-
-        return [...result].sort((a, b) => {
+            
+            const eventPhase = getEventPhase(event).key;
+            const matchesPhase = selectedPhase === 'all' || 
+                (selectedPhase === 'running' && (eventPhase === 'running' || eventPhase === 'registration')) ||
+                (selectedPhase === 'upcoming' && eventPhase === 'upcoming') ||
+                (selectedPhase === 'ended' && eventPhase === 'ended');
+                
+            return matchesSearch && matchesPhase;
+        }).sort((a, b) => {
             if (sortBy === 'deadline') return new Date(a.regEndDate || 0) - new Date(b.regEndDate || 0);
             if (sortBy === 'newest') return Number(b.year || 0) - Number(a.year || 0) || Number(b.id || 0) - Number(a.id || 0);
             if (sortBy === 'teams') return Number(b.teamCount || 0) - Number(a.teamCount || 0);
             const phaseOrder = { registration: 0, running: 1, upcoming: 2, ended: 3 };
             return phaseOrder[getEventPhase(a).key] - phaseOrder[getEventPhase(b).key];
         });
-    }, [displayEvents, phaseFilters, query, seasonFilters, sortBy]);
-
-    const toggleFilter = (setter, value) => {
-        setter((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
-    };
-
-    const clearFilters = () => {
-        setPhaseFilters([]);
-        setSeasonFilters([]);
-    };
+    }, [displayEvents, selectedPhase, query, sortBy]);
 
     const submitSearch = (event) => {
         event.preventDefault();
@@ -148,75 +180,109 @@ export default function Events() {
     };
 
     return (
-        <main className="events-marketplace">
-            <header className="events-marketplace__hero">
-                <h1>Tham gia những hackathon nổi bật của SEAL</h1>
-                <p>Khám phá cuộc thi phù hợp, lập đội và biến ý tưởng thành sản phẩm thực tế.</p>
+        <main className="bg-white min-h-screen text-slate-800">
+            {/* Title Section */}
+            <header className="bg-[#f8fafc] py-12 text-center border-b border-slate-200">
+                <h1 className="text-[60px] font-black tracking-tight text-[#1f3747] leading-none">Events</h1>
+                <p className="mt-4 text-[#415b6d] max-w-lg mx-auto text-base sm:text-lg">
+                    Discover SEAL hackathons, assemble your team, and build prototypes for real-world issues.
+                </p>
             </header>
 
-            <section className="events-marketplace__search-wrap">
-                <form className="events-marketplace__search" onSubmit={submitSearch}>
-                    <label>
-                        <span aria-hidden="true">⌕</span>
-                        <input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Tìm theo tên hackathon, mùa giải hoặc hạng mục" />
-                    </label>
-                    <button type="submit">Tìm kiếm</button>
-                </form>
-            </section>
-
-            <div className="events-marketplace__body">
-                <aside className="market-filters" aria-label="Bộ lọc sự kiện">
-                    <button type="button" className="market-filters__clear" onClick={clearFilters} disabled={!activeFilterCount}>
-                        Xóa bộ lọc <span>{activeFilterCount}</span>
-                    </button>
-
-                    <fieldset>
-                        <legend>Trạng thái</legend>
+            {/* Filter pills & search toolbar */}
+            <section className="max-w-[1220px] mx-auto px-6 mt-12">
+                <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center pb-6 border-b border-slate-100">
+                    {/* Category tabs */}
+                    <div className="flex flex-wrap gap-2">
                         {PHASE_OPTIONS.map((option) => (
-                            <label key={option.key}>
-                                <input type="checkbox" checked={phaseFilters.includes(option.key)} onChange={() => toggleFilter(setPhaseFilters, option.key)} />
-                                <span>{option.label}</span><i className={`filter-dot filter-dot--${option.dot}`} />
-                            </label>
+                            <button
+                                key={option.key}
+                                type="button"
+                                className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded border transition-all ${
+                                    selectedPhase === option.key
+                                        ? 'bg-[#2c4e66] border-[#2c4e66] text-white'
+                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`}
+                                onClick={() => setSelectedPhase(option.key)}
+                            >
+                                {option.label}
+                            </button>
                         ))}
-                    </fieldset>
-
-                    <fieldset>
-                        <legend>Mùa giải</legend>
-                        {seasons.map((season) => (
-                            <label key={season}>
-                                <input type="checkbox" checked={seasonFilters.includes(season)} onChange={() => toggleFilter(setSeasonFilters, season)} />
-                                <span>{season}</span>
-                            </label>
-                        ))}
-                    </fieldset>
-
-                    <button type="button" className="market-filters__refresh h-8 w-8 inline-flex items-center justify-center rounded border border-[#afc0c6] bg-white text-[#1474cb] hover:bg-[#e8f4ff] font-bold text-sm transition-all" onClick={fetchEvents} title="Làm mới dữ liệu">↻</button>
-                </aside>
-
-                <section className="market-results">
-                    <div className="market-results__toolbar">
-                        <p>Hiển thị <strong>{filteredEvents.length}</strong> hackathon</p>
-                        <div className="market-sort" aria-label="Sắp xếp sự kiện">
-                            <strong>Sắp xếp:</strong>
-                            {[
-                                ['relevant', 'Phù hợp nhất'],
-                                ['deadline', 'Hạn đăng ký'],
-                                ['newest', 'Mới thêm'],
-                                ['teams', 'Đội tham gia'],
-                            ].map(([value, label]) => <button type="button" key={value} className={sortBy === value ? 'is-active' : ''} onClick={() => setSortBy(value)}>{label}</button>)}
-                        </div>
                     </div>
 
-                    <Toast error={error} onClose={() => setError('')} />
-                    {loading ? (
-                        <div className="market-results__message">Đang tải danh sách sự kiện...</div>
-                    ) : filteredEvents.length ? (
-                        <div className="market-event-list">{filteredEvents.map((event) => <MarketplaceEventCard event={event} key={event.id} navigate={navigate} />)}</div>
-                    ) : (
-                        <div className="market-results__message">Không tìm thấy hackathon phù hợp với bộ lọc hiện tại.</div>
-                    )}
-                </section>
-            </div>
+                    {/* Search Form */}
+                    <form className="flex w-full md:w-auto gap-2" onSubmit={submitSearch}>
+                        <div className="flex items-center border border-slate-200 rounded px-3 py-1.5 bg-white w-full md:w-80 focus-within:border-[#2c4e66]">
+                            <span className="text-slate-400 mr-2 text-sm">⌕</span>
+                            <input 
+                                value={searchInput} 
+                                onChange={(event) => setSearchInput(event.target.value)} 
+                                placeholder="Search by name, season, or track..." 
+                                className="w-full text-sm outline-none border-0 p-0 focus:ring-0 bg-transparent text-slate-800"
+                            />
+                        </div>
+                        <button 
+                            type="submit" 
+                            className="btn-primary min-h-[38px] text-xs py-2"
+                            style={{ backgroundColor: '#2c4e66', borderColor: '#2c4e66' }}
+                        >
+                            Search
+                        </button>
+                    </form>
+                </div>
+
+                {/* Toolbar results list count & sort order */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mt-6">
+                    <p className="text-sm font-bold text-slate-500">
+                        Showing <strong>{filteredEvents.length}</strong> Hackathons
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <strong>Sort by:</strong>
+                        <div className="inline-flex rounded border border-slate-200 overflow-hidden">
+                            {[
+                                ['relevant', 'Most Relevant'],
+                                ['deadline', 'Registration Deadline'],
+                                ['newest', 'Recently Added'],
+                                ['teams', 'Team Count'],
+                            ].map(([value, label]) => (
+                                <button
+                                    type="button"
+                                    key={value}
+                                    className={`px-3 py-1.5 border-r border-slate-100 last:border-0 ${
+                                        sortBy === value 
+                                            ? 'bg-slate-100 text-slate-900 font-extrabold' 
+                                            : 'bg-white hover:bg-slate-50 text-slate-600'
+                                    }`}
+                                    onClick={() => setSortBy(value)}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Events Card Grid List */}
+            <section className="max-w-[1220px] mx-auto px-6 py-12">
+                <Toast error={error} onClose={() => setError('')} />
+                
+                {loading ? (
+                    <div className="text-center py-16 text-sm text-slate-500 font-bold">
+                        Loading events list...
+                    </div>
+                ) : filteredEvents.length ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {filteredEvents.map((event) => (
+                            <MarketplaceEventCard event={event} key={event.id} navigate={navigate} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-16 text-sm text-slate-500">
+                        No hackathons found matching the current filters.
+                    </div>
+                )}
+            </section>
         </main>
     );
 }

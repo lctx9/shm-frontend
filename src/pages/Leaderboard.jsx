@@ -16,7 +16,7 @@ function PodiumCard({ entry, mode, isGlobal }) {
             medal: '👑',
             medalBg: 'bg-amber-50 text-amber-500 border-amber-200',
             border: 'border-t-4 border-t-amber-500 shadow-sm',
-            rankText: 'Vô địch',
+            rankText: 'Champion',
             scoreBg: 'bg-amber-50 text-amber-700',
             scale: 'md:scale-105 z-10 md:-translate-y-1'
         },
@@ -24,15 +24,15 @@ function PodiumCard({ entry, mode, isGlobal }) {
             medal: '🥈',
             medalBg: 'bg-slate-50 text-slate-500 border-slate-200',
             border: 'border-t-4 border-t-slate-400 shadow-sm',
-            rankText: 'Á quân',
-            scoreBg: 'bg-[#e8f4ff] text-[#1474cb]',
+            rankText: 'Runner-up',
+            scoreBg: 'bg-[#f0eefc] text-[#453e66]',
             scale: ''
         },
         3: {
             medal: '🥉',
             medalBg: 'bg-orange-50 text-orange-700 border-orange-200',
             border: 'border-t-4 border-t-orange-600 shadow-sm',
-            rankText: 'Hạng ba',
+            rankText: 'Third Place',
             scoreBg: 'bg-orange-50 text-orange-800',
             scale: ''
         }
@@ -40,13 +40,13 @@ function PodiumCard({ entry, mode, isGlobal }) {
         medal: '🎖️',
         medalBg: 'bg-slate-50 text-slate-600 border-slate-200',
         border: 'border-t-4 border-t-slate-500 shadow-sm',
-        rankText: `Hạng ${entry.rank}`,
-        scoreBg: 'bg-[#e8f4ff] text-[#1474cb]',
+        rankText: `Rank ${entry.rank}`,
+        scoreBg: 'bg-[#f0eefc] text-[#453e66]',
         scale: ''
     };
 
     return (
-        <div className={`bg-white rounded-lg border border-[#c6d3d7] p-5 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${config.border} ${config.scale}`}>
+        <div className={`bg-white rounded-lg border border-slate-200 p-5 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${config.border} ${config.scale}`}>
             <div>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -54,24 +54,24 @@ function PodiumCard({ entry, mode, isGlobal }) {
                             {config.medal}
                         </span>
                         <div>
-                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#56717a]">{config.rankText}</p>
-                            <p className="text-xs font-bold text-[#536d75]">Top {entry.rank}</p>
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#4b4561]">{config.rankText}</p>
+                            <p className="text-xs font-bold text-slate-400">Top {entry.rank}</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="mt-4 min-w-0">
                     {isTeam ? (
-                        <h2 className="text-base font-extrabold text-[#102d38] truncate" title={name}>{name}</h2>
+                        <h2 className="text-base font-extrabold text-slate-900 truncate" title={name}>{name}</h2>
                     ) : (
-                        <Link to={profilePath} className="text-base font-extrabold text-[#102d38] hover:text-[var(--dp-blue)] hover:underline truncate block" title={name}>
+                        <Link to={profilePath} className="text-base font-extrabold text-slate-900 hover:text-[#453e66] hover:underline truncate block" title={name}>
                             {name}
                         </Link>
                     )}
-                    <p className="text-xs text-[#536d75] mt-1 truncate">
+                    <p className="text-xs text-slate-500 mt-1 truncate">
                         {isTeam
-                            ? (isGlobal && entry.eventName ? entry.eventName : (entry.track || 'Bảng chung'))
-                            : `${entry.first} nhất · ${entry.second} nhì · ${entry.third} ba`}
+                            ? (isGlobal && entry.eventName ? entry.eventName : (entry.track || 'General'))
+                            : `${entry.first} 1st · ${entry.second} 2nd · ${entry.third} 3rd`}
                     </p>
                 </div>
 
@@ -81,7 +81,7 @@ function PodiumCard({ entry, mode, isGlobal }) {
                             <Link 
                                 to={m.userId ? `/profile?userId=${m.userId}` : '/profile'}
                                 key={m.id || m.email || m.fullName || idx}
-                                className="text-[11px] bg-[#e8f4ff] hover:bg-[#d8ebff] text-[#1474cb] px-2 py-0.5 rounded font-semibold transition-colors"
+                                className="text-[11px] bg-[#f0eefc] hover:bg-[#e4e1f7] text-[#453e66] px-2 py-0.5 rounded font-semibold transition-colors"
                             >
                                 {m.fullName || m.email}
                             </Link>
@@ -90,10 +90,10 @@ function PodiumCard({ entry, mode, isGlobal }) {
                 )}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-[#eef1f2] flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[#56717a] uppercase tracking-wider">Thành tích</span>
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Record</span>
                 <span className={`text-xs font-extrabold px-2.5 py-1 rounded ${config.scoreBg}`}>
-                    {isTeam ? `${entry.score || 0} điểm` : `${entry.total} lần tham gia`}
+                    {isTeam ? `${entry.score || 0} pts` : `${entry.total} events`}
                 </span>
             </div>
         </div>
@@ -104,45 +104,45 @@ function RankedList({ rows, mode, isGlobal }) {
     if (!rows.length) return null;
 
     return (
-        <div className="bg-white rounded-lg border border-[#c6d3d7] overflow-hidden">
-            <div className="px-5 py-3.5 bg-[#f8fafb] border-b border-[#c6d3d7] flex items-center justify-between">
-                <h2 className="text-xs font-extrabold text-[#102d38] uppercase tracking-wider">Thứ hạng tiếp theo</h2>
-                <span className="bg-[#1fa58f] text-white text-[10px] font-extrabold px-2.5 py-1 rounded uppercase tracking-wider shadow-sm">
-                    Từ hạng 4 trở xuống
+        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <h2 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Remaining Standings</h2>
+                <span className="bg-[#453e66] text-white text-[10px] font-extrabold px-2.5 py-1 rounded uppercase tracking-wider shadow-sm">
+                    Rank 4 and below
                 </span>
             </div>
 
             <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="border-b border-[#c6d3d7] bg-[#f8fafb] text-[11px] font-extrabold uppercase text-[#102d38] tracking-wider">
-                            <th className="py-3 px-5 w-16 text-center">Hạng</th>
+                        <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-extrabold uppercase text-slate-900 tracking-wider">
+                            <th className="py-3 px-5 w-16 text-center">Rank</th>
                             <th className="py-3 px-5">
-                                {mode === 'TEAM' ? 'Đội thi & Thành viên' : 'Sinh viên'}
+                                {mode === 'TEAM' ? 'Team & Members' : 'Student'}
                             </th>
-                            {mode === 'TEAM' && isGlobal && <th className="py-3 px-5">Giải đấu</th>}
-                            {mode === 'TEAM' && !isGlobal && <th className="py-3 px-5">Bảng đấu</th>}
+                            {mode === 'TEAM' && isGlobal && <th className="py-3 px-5">Event</th>}
+                            {mode === 'TEAM' && !isGlobal && <th className="py-3 px-5">Track</th>}
                             <th className="py-3 px-5 text-right pr-6">
-                                {mode === 'TEAM' ? 'Điểm số' : 'Số giải đạt được'}
+                                {mode === 'TEAM' ? 'Score' : 'Awards Won'}
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#eef1f2] text-xs sm:text-sm">
+                    <tbody className="divide-y divide-slate-100 text-xs sm:text-sm">
                         {rows.map((entry) => (
-                            <tr key={entry.id || entry.teamName || entry.userId || entry.email || entry.fullName} className="hover:bg-[#f8fafb]/60 transition-colors">
-                                <td className="py-3.5 px-5 text-center font-extrabold text-[#56717a]">
+                            <tr key={entry.id || entry.teamName || entry.userId || entry.email || entry.fullName} className="hover:bg-slate-50/60 transition-colors">
+                                <td className="py-3.5 px-5 text-center font-extrabold text-slate-400">
                                     #{entry.rank}
                                 </td>
                                 <td className="py-3.5 px-5">
                                     {mode === 'TEAM' ? (
                                         <div>
-                                            <p className="font-extrabold text-[#102d38]">{entry.teamName}</p>
+                                            <p className="font-extrabold text-slate-900">{entry.teamName}</p>
                                             {entry.members && entry.members.length > 0 && (
-                                                <div className="text-xs text-[#536d75] mt-1 flex flex-wrap gap-x-1.5 items-center">
-                                                    <span className="font-semibold text-[#56717a]">Thành viên:</span>
+                                                <div className="text-xs text-slate-500 mt-1 flex flex-wrap gap-x-1.5 items-center">
+                                                    <span className="font-semibold text-slate-400">Members:</span>
                                                     {(entry.members || []).map((m, idx) => (
                                                         <span key={m.userId || m.email || idx} className="inline-flex items-center">
-                                                            <Link to={m.userId ? `/profile?userId=${m.userId}` : '/profile'} className="text-[#1474cb] hover:underline font-bold">
+                                                            <Link to={m.userId ? `/profile?userId=${m.userId}` : '/profile'} className="text-[#453e66] hover:underline font-bold">
                                                                 {m.fullName || m.email}
                                                             </Link>
                                                             {idx < entry.members.length - 1 && <span className="text-[#a4b4b9] ml-1">,</span>}
@@ -153,33 +153,33 @@ function RankedList({ rows, mode, isGlobal }) {
                                         </div>
                                     ) : (
                                         <div>
-                                            <Link to={entry.userId ? `/profile?userId=${entry.userId}` : '/profile'} className="font-extrabold text-[#102d38] hover:text-[#1474cb] hover:underline">
+                                            <Link to={entry.userId ? `/profile?userId=${entry.userId}` : '/profile'} className="font-extrabold text-slate-900 hover:text-[#453e66] hover:underline">
                                                 {entry.fullName}
                                             </Link>
-                                            <p className="text-xs text-[#56717a] mt-0.5">{entry.email}</p>
+                                            <p className="text-xs text-slate-400 mt-0.5">{entry.email}</p>
                                         </div>
                                     )}
                                 </td>
                                 {mode === 'TEAM' && isGlobal && (
-                                    <td className="py-3.5 px-5 font-semibold text-[#536d75]">
-                                        <span className="text-[10px] font-bold text-[#1474cb] bg-[#e8f4ff] px-2 py-0.5 rounded">
-                                            {entry.eventName || 'Tổng hợp'}
+                                    <td className="py-3.5 px-5 font-semibold text-slate-500">
+                                        <span className="text-[10px] font-bold text-[#453e66] bg-[#f0eefc] px-2 py-0.5 rounded">
+                                            {entry.eventName || 'Aggregate'}
                                         </span>
                                     </td>
                                 )}
                                 {mode === 'TEAM' && !isGlobal && (
-                                    <td className="py-3.5 px-5 font-semibold text-[#536d75]">
-                                        {entry.track || 'Bảng chung'}
+                                    <td className="py-3.5 px-5 font-semibold text-slate-500">
+                                        {entry.track || 'General'}
                                     </td>
                                 )}
                                 <td className="py-3.5 px-5 text-right pr-6">
                                     {mode === 'TEAM' ? (
-                                        <span className="font-extrabold text-white bg-[#1fa58f] px-2.5 py-1 rounded text-xs shadow-sm">
-                                            {entry.score || 0} điểm
+                                        <span className="font-extrabold text-white bg-[#453e66] px-2.5 py-1 rounded text-xs shadow-sm">
+                                            {entry.score || 0} pts
                                         </span>
                                     ) : (
-                                        <span className="text-xs font-semibold text-[#536d75]">
-                                            {entry.first} nhất · {entry.second} nhì · {entry.third} ba
+                                        <span className="text-xs font-semibold text-slate-500">
+                                            {entry.first} 1st · {entry.second} 2nd · {entry.third} 3rd
                                         </span>
                                     )}
                                 </td>
@@ -223,7 +223,7 @@ export default function Leaderboard() {
             const res = await axiosClient.get(url);
             setRankings(res.result || []);
         } catch (err) {
-            setError(err.message || 'Không thể tải dữ liệu bảng xếp hạng.');
+            setError(err.message || 'Unable to load leaderboard data.');
         } finally {
             setLoading(false);
         }
@@ -238,7 +238,7 @@ export default function Leaderboard() {
 
     const selectedEventName = useMemo(() => {
         const found = events.find(e => String(e.id) === String(selectedEventId));
-        return found ? found.name : 'Giải đấu';
+        return found ? found.name : 'Event';
     }, [events, selectedEventId]);
 
     const teamRows = useMemo(() => {
@@ -284,61 +284,71 @@ export default function Leaderboard() {
     const remainingRows = rankedRows.filter((entry) => entry.rank > 3);
 
     return (
-        <main className="events-marketplace">
-            {/* Hero Section - Synchronized with Events Page */}
-            <header className="events-marketplace__hero">
-                <h1 style={{ color: '#ffffff' }}>Bảng xếp hạng giải đấu SEAL</h1>
-                <p style={{ color: '#c7dce2' }}>Vinh danh thành tích các đội thi và cá nhân xuất sắc nhất qua các mùa giải hackathon.</p>
+        <main className="bg-white min-h-screen text-slate-800">
+            {/* Title Section - Synchronized with Events Page layout but lavender background */}
+            <header className="bg-[#f8fafc] py-12 text-center border-b border-slate-200">
+                <h1 className="text-[60px] font-black tracking-tight text-[#2b2542] leading-none">Leaderboard</h1>
+                <p className="mt-4 text-[#4b4561] max-w-lg mx-auto text-base sm:text-lg">
+                    Celebrating the achievements of the top teams and individual student innovators.
+                </p>
             </header>
 
-            {/* Filter & Controls section - Synchronized with Events Page Search Wrap */}
-            <section className="events-marketplace__search-wrap">
-                <div className="w-full max-w-[1460px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Filter & Controls section - Synchronized with Events Page search wrap */}
+            <section className="max-w-[1220px] mx-auto px-6 mt-12">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-100">
                     <div className="flex-1">
                         {mode === 'TEAM' ? (
                             <div className="flex items-center gap-3">
-                                <label htmlFor="leaderboard-season" className="text-xs font-extrabold text-[#56717a] uppercase tracking-wider whitespace-nowrap">Lọc giải đấu:</label>
+                                <label htmlFor="leaderboard-season" className="text-xs font-extrabold text-slate-400 uppercase tracking-wider whitespace-nowrap">Filter by Event:</label>
                                 <select 
                                     id="leaderboard-season" 
                                     value={selectedEventId} 
                                     onChange={(e) => setSelectedEventId(e.target.value)}
-                                    className="bg-white border border-[#afc0c6] rounded px-3 py-1.5 text-xs font-bold text-[#102d38] focus:border-[var(--dp-blue)] focus:outline-none min-w-[220px]"
+                                    className="bg-white border border-slate-200 rounded px-3 py-1.5 text-xs font-bold text-slate-800 focus:border-[#453e66] focus:outline-none min-w-[220px]"
                                 >
-                                    {events.length === 0 && <option value="">Đang tải...</option>}
-                                    <option value="ALL">Tổng hợp toàn hệ thống</option>
+                                    {events.length === 0 && <option value="">Loading...</option>}
+                                    <option value="ALL">System-wide Standings</option>
                                     {events.map((evt) => <option key={evt.id} value={String(evt.id)}>{evt.name}</option>)}
                                 </select>
                             </div>
                         ) : (
-                            <div className="inline-flex items-center text-xs font-extrabold text-white border rounded px-3.5 py-2 shadow-sm" style={{ background: 'linear-gradient(115deg,#062f3b,#0d5c6e)', borderColor: '#0e5362' }}>
-                                <span>BXH Cá nhân tự động tích lũy điểm qua tất cả giải đấu</span>
+                            <div className="inline-flex items-center text-xs font-extrabold text-[#4b4561] bg-[#f0eefc] border border-[#ddd9f0] rounded px-3.5 py-2 shadow-sm">
+                                <span>Individual leaderboard aggregates performance points across all hackathons</span>
                             </div>
                         )}
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <div className="market-sort">
-                            <strong>Chế độ:</strong>
+                        {/* Mode selectors matched to Events page layout tabs */}
+                        <div className="flex gap-2">
                             <button 
                                 type="button" 
-                                className={mode === 'TEAM' ? 'is-active' : ''} 
+                                className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded border transition-all ${
+                                    mode === 'TEAM' 
+                                        ? 'bg-[#453e66] border-[#453e66] text-white' 
+                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`} 
                                 onClick={() => setMode('TEAM')}
                             >
-                                Đội thi
+                                Teams
                             </button>
                             <button 
                                 type="button" 
-                                className={mode === 'PERSONAL' ? 'is-active' : ''} 
+                                className={`px-4 py-2 text-xs font-black uppercase tracking-wider rounded border transition-all ${
+                                    mode === 'PERSONAL' 
+                                        ? 'bg-[#453e66] border-[#453e66] text-white' 
+                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                }`} 
                                 onClick={() => setMode('PERSONAL')}
                             >
-                                Cá nhân
+                                Individuals
                             </button>
                         </div>
 
                         <button 
                             onClick={() => fetchLeaderboard(selectedEventId)} 
-                            title="Làm mới dữ liệu" 
-                            className="h-9 w-9 flex items-center justify-center rounded border border-[#afc0c6] bg-white text-[#1474cb] hover:bg-[#e8f4ff] font-bold text-sm transition-all shadow-sm" 
+                            title="Refresh" 
+                            className="h-9 w-9 flex items-center justify-center rounded border border-slate-200 bg-white text-[#453e66] hover:bg-[#f0eefc] font-bold text-sm transition-all shadow-sm" 
                             type="button"
                         >
                             ↻
@@ -347,16 +357,16 @@ export default function Leaderboard() {
                 </div>
             </section>
 
-            {/* Main Content Body - Synchronized with Events Page Body */}
-            <div className="events-marketplace__body flex-col space-y-5" style={{ gridTemplateColumns: '1fr' }}>
+            {/* Leaderboard content body matched to Events page body layout */}
+            <section className="max-w-[1220px] mx-auto px-6 py-12">
                 <Toast error={error} onClose={() => setError('')} />
 
                 {loading ? (
-                    <div className="market-results__message">
-                        Đang tải dữ liệu bảng xếp hạng...
+                    <div className="text-center py-16 text-sm text-slate-500 font-bold">
+                        Loading leaderboard statistics...
                     </div>
                 ) : rankedRows.length ? (
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         {/* Top 3 Podium Grid */}
                         <div className="grid gap-6 sm:grid-cols-3 items-end max-w-5xl mx-auto pt-2">
                             <PodiumCard entry={podiumEntries[0]} mode={mode} isGlobal={selectedEventId === 'ALL'} />
@@ -368,11 +378,11 @@ export default function Leaderboard() {
                         <RankedList rows={remainingRows} mode={mode} isGlobal={selectedEventId === 'ALL'} />
                     </div>
                 ) : (
-                    <div className="market-results__message">
-                        Chưa có đủ dữ liệu để hiển thị bảng xếp hạng.
+                    <div className="text-center py-16 text-sm text-slate-500">
+                        No leaderboard data available at the moment.
                     </div>
                 )}
-            </div>
+            </section>
         </main>
     );
 }
