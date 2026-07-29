@@ -214,6 +214,23 @@ export default function EventManagement() {
         }
     };
 
+    const handleEndEventEarly = async () => {
+        if (!ensureCoordinator()) return;
+        if (!selectedEventId) return;
+        if (window.confirm(`Xác nhận kết thúc sự kiện "${selectedEvent?.name}" sớm hơn dự kiến?`)) {
+            try {
+                setLoading(true);
+                await axiosClient.post(`/events/${selectedEventId}/end-early`);
+                setMessage({ type: 'success', text: 'Đã kết thúc sự kiện sớm hơn dự kiến thành công!' });
+                await fetchAll(selectedEventId);
+            } catch (err) {
+                setMessage({ type: 'error', text: err.message || 'Không thể kết thúc sự kiện sớm.' });
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
     const eventTeams = useMemo(
         () => teams.filter((team) => String(team.eventId) === String(selectedEventId)),
         [teams, selectedEventId]
@@ -1234,49 +1251,70 @@ export default function EventManagement() {
                             <h2 className="mt-3 text-2xl font-black text-white md:text-3xl">{selectedEvent?.name}</h2>
                             <p className="mt-2 text-sm text-teal-100/90">{selectedEvent?.teamCount || 0} đội thi · {selectedEvent?.tracks?.length || 0} bảng đấu · {selectedEvent?.roundCount || 0} vòng</p>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-[#071936] px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#071936', color: '#ffffff' }}>Xem trang công khai</Link>
-                            <Link to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="rounded-xl border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#ffffff', color: '#0b3d49' }}>{readOnly ? 'Xem cấu hình chấm điểm' : 'Cấu hình chấm điểm'}</Link>
-                            {selectedEvent && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const unpublishedMatrices = (selectedEvent.matrices || []).filter((matrix) => !matrix.isPublished);
-                                        const nextRoundOrder = unpublishedMatrices.length
-                                            ? Math.min(...unpublishedMatrices.map((matrix) => Number(matrix.roundOrder)))
-                                            : null;
-                                        const roundMatrices = unpublishedMatrices.filter((matrix) => Number(matrix.roundOrder) === nextRoundOrder);
-                                        if (roundMatrices.length) {
-                                            const roundName = roundMatrices[0].roundName || `Vòng ${nextRoundOrder}`;
-                                            const action = roundMatrices[0].finalRound ? 'chốt kết quả' : 'công bố kết quả và mở vòng tiếp theo';
-                                            if (window.confirm(`Xác nhận ${action} cho toàn bộ ${roundMatrices.length} bảng thuộc ${roundName} của giải đấu "${selectedEvent.name}"?`)) {
-                                                handlePublishAndAdvanceRound(nextRoundOrder);
-                                            }
-                                        } else {
-                                            alert('Không còn vòng đấu nào đang chờ công bố.');
-                                        }
-                                    }}
-                                    disabled={loading || readOnly}
-                                    className="rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white bg-indigo-600 border-indigo-600 hover:bg-indigo-700 cursor-pointer flex items-center gap-1.5"
-                                >
-                                    <span>⚡ Công bố kết quả & Mở Vòng mới</span>
-                                </button>
-                            )}
-                            {selectedEvent && eventLifecycle(selectedEvent).id === 'ended' && (
-                                <button
-                                    type="button"
-                                    onClick={togglePublishResults}
-                                    disabled={loading || readOnly}
-                                    className="rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white"
-                                    style={{
-                                        backgroundColor: selectedEvent.resultsPublished ? '#dc2626' : '#16a34a',
-                                        borderColor: selectedEvent.resultsPublished ? '#dc2626' : '#16a34a'
-                                    }}
-                                >
-                                    {selectedEvent.resultsPublished ? 'Hủy công bố kết quả' : 'Công bố kết quả'}
-                                </button>
-                            )}
-                        </div>
+                            {selectedEvent && (() => {
+                                const unpublishedMatrices = (selectedEvent.matrices || []).filter((matrix) => !matrix.isPublished);
+                                const nextRoundOrder = unpublishedMatrices.length
+                                    ? Math.min(...unpublishedMatrices.map((matrix) => Number(matrix.roundOrder)))
+                                    : null;
+                                const roundMatrices = unpublishedMatrices.filter((matrix) => Number(matrix.roundOrder) === nextRoundOrder);
+                                const isNextRoundFinal = roundMatrices.length > 0 && Boolean(roundMatrices[0].finalRound);
+                                const finalRoundPublished = (selectedEvent.matrices || []).some((m) => m.finalRound && m.isPublished);
+                                const isEventEnded = Boolean(selectedEvent.endedEarly || eventLifecycle(selectedEvent).id === 'ended');
+
+                                return (
+                                    <div className="flex flex-wrap gap-2">
+                                        <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-[#071936] px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#071936', color: '#ffffff' }}>Xem trang công khai</Link>
+                                        <Link to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="rounded-xl border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#ffffff', color: '#0b3d49' }}>{readOnly ? 'Xem cấu hình chấm điểm' : 'Cấu hình chấm điểm'}</Link>
+
+                                        {/* Nút 1: Công bố kết quả vòng thi */}
+                                        {roundMatrices.length > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const roundName = roundMatrices[0].roundName || `Vòng ${nextRoundOrder}`;
+                                                    if (isNextRoundFinal) {
+                                                        if (window.confirm(`Xác nhận CÔNG BỐ ĐIỂM & BẢNG XẾP HẠNG Vòng chung kết cho toàn bộ bảng thuộc ${roundName} của giải đấu "${selectedEvent.name}"?\n\nThông báo sẽ được tự động gửi tới toàn bộ thí sinh và giám khảo.`)) {
+                                                            handlePublishAndAdvanceRound(nextRoundOrder);
+                                                        }
+                                                    } else {
+                                                        if (window.confirm(`Xác nhận công bố kết quả và mở vòng tiếp theo cho toàn bộ ${roundMatrices.length} bảng thuộc ${roundName} của giải đấu "${selectedEvent.name}"?`)) {
+                                                            handlePublishAndAdvanceRound(nextRoundOrder);
+                                                        }
+                                                    }
+                                                }}
+                                                disabled={loading || readOnly}
+                                                className={`rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white cursor-pointer flex items-center gap-1.5 ${
+                                                    isNextRoundFinal
+                                                        ? 'bg-purple-600 border-purple-600 hover:bg-purple-700'
+                                                        : 'bg-indigo-600 border-indigo-600 hover:bg-indigo-700'
+                                                }`}
+                                            >
+                                                {isNextRoundFinal ? (
+                                                    <span>🏆 Công bố kết quả & Xếp hạng</span>
+                                                ) : (
+                                                    <span>⚡ Công bố kết quả & Mở Vòng mới</span>
+                                                )}
+                                            </button>
+                                        )}
+
+                                        {/* Nút 2: Kết thúc sự kiện - CHỈ HIỆN SAU KHI VÒNG CHUNG KẾT ĐÃ CÔNG BỐ và sự kiện chưa đóng */}
+                                        {finalRoundPublished && !isEventEnded && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (window.confirm(`Xác nhận KẾT THÚC SỰ KIỆN "${selectedEvent.name}"?\n\nHệ thống sẽ chốt giải đấu và gửi THƯ CẢM ƠN tới toàn bộ Giám khảo, Mentor và Thí sinh.`)) {
+                                                        handleEndEventEarly();
+                                                    }
+                                                }}
+                                                disabled={loading || readOnly}
+                                                className="rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white bg-red-600 border-red-600 hover:bg-red-700 cursor-pointer flex items-center gap-1.5"
+                                            >
+                                                <span>🏁 Kết thúc sự kiện</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                     </div>
                 </section>
 

@@ -795,6 +795,23 @@ export default function MyTeam() {
                                         })}
                                     </div>
 
+                                     {/* === INTER-ROUND BREAK COUNTDOWN BANNER === */}
+                                     {selectedMatrix?.breakRemainingSeconds > 0 && (
+                                         <div className="mb-5 rounded-xl border border-violet-200 bg-violet-50 p-4 text-violet-900 shadow-sm flex items-center justify-between">
+                                             <div>
+                                                 <p className="text-xs font-black uppercase tracking-wider text-violet-700">☕ Thời gian nghỉ giữa các vòng thi</p>
+                                                 <p className="text-sm font-bold text-violet-900 mt-0.5">Thời gian nghỉ và chuẩn bị cho vòng tiếp theo. Đề thi vòng sau sẽ được công bố khi hết giờ nghỉ.</p>
+                                             </div>
+                                             <div className="text-right">
+                                                 <span className="text-2xl font-black text-violet-700">
+                                                     {Math.floor(selectedMatrix.breakRemainingSeconds / 60)}:
+                                                     {String(selectedMatrix.breakRemainingSeconds % 60).padStart(2, '0')}
+                                                 </span>
+                                                 <p className="text-[10px] uppercase font-bold text-violet-600">Thời gian nghỉ còn lại</p>
+                                             </div>
+                                         </div>
+                                     )}
+
                                     {/* === GUIDELINE / PROMPT DOWNLOAD CARD === */}
                                     {selectedMatrix && (
                                         <div className="mb-5 rounded-xl border border-blue-100 bg-[#f8fafc] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">

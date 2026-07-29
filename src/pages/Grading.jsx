@@ -127,6 +127,7 @@ export default function Grading() {
         canGrade
         && selectedSub
         && !selectedSub.isPublished
+        && !selectedMatrixForPermission?.isPublished
         && selectedSub.disqualificationStatus !== 'APPROVED'
         && selectedSub.disqualificationStatus !== 'PENDING'
         && resolvedUserId
@@ -164,6 +165,7 @@ export default function Grading() {
             const teamId = disqualifyingTeam.id;
             const teamName = disqualifyingTeam.name;
             await axiosClient.post(`/teams/${teamId}/propose-disqualify`, { reason: finalReason });
+            window.dispatchEvent(new Event('notifications:refresh'));
             setShowDisqualifyModal(false);
             setDisqualifyingTeam(null);
             setDisqualifyCustomReason('');
@@ -394,6 +396,25 @@ export default function Grading() {
                                 </div>
                             </header>
 
+                            {selectedMatrix?.gradingRemainingSeconds != null && (
+                                <div style={{ backgroundColor: '#fffbe8', border: '1px solid #fde68a', color: '#78350f', padding: '12px 16px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '16px' }}>⏱️</span>
+                                        <div>
+                                            <strong style={{ fontSize: '13px', display: 'block' }}>Thời gian chấm bài (Vòng {selectedSub.roundName})</strong>
+                                            <span style={{ fontSize: '11px', opacity: 0.8 }}>Hệ thống đếm ngược thời gian chấm bài của Giám khảo</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <span style={{ fontSize: '20px', fontWeight: '900', color: '#b45309' }}>
+                                            {Math.floor(selectedMatrix.gradingRemainingSeconds / 60)}:
+                                            {String(selectedMatrix.gradingRemainingSeconds % 60).padStart(2, '0')}
+                                        </span>
+                                        <span style={{ fontSize: '10px', textTransform: 'uppercase', display: 'block', fontWeight: '700', color: '#92400e' }}>Thời gian còn lại</span>
+                                    </div>
+                                </div>
+                            )}
+
                             {selectedSub.disqualificationStatus === 'PENDING' && (
                                 <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fef3c7', color: '#92400e', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>
                                     ⚠️ Đội thi này đang có đề xuất loại giải đấu chờ Coordinator duyệt.
@@ -475,7 +496,7 @@ export default function Grading() {
                             <section className="judge-feedback">
                                 <label>Nhận xét chung <span>Phản hồi này sẽ được lưu cùng kết quả chấm.</span><textarea ref={feedbackRef} required rows="5" tabIndex={criteriaScores.length * 2 + 1} value={feedback} onChange={(e) => setFeedback(e.target.value)} disabled={!canGradeSelected} placeholder="Tổng kết điểm mạnh, hạn chế và đề xuất cải thiện cho đội thi..." /></label>
                                 {selectedSub.graded && canGradeSelected && <label>Lý do sửa điểm <span>Bắt buộc để đảm bảo audit log minh bạch.</span><input required tabIndex={criteriaScores.length * 2 + 2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Ví dụ: rà soát lại rubric sau phiên Q&A" /></label>}
-                                {!canGradeSelected && <div className="judge-readonly">{selectedSub.isPublished ? 'Kết quả vòng đấu đã được công bố và khóa chỉnh sửa.' : 'Tài khoản hiện tại chỉ được xem tiến độ hoặc chưa được phân công làm Judge cho bài này.'}</div>}
+                                {!canGradeSelected && <div className="judge-readonly">{(selectedSub.isPublished || selectedMatrixForPermission?.isPublished) ? '🔒 Kết quả vòng đấu đã được công bố - Điểm số đã bị khóa và không thể chỉnh sửa.' : 'Tài khoản hiện tại chỉ được xem tiến độ hoặc chưa được phân công làm Judge cho bài này.'}</div>}
                             </section>
 
                             <footer className="judge-submit-bar">

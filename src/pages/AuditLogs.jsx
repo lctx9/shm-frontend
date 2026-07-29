@@ -76,8 +76,8 @@ export default function AuditLogs() {
                                     {actionLabel(log)}
                                 </span>
                             </td>
-                            <td className="px-6 py-4 text-amber-700">{log.oldScore ?? '—'}</td>
-                            <td className="px-6 py-4 text-green-700">{log.newScore ?? '—'}</td>
+                            <td className="px-6 py-4 text-amber-700 font-medium">{log.oldScore != null ? log.oldScore : 'N/A'}</td>
+                            <td className="px-6 py-4 text-green-700 font-medium">{log.newScore != null ? log.newScore : 'N/A'}</td>
                             <td className="px-6 py-4 text-sm text-slate-600">{log.reason}</td>
                         </tr>
                     ))}
