@@ -2429,3 +2429,94 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     cursor: pointer !important;
 }
 
+/* Aurora UI Floating Background Spheres */
+.aurora-container {
+    position: relative;
+    overflow: hidden;
+}
+.aurora-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+.aurora-sphere {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(140px);
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    animation: aurora-float 25s infinite alternate ease-in-out;
+}
+.aurora-sphere--1 {
+    width: 450px;
+    height: 450px;
+    background: radial-gradient(circle, #2468ee 0%, rgba(36,104,238,0) 70%);
+    top: -10%;
+    left: -10%;
+    animation-duration: 20s;
+}
+.aurora-sphere--2 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, #8f33ff 0%, rgba(143,51,255,0) 70%);
+    bottom: -15%;
+    right: -10%;
+    animation-duration: 28s;
+    animation-delay: -5s;
+}
+.aurora-sphere--3 {
+    width: 380px;
+    height: 380px;
+    background: radial-gradient(circle, #16b889 0%, rgba(22,184,137,0) 70%);
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-duration: 24s;
+    animation-delay: -10s;
+}
+
+@keyframes aurora-float {
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+    }
+    33% {
+        transform: translate(40px, -50px) scale(1.1) rotate(120deg);
+    }
+    66% {
+        transform: translate(-30px, 30px) scale(0.9) rotate(240deg);
+    }
+    100% {
+        transform: translate(0, 0) scale(1) rotate(360deg);
+    }
+}
+
+/* Premium glassmorphism effects */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 20px 50px rgba(31, 38, 135, 0.05) !important;
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.55) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.03) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.glass-card:hover {
+    background: rgba(255, 255, 255, 0.7) !important;
+    border-color: rgba(36, 104, 238, 0.3) !important;
+    box-shadow: 0 16px 48px rgba(36, 104, 238, 0.08) !important;
+    transform: translateY(-4px) scale(1.02) !important;
+}
+
