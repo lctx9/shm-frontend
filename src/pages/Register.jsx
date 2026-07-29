@@ -315,41 +315,7 @@ export default function Register() {
         }
     };
 
-    // Style đồng bộ nút bấm chính của Đăng nhập (Màu xanh dương/teal đặc trưng)
-    const primaryButtonStyle = {
-        flex: 1,
-        margin: 0,
-        minHeight: '47px',
-        border: '0',
-        borderRadius: '3px',
-        background: 'var(--dp-blue)',
-        color: 'white',
-        fontSize: '14px',
-        fontWeight: '800',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'background-color 0.2s'
-    };
-
-    // Style nút phụ (Quay lại)
-    const secondaryButtonStyle = {
-        flex: 1,
-        margin: 0,
-        minHeight: '47px',
-        border: '1px solid #adc5ca',
-        borderRadius: '3px',
-        background: 'white',
-        color: 'var(--seal-700)',
-        fontSize: '14px',
-        fontWeight: '800',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'background-color 0.2s'
-    };
+    // Các biến style phụ trợ đã được chuyển thành class CSS trong index.css để tăng tính đồng bộ.
 
     return (
         /* Thay đổi devpost-auth--register sang devpost-auth--login để căn giữa form theo chiều dọc giống hệt trang Đăng nhập */
@@ -420,41 +386,23 @@ export default function Register() {
                                 {fieldErrors.fullName && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.fullName}</p>}
 
                                 <label htmlFor="register-email">Email</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+                                <div className="flex gap-3 items-center mb-4">
                                     <input
                                         required
                                         id="register-email"
                                         type="email"
                                         placeholder="example@fpt.edu.vn"
-                                        style={{ margin: 0 }}
                                         value={formData.email}
                                         onChange={(e) => {
                                             setFormData({ ...formData, email: e.target.value });
                                             setOtpSent(false);
                                         }}
                                     />
-                                    {/* Nút gửi mã OTP được chuyển sang background trắng đồng bộ */}
                                     <button
                                         type="button"
                                         onClick={handleSendOtp}
                                         disabled={sendingOtp}
-                                        style={{
-                                            width: 'auto',
-                                            margin: 0,
-                                            padding: '0 16px',
-                                            height: '46px',
-                                            whiteSpace: 'nowrap',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            background: 'white',
-                                            color: 'var(--seal-700)',
-                                            border: '1px solid #adc5ca',
-                                            borderRadius: '3px',
-                                            fontSize: '12px',
-                                            fontWeight: '800',
-                                            cursor: 'pointer'
-                                        }}
+                                        className="btn-secondary h-[42px] px-4 whitespace-nowrap text-xs font-bold w-auto"
                                     >
                                         {sendingOtp ? 'Đang gửi...' : otpSent ? 'Gửi lại' : 'Gửi mã'}
                                     </button>
@@ -547,42 +495,29 @@ export default function Register() {
                                             <label htmlFor="register-card">Ảnh thẻ sinh viên (bắt buộc)</label>
                                             <label
                                                 htmlFor="register-card"
-                                                style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: '6px',
-                                                    borderRadius: '3px',
-                                                    border: '2px dashed #b3d0f0',
-                                                    padding: '16px',
-                                                    background: '#f7fbff',
-                                                    cursor: 'pointer',
-                                                    textAlign: 'center',
-                                                    marginBottom: '16px'
-                                                }}
+                                                className="student-card-upload-label mb-4"
                                             >
                                                 {studentCardFile ? (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                        <svg style={{ height: '24px', width: '24px', color: '#16a34a', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <div className="flex items-center gap-3">
+                                                        <svg className="h-6 w-6 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                         </svg>
-                                                        <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-                                                            <p style={{ fontSize: '13px', fontWeight: 'bold', color: '#15803d', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                                                        <div className="text-left leading-normal">
+                                                            <p className="text-sm font-bold text-emerald-800 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap m-0">
                                                                 {getFileName(studentCardFile)}
                                                             </p>
-                                                            <p style={{ fontSize: '11px', color: '#16a34a', margin: 0 }}>
+                                                            <p className="text-xs text-emerald-600 m-0">
                                                                 {(studentCardFile.size / 1024).toFixed(0)} KB (Nhấn đổi ảnh)
                                                             </p>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <svg style={{ height: '28px', width: '28px', color: 'var(--seal-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <svg className="h-7 w-7 text-[var(--seal-600)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                                         </svg>
-                                                        <p style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--seal-600)', margin: 0 }}>Tải ảnh thẻ lên</p>
-                                                        <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>Chỉ nhận file .jpg, .png, .webp (Max 5MB)</p>
+                                                        <p className="text-sm font-bold text-[var(--seal-600)] m-0">Tải ảnh thẻ lên</p>
+                                                        <p className="text-xs text-gray-500 m-0">Chỉ nhận file .jpg, .png, .webp (Max 5MB)</p>
                                                     </>
                                                 )}
                                             </label>
@@ -628,13 +563,13 @@ export default function Register() {
                         )}
 
                         {/* ================= NÚT THAO TÁC DI CHUYỂN BƯỚC ================= */}
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                        <div className="flex gap-3 mt-5">
                             {step > 1 && (
                                 <button
                                     type="button"
                                     onClick={handleBack}
                                     disabled={loading || uploading}
-                                    style={secondaryButtonStyle}
+                                    className="btn-secondary flex-1 w-full"
                                 >
                                     Quay lại
                                 </button>
@@ -644,13 +579,13 @@ export default function Register() {
                                 type={step === 3 ? 'submit' : 'button'}
                                 onClick={step < 3 ? handleNext : undefined}
                                 disabled={loading || uploading}
-                                style={primaryButtonStyle}
+                                className="btn-primary flex-1 w-full"
                             >
                                 {step < 3 ? (
                                     'Tiếp tục'
                                 ) : uploading ? (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <svg className="animate-spin" style={{ height: '16px', width: '16px' }} fill="none" viewBox="0 0 24 24">
+                                    <span className="flex items-center gap-2">
+                                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                                         </svg>

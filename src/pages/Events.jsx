@@ -71,7 +71,7 @@ function MarketplaceEventCard({ event, navigate }) {
 
             <aside className="market-event-card__meta">
                 <p className="market-season"><span aria-hidden="true">⚑</span><span>{event.season} {event.year}</span></p>
-                <p><span aria-hidden="true">▣</span><span>{formatShortDate(event.eventStartDate)} – {formatShortDate(event.eventEndDate)}</span></p>
+                <p><span aria-hidden="true">▣</span><span>{formatShortDate(event.eventStartDate)} – {event.formattedEventEndDate || formatShortDate(event.eventEndDate)}</span></p>
                 <p><span className="market-seal-mark">S</span><span>Được tổ chức bởi SEAL</span></p>
                 {tracks.length > 0 && (
                     <div className="market-tags">

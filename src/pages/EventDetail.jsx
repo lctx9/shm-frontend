@@ -82,7 +82,7 @@ export default function EventDetail() {
         ['01', 'Mở đăng ký', event.regStartDate],
         ['02', 'Đóng đăng ký', event.regEndDate],
         ['03', 'Bắt đầu thi', event.eventStartDate],
-        ['04', 'Kết thúc', event.eventEndDate],
+        ['04', 'Kết thúc', event.formattedEventEndDate || formatDateTime(event.eventEndDate)],
     ];
 
     return (

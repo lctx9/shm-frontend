@@ -30,13 +30,6 @@ const coordinatorGroups = [
             { to: '/dashboard/audit-logs', label: 'Audit điểm' },
         ],
     },
-    {
-        title: 'Tài khoản',
-        items: [
-            { to: '/dashboard/student-approval', label: 'Phê duyệt thí sinh' },
-            { to: '/dashboard/staff', label: 'Quản lý staff' },
-        ],
-    },
 ];
 
 const adminGroups = [
@@ -45,21 +38,23 @@ const adminGroups = [
         items: [
             { to: '/dashboard', label: 'Tổng quan hệ thống', match: ['/dashboard'] },
             { to: '/dashboard/users', label: 'Tài khoản & phân quyền' },
+            { to: '/dashboard/student-approval', label: 'Phê duyệt tài khoản' },
+            { to: '/dashboard/staff', label: 'Quản lý staff' },
             { to: '/dashboard/monitoring', label: 'Giám sát hệ thống' },
         ],
     },
     {
         title: 'Vận hành cuộc thi',
         items: [
-            { to: '/dashboard/events', label: 'Quản lý sự kiện' },
-            { to: '/dashboard/scoring-config', label: 'Cấu hình chấm điểm' },
+            { to: '/dashboard/events', label: 'Sự kiện (chỉ xem)' },
+            { to: '/dashboard/scoring-config', label: 'Cấu hình điểm (chỉ xem)' },
             { to: '/dashboard/submissions', label: 'Bài nộp' },
         ],
     },
     {
         title: 'Chấm điểm & kết quả',
         items: [
-            { to: '/dashboard/grading', label: 'Chấm bài' },
+            { to: '/dashboard/grading', label: 'Tiến độ chấm (chỉ xem)' },
             { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
             { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
             { to: '/dashboard/audit-logs', label: 'Audit điểm' },
@@ -68,7 +63,7 @@ const adminGroups = [
     {
         title: 'Truyền thông',
         items: [
-            { to: '/dashboard/notifications', label: 'Gửi thông báo' },
+            { to: '/dashboard/notifications', label: 'Thông báo (chỉ xem)' },
         ],
     },
     {
@@ -177,7 +172,7 @@ export default function DashboardLayout() {
         let active = true;
 
         const fetchPendingStudents = () => {
-            if (storedRole !== 'COORDINATOR') return;
+            if (storedRole !== 'ADMIN') return;
             axiosClient.get('/users')
                 .then((response) => {
                     const list = response.result || [];
@@ -190,7 +185,7 @@ export default function DashboardLayout() {
         fetchPendingStudentsRef.current = fetchPendingStudents;
 
         const fetchData = async () => {
-            // 1. Fetch pending students (Coordinator only)
+            // 1. Fetch pending accounts (Admin only)
             fetchPendingStudents();
 
             // 2. Fetch pending grading (Judge assignment only)

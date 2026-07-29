@@ -22,7 +22,6 @@ function OperationalDashboard() {
     });
     const [submissions, setSubmissions] = useState([]);
     const [events, setEvents] = useState([]);
-    const [pendingStudents, setPendingStudents] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -31,11 +30,10 @@ function OperationalDashboard() {
             setLoading(true);
             setError(null);
             
-            const [statsRes, subsRes, eventsRes, usersRes] = await Promise.allSettled([
+            const [statsRes, subsRes, eventsRes] = await Promise.allSettled([
                 axiosClient.get('/stats'),
                 axiosClient.get('/submissions'),
-                axiosClient.get('/events'),
-                axiosClient.get('/users')
+                axiosClient.get('/events')
             ]);
 
             if (statsRes.status === 'fulfilled' && statsRes.value.result) {
@@ -54,11 +52,6 @@ function OperationalDashboard() {
                 setEvents(eventsRes.value.result || []);
             }
 
-            if (usersRes.status === 'fulfilled' && usersRes.value.result) {
-                const list = usersRes.value.result || [];
-                const pendingCount = list.filter(user => user.role === 'USER' && user.status === 'PENDING').length;
-                setPendingStudents(pendingCount);
-            }
         } catch (err) {
             setError('Không thể tải dữ liệu thống kê. Vui lòng kiểm tra backend hoặc quyền truy cập.');
         } finally {
@@ -237,15 +230,7 @@ function OperationalDashboard() {
                 <h2 className="text-base font-black text-[var(--shield-ink)]">Phím tắt thao tác nhanh</h2>
                 <p className="text-xs text-[var(--shield-copy)] mt-1">Truy cập nhanh các phân hệ chức năng dành cho Điều phối viên</p>
                 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-                    <Link to="/dashboard/student-approval" className="flex items-center justify-between rounded-xl bg-[var(--shield-blue-soft)] p-4 text-xs font-bold text-[var(--shield-blue)] hover:bg-blue-100 transition-all">
-                        <span>Phê duyệt thí sinh mới</span>
-                        {pendingStudents > 0 && (
-                            <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
-                                {pendingStudents}
-                            </span>
-                        )}
-                    </Link>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                     <Link to="/dashboard/scoring-config" className="flex items-center justify-between rounded-xl bg-[var(--shield-blue-soft)] p-4 text-xs font-bold text-[var(--shield-blue)] hover:bg-blue-100 transition-all">
                         <span>Cấu hình chấm điểm</span>
                         <span>&rarr;</span>
