@@ -477,99 +477,128 @@ export default function Register() {
                             </>
                         )}
                         {/* ================= STEP 2: THÔNG TIN SINH VIÊN ================= */}
-                        {step === 2 && (
-                            <>
-                                <label htmlFor="register-student-id">Mã số sinh viên</label>
-                                <input
-                                    id="register-student-id"
-                                    required
-                                    type="text"
-                                    placeholder="SE170001"
-                                    value={formData.studentId}
-                                    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                                />
-                                {fieldErrors.studentId && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.studentId}</p>}
+                        {step === 2 && (() => {
+                            const emailVal = formData.email.trim().toLowerCase();
+                            const isFptEmail = emailVal.endsWith('@fpt.edu.vn');
+                            const isFptStudent = isFptEmail ? isFptStudentEmail(emailVal) : formData.isFptStudent;
+                            const isFptLecturer = isFptEmail && !isFptStudent;
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0 16px 0' }}>
-                                    <input
-                                        type="checkbox"
-                                        id="isFpt"
-                                        style={{ width: 'auto', height: '18px', width: '18px', margin: 0, accentColor: 'var(--seal-600)', cursor: 'pointer' }}
-                                        checked={formData.isFptStudent}
-                                        onChange={(e) => setFormData({ ...formData, isFptStudent: e.target.checked })}
-                                    />
-                                    <label htmlFor="isFpt" style={{ margin: 0, cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: 'var(--seal-700)' }}>
-                                        Tôi là sinh viên Đại học FPT
-                                    </label>
-                                </div>
-
-                                {!formData.isFptStudent && (
-                                    <>
-                                        <label htmlFor="register-university">Tên trường đại học</label>
-                                        <input
-                                            id="register-university"
-                                            required
-                                            type="text"
-                                            placeholder="Trường đại học của bạn"
-                                            value={formData.universityName}
-                                            onChange={(e) => setFormData({ ...formData, universityName: e.target.value })}
-                                        />
-                                        {fieldErrors.universityName && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.universityName}</p>}
-                                    </>
-                                )}
-
-                                <label htmlFor="register-card">Ảnh thẻ sinh viên (bắt buộc)</label>
-                                <label
-                                    htmlFor="register-card"
-                                    style={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '6px',
-                                        borderRadius: '3px',
-                                        border: '2px dashed #b3d0f0',
-                                        padding: '16px',
-                                        background: '#f7fbff',
-                                        cursor: 'pointer',
-                                        textAlign: 'center',
-                                        marginBottom: '16px'
-                                    }}
-                                >
-                                    {studentCardFile ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <svg style={{ height: '24px', width: '24px', color: '#16a34a', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-                                                <p style={{ fontSize: '13px', fontWeight: 'bold', color: '#15803d', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
-                                                    {getFileName(studentCardFile)}
-                                                </p>
-                                                <p style={{ fontSize: '11px', color: '#16a34a', margin: 0 }}>
-                                                    {(studentCardFile.size / 1024).toFixed(0)} KB (Nhấn đổi ảnh)
-                                                </p>
-                                            </div>
-                                        </div>
+                            return (
+                                <>
+                                    {!isFptLecturer ? (
+                                        <>
+                                            <label htmlFor="register-student-id">Mã số sinh viên</label>
+                                            <input
+                                                id="register-student-id"
+                                                required
+                                                type="text"
+                                                placeholder="SE170001"
+                                                value={formData.studentId}
+                                                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                                            />
+                                            {fieldErrors.studentId && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.studentId}</p>}
+                                        </>
                                     ) : (
                                         <>
-                                            <svg style={{ height: '28px', width: '28px', color: 'var(--seal-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                            </svg>
-                                            <p style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--seal-600)', margin: 0 }}>Tải ảnh thẻ lên</p>
-                                            <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>Chỉ nhận file .jpg, .png, .webp (Max 5MB)</p>
+                                            <label htmlFor="register-student-id">Mã cán bộ (không bắt buộc)</label>
+                                            <input
+                                                id="register-student-id"
+                                                type="text"
+                                                placeholder="Mã cán bộ FPT của bạn"
+                                                value={formData.studentId}
+                                                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                                            />
+                                            {fieldErrors.studentId && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.studentId}</p>}
                                         </>
                                     )}
-                                </label>
-                                <input
-                                    id="register-card"
-                                    type="file"
-                                    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/bmp"
-                                    className="sr-only"
-                                    onChange={handleStudentCardUpload}
-                                />
-                                {fieldErrors.studentCard && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '-8px', marginBottom: '8px' }}>{fieldErrors.studentCard}</p>}
-                            </>
-                        )}
+
+                                    {!isFptEmail && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0 16px 0' }}>
+                                            <input
+                                                type="checkbox"
+                                                id="isFpt"
+                                                style={{ width: '18px', height: '18px', margin: 0, accentColor: 'var(--seal-600)', cursor: 'pointer' }}
+                                                checked={formData.isFptStudent}
+                                                onChange={(e) => setFormData({ ...formData, isFptStudent: e.target.checked })}
+                                            />
+                                            <label htmlFor="isFpt" style={{ margin: 0, cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: 'var(--seal-700)' }}>
+                                                Tôi là sinh viên Đại học FPT
+                                            </label>
+                                        </div>
+                                    )}
+
+                                    {!isFptEmail && !formData.isFptStudent && (
+                                        <>
+                                            <label htmlFor="register-university">Tên trường đại học</label>
+                                            <input
+                                                id="register-university"
+                                                required
+                                                type="text"
+                                                placeholder="Trường đại học của bạn"
+                                                value={formData.universityName}
+                                                onChange={(e) => setFormData({ ...formData, universityName: e.target.value })}
+                                            />
+                                            {fieldErrors.universityName && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.universityName}</p>}
+                                        </>
+                                    )}
+
+                                    {!isFptEmail && (
+                                        <>
+                                            <label htmlFor="register-card">Ảnh thẻ sinh viên (bắt buộc)</label>
+                                            <label
+                                                htmlFor="register-card"
+                                                style={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '6px',
+                                                    borderRadius: '3px',
+                                                    border: '2px dashed #b3d0f0',
+                                                    padding: '16px',
+                                                    background: '#f7fbff',
+                                                    cursor: 'pointer',
+                                                    textAlign: 'center',
+                                                    marginBottom: '16px'
+                                                }}
+                                            >
+                                                {studentCardFile ? (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <svg style={{ height: '24px', width: '24px', color: '#16a34a', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
+                                                            <p style={{ fontSize: '13px', fontWeight: 'bold', color: '#15803d', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                                                                {getFileName(studentCardFile)}
+                                                            </p>
+                                                            <p style={{ fontSize: '11px', color: '#16a34a', margin: 0 }}>
+                                                                {(studentCardFile.size / 1024).toFixed(0)} KB (Nhấn đổi ảnh)
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <svg style={{ height: '28px', width: '28px', color: 'var(--seal-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                                        </svg>
+                                                        <p style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--seal-600)', margin: 0 }}>Tải ảnh thẻ lên</p>
+                                                        <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>Chỉ nhận file .jpg, .png, .webp (Max 5MB)</p>
+                                                    </>
+                                                )}
+                                            </label>
+                                            <input
+                                                id="register-card"
+                                                type="file"
+                                                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/bmp"
+                                                className="sr-only"
+                                                onChange={handleStudentCardUpload}
+                                            />
+                                            {fieldErrors.studentCard && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '-8px', marginBottom: '8px' }}>{fieldErrors.studentCard}</p>}
+                                        </>
+                                    )}
+                                </>
+                            );
+                        })()}
 
                         {/* ================= STEP 3: THIẾT LẬP MẬT KHẨU ================= */}
                         {step === 3 && (
