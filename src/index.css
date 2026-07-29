@@ -2209,21 +2209,27 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .judge-rubric__guide div:first-child span { color: #61767d; font-size: 11px; }
 .judge-rubric__guide > div:last-child { height: 5px; overflow: hidden; background: #dce7e9; }
 .judge-rubric__guide > div:last-child span { display: block; height: 100%; background: linear-gradient(90deg,var(--seal-600),#22a58e); transition: width .2s ease; }
-.judge-rubric__criteria { display: grid; gap: 14px; padding: 22px 26px; }
+.judge-keyboard-guide { display: flex; align-items: center; justify-content: space-between; gap: 18px; border-bottom: 1px solid #c9e4e0; background: #effaf8; padding: 11px 26px; color: #315e5a; font-size: 11px; }
+.judge-keyboard-guide strong { flex: none; color: var(--seal-700); font-size: 11px; }
+.judge-keyboard-guide kbd { display: inline-block; min-width: 24px; border: 1px solid #a9c9c4; border-bottom-width: 2px; border-radius: 4px; background: white; padding: 2px 5px; color: #244d49; font-family: inherit; font-size: 10px; font-weight: 900; line-height: 1.2; text-align: center; }
+.judge-rubric__criteria { display: grid; gap: 9px; padding: 16px 26px; }
 .judge-rubric__criteria article { display: grid; grid-template-columns: 45px minmax(0,1fr); border: 1px solid #d8e1e3; background: white; transition: border-color .18s ease,background .18s ease; }
+.judge-rubric__criteria article:focus-within { border-color: var(--seal-600); box-shadow: 0 0 0 3px rgba(19,125,116,.12); }
 .judge-rubric__criteria article.is-complete { border-color: #b8deda; background: #fcfefe; }
 .judge-criterion__number { display: grid; place-items: start center; border-right: 1px solid #e0e7e9; padding-top: 19px; color: #91a4a9; font-size: 11px; font-weight: 900; }
 .judge-rubric__criteria article.is-complete .judge-criterion__number { color: var(--seal-600); }
-.judge-criterion__content { min-width: 0; padding: 17px 19px 19px; }
+.judge-criterion__content { min-width: 0; padding: 13px 17px 15px; }
 .judge-criterion__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .judge-criterion__heading h3 { margin: 0; font-size: 15px; }
 .judge-criterion__heading p { margin: 5px 0 0; color: #667b82; font-size: 11px; line-height: 1.5; }
 .judge-criterion__heading > span { flex: none; background: var(--seal-50); padding: 5px 8px; color: var(--seal-700); font-size: 10px; font-weight: 900; }
-.judge-criterion__inputs { display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 13px; margin-top: 15px; }
+.judge-criterion__inputs { display: grid; grid-template-columns: 130px minmax(0,1fr); gap: 13px; margin-top: 11px; }
 .judge-criterion__inputs label,.judge-feedback label { color: #3e5962 !important; font-size: 10px !important; font-weight: 800; letter-spacing: .04em !important; text-transform: uppercase; }
 .judge-criterion__inputs label > span,.judge-feedback label > span { float: right; color: #84969b; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .judge-criterion__inputs input,.judge-feedback input,.judge-feedback textarea { display: block; width: 100%; margin-top: 6px; border: 1px solid #b8c8cc !important; border-radius: 2px !important; background: white; padding: 10px 11px; color: #17313a; font-size: 12px; box-shadow: none !important; }
 .judge-criterion__inputs input { min-height: 42px; }
+.judge-criterion__inputs input:focus,.judge-feedback input:focus,.judge-feedback textarea:focus { border-color: var(--seal-600) !important; outline: 3px solid rgba(19,125,116,.14); outline-offset: 0; }
+.judge-score-field input { height: 44px; padding-block: 6px; color: var(--seal-800); font-size: 20px; font-weight: 900; text-align: center; }
 .judge-feedback { display: grid; gap: 18px; border-top: 1px solid var(--dp-line); padding: 24px 26px; }
 .judge-feedback textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
 .judge-readonly { border: 1px solid #ead19a; background: #fff8e8; padding: 13px; color: #89611b; font-size: 12px; font-weight: 700; }
@@ -2251,6 +2257,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     .judge-queue { position: static; margin-bottom: 20px; }
     .judge-queue__list { max-height: 380px; }
     .judge-rubric__header,.judge-rubric__guide > div:first-child,.judge-submit-bar { align-items: flex-start; flex-direction: column; }
+    .judge-keyboard-guide { align-items: flex-start; flex-direction: column; gap: 7px; }
     .judge-submit-bar button { width: 100%; }
 }
 @media(max-width:520px) {

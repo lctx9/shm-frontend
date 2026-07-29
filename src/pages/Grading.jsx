@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 
@@ -51,6 +51,8 @@ export default function Grading() {
     const [successMsg, setSuccessMsg] = useState('');
     const [query, setQuery] = useState('');
     const [queueFilter, setQueueFilter] = useState('pending');
+    const scoreInputRefs = useRef([]);
+    const feedbackRef = useRef(null);
 
     const [showDisqualifyModal, setShowDisqualifyModal] = useState(false);
     const [disqualifyReasonOption, setDisqualifyReasonOption] = useState('Gian lận');
@@ -114,6 +116,16 @@ export default function Grading() {
     const finalScore = useMemo(() => weightedAverage(criteriaScores), [criteriaScores]);
     const completedCriteria = criteriaScores.filter((item) => item.score !== '').length;
     const totalWeight = criteriaScores.reduce((sum, item) => sum + Number(item.weight || 0), 0);
+    const selectedMatrixForPermission = selectedSub ? matrixById.get(String(selectedSub.matrixId)) : null;
+    const canGradeSelected = Boolean(
+        canGrade
+        && selectedSub
+        && !selectedSub.isPublished
+        && resolvedUserId
+        && (selectedMatrixForPermission?.judges || []).some(
+            (judge) => String(judge.id) === String(resolvedUserId)
+        )
+    );
 
     const handleDisqualifyClick = (teamId, teamName) => {
         setDisqualifyingTeam({ id: teamId, name: teamName });
@@ -212,21 +224,40 @@ export default function Grading() {
     const handleSelect = (submission) => {
         const matrix = matrixById.get(String(submission.matrixId));
         const criteria = parseJson(matrix?.scoringCriteriaJson, fallbackCriteria);
+        const normalizedScores = normalizeScores(criteria, submission.criteriaScoresJson);
         setSelectedSub(submission);
-        setCriteriaScores(normalizeScores(criteria, submission.criteriaScoresJson));
+        setCriteriaScores(normalizedScores);
         setFeedback(submission.feedback || '');
         setEditReason('');
         setError('');
         setSuccessMsg('');
+        setTimeout(() => {
+            const firstBlankIndex = normalizedScores.findIndex((criterion) => criterion.score === '');
+            const targetIndex = firstBlankIndex >= 0 ? firstBlankIndex : 0;
+            scoreInputRefs.current[targetIndex]?.focus();
+            scoreInputRefs.current[targetIndex]?.select();
+        }, 0);
     };
 
     const updateCriterionScore = (index, patch) => {
         setCriteriaScores((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
     };
 
+    const handleScoreKeyDown = (event, index) => {
+        if (event.key !== 'Enter' || event.ctrlKey || event.metaKey) return;
+        event.preventDefault();
+        const nextScoreInput = scoreInputRefs.current[index + 1];
+        if (nextScoreInput) {
+            nextScoreInput.focus();
+            nextScoreInput.select();
+        } else {
+            feedbackRef.current?.focus();
+        }
+    };
+
     const handleSubmitGrade = async (e) => {
         e.preventDefault();
-        if (!selectedSub || !canGrade) return;
+        if (!selectedSub || !canGradeSelected) return;
         const invalid = criteriaScores.some((item) => item.score === '' || Number(item.score) < 0 || Number(item.score) > Number(item.maxScore || 100));
         if (invalid) {
             setError('Vui lòng nhập điểm hợp lệ cho tất cả tiêu chí.');
@@ -312,7 +343,15 @@ export default function Grading() {
 
                 <main className="judge-rubric">
                     {selectedSub ? (
-                        <form onSubmit={handleSubmitGrade}>
+                        <form
+                            onSubmit={handleSubmitGrade}
+                            onKeyDown={(event) => {
+                                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                                    event.preventDefault();
+                                    event.currentTarget.requestSubmit();
+                                }
+                            }}
+                        >
                             <header className="judge-rubric__header">
                                 <div><p>{selectedMatrix?.eventName || 'SEAL Hackathon'} · {selectedSub.roundName}</p><h2>{selectedSub.teamName || `Đội #${selectedSub.teamId}`}</h2><span>{selectedSub.trackName || 'Bảng chung'}</span></div>
                                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -377,6 +416,13 @@ export default function Grading() {
                                 <div><span style={{ width: `${criteriaScores.length ? completedCriteria / criteriaScores.length * 100 : 0}%` }} /></div>
                             </section>
 
+                            {canGradeSelected && (
+                                <div className="judge-keyboard-guide" role="note">
+                                    <strong>⌨ Chấm nhanh bằng bàn phím</strong>
+                                    <span><kbd>Tab</kbd> hoặc <kbd>Enter</kbd> sang ô điểm kế tiếp · <kbd>Shift</kbd> + <kbd>Tab</kbd> quay lại · <kbd>Ctrl</kbd> + <kbd>Enter</kbd> lưu kết quả</span>
+                                </div>
+                            )}
+
                             <div className="judge-rubric__criteria">
                                 {criteriaScores.map((criterion, index) => (
                                     <article key={criterion.id || index} className={criterion.score !== '' ? 'is-complete' : ''}>
@@ -384,8 +430,8 @@ export default function Grading() {
                                         <div className="judge-criterion__content">
                                             <div className="judge-criterion__heading"><div><h3>{criterion.label}</h3><p>{criterion.description}</p></div><span>{criterion.weight}%</span></div>
                                             <div className="judge-criterion__inputs">
-                                                <label>Điểm <span>0–{criterion.maxScore || 100}</span><input required type="number" step="0.1" min="0" max={criterion.maxScore || 100} value={criterion.score} onChange={(e) => updateCriterionScore(index, { score: e.target.value })} disabled={!canGrade} /></label>
-                                                <label>Nhận xét cho tiêu chí<input value={criterion.note} onChange={(e) => updateCriterionScore(index, { note: e.target.value })} placeholder="Nêu điểm tốt hoặc nội dung cần cải thiện..." disabled={!canGrade} /></label>
+                                                <label className="judge-score-field">Điểm <span>0–{criterion.maxScore || 100}</span><input ref={(element) => { scoreInputRefs.current[index] = element; }} required type="number" inputMode="decimal" step="0.1" min="0" max={criterion.maxScore || 100} tabIndex={index + 1} aria-label={`Điểm tiêu chí ${index + 1}: ${criterion.label}`} value={criterion.score} onFocus={(event) => event.currentTarget.select()} onKeyDown={(event) => handleScoreKeyDown(event, index)} onChange={(e) => updateCriterionScore(index, { score: e.target.value })} disabled={!canGradeSelected} /></label>
+                                                <label>Nhận xét cho tiêu chí<input tabIndex={criteriaScores.length + index + 1} value={criterion.note} onChange={(e) => updateCriterionScore(index, { note: e.target.value })} placeholder="Không bắt buộc — Tab để bỏ qua" disabled={!canGradeSelected} /></label>
                                             </div>
                                         </div>
                                     </article>
@@ -393,14 +439,14 @@ export default function Grading() {
                             </div>
 
                             <section className="judge-feedback">
-                                <label>Nhận xét chung <span>Phản hồi này sẽ được lưu cùng kết quả chấm.</span><textarea required rows="5" value={feedback} onChange={(e) => setFeedback(e.target.value)} disabled={!canGrade} placeholder="Tổng kết điểm mạnh, hạn chế và đề xuất cải thiện cho đội thi..." /></label>
-                                {selectedSub.graded && canGrade && <label>Lý do sửa điểm <span>Bắt buộc để đảm bảo audit log minh bạch.</span><input required value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Ví dụ: rà soát lại rubric sau phiên Q&A" /></label>}
-                                {!canGrade && <div className="judge-readonly">Tài khoản hiện tại chỉ được xem tiến độ. Quyền lưu điểm dành cho Judge.</div>}
+                                <label>Nhận xét chung <span>Phản hồi này sẽ được lưu cùng kết quả chấm.</span><textarea ref={feedbackRef} required rows="5" tabIndex={criteriaScores.length * 2 + 1} value={feedback} onChange={(e) => setFeedback(e.target.value)} disabled={!canGradeSelected} placeholder="Tổng kết điểm mạnh, hạn chế và đề xuất cải thiện cho đội thi..." /></label>
+                                {selectedSub.graded && canGradeSelected && <label>Lý do sửa điểm <span>Bắt buộc để đảm bảo audit log minh bạch.</span><input required tabIndex={criteriaScores.length * 2 + 2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="Ví dụ: rà soát lại rubric sau phiên Q&A" /></label>}
+                                {!canGradeSelected && <div className="judge-readonly">{selectedSub.isPublished ? 'Kết quả vòng đấu đã được công bố và khóa chỉnh sửa.' : 'Tài khoản hiện tại chỉ được xem tiến độ hoặc chưa được phân công làm Judge cho bài này.'}</div>}
                             </section>
 
                             <footer className="judge-submit-bar">
                                 <div><span>Điểm tổng có trọng số</span><strong>{finalScore}<small>/100</small></strong></div>
-                                <button type="submit" disabled={saving || !canGrade || completedCriteria !== criteriaScores.length}>{saving ? 'Đang lưu...' : selectedSub.graded ? 'Cập nhật điểm' : 'Lưu kết quả chấm'}</button>
+                                <button type="submit" tabIndex={criteriaScores.length * 2 + 3} disabled={saving || !canGradeSelected || completedCriteria !== criteriaScores.length}>{saving ? 'Đang lưu...' : selectedSub.graded ? 'Cập nhật điểm' : 'Lưu kết quả chấm'}</button>
                             </footer>
                         </form>
                     ) : (
