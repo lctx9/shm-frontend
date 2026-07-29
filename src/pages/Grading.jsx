@@ -77,7 +77,7 @@ export default function Grading() {
     const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const email = localStorage.getItem('email');
     const [resolvedUserId, setResolvedUserId] = useState(localStorage.getItem('userId') || null);
-    const canGrade = ['STAFF', 'JUDGE', 'ADMIN', 'COORDINATOR'].includes(role);
+    const canGrade = ['STAFF', 'JUDGE'].includes(role);
 
     const matrixById = useMemo(() => {
         const map = new Map();

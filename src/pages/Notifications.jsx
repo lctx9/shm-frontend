@@ -13,7 +13,7 @@ export default function Notifications() {
     const [success, setSuccess] = useState('');
 
     const role = localStorage.getItem('role');
-    const canSend = role === 'COORDINATOR' || role === 'ADMIN';
+    const canSend = role === 'COORDINATOR';
 
     const ROLE_LABELS = { USER: 'Người tham gia', STAFF: 'Staff', null: 'Tất cả', '': 'Tất cả' };
 

@@ -70,14 +70,14 @@ function App() {
                         <Route path="teams" element={<TeamExplorer />} />
                         <Route path="my-team" element={<Navigate to="/my-team" replace />} />
                         <Route path="submissions" element={<SubmissionManagement />} />
-                        <Route path="events" element={<EventManagement />} />
+                        <Route path="events" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><EventManagement /></RoleRoute>} />
                         <Route path="scoring-config" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><ScoringConfiguration /></RoleRoute>} />
                         <Route path="users" element={<RoleRoute roles={['ADMIN']}><UserManagement /></RoleRoute>} />
                         <Route path="monitoring" element={<RoleRoute roles={['ADMIN']}><AdminMonitoring /></RoleRoute>} />
                         <Route path="backups" element={<RoleRoute roles={['ADMIN']}><BackupRestore /></RoleRoute>} />
                         <Route path="settings" element={<RoleRoute roles={['ADMIN']}><AdminSettings /></RoleRoute>} />
-                        <Route path="student-approval" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><StudentApproval /></RoleRoute>} />
-                        <Route path="staff" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><StaffManagement /></RoleRoute>} />
+                        <Route path="student-approval" element={<RoleRoute roles={['ADMIN']}><StudentApproval /></RoleRoute>} />
+                        <Route path="staff" element={<RoleRoute roles={['ADMIN']}><StaffManagement /></RoleRoute>} />
                         <Route path="audit-logs" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><AuditLogs /></RoleRoute>} />
                         <Route path="grading" element={<RoleRoute roles={['JUDGE', 'STAFF', 'COORDINATOR', 'ADMIN']}><Grading /></RoleRoute>} />
                         <Route path="scoring-stats" element={<RoleRoute roles={['COORDINATOR', 'ADMIN', 'JUDGE']}><ScoringStats /></RoleRoute>} />
