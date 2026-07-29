@@ -46,6 +46,8 @@ export default function MyTeam() {
     const [creating, setCreating] = useState(false);
     const [savingSubmission, setSavingSubmission] = useState(false);
     const [memberEmails, setMemberEmails] = useState(['', '']);
+    const [teamPage, setTeamPage] = useState(0);
+    const [eventCarouselPage, setEventCarouselPage] = useState(0);
     const [showPin, setShowPin] = useState(false);
     const [submissionValues, setSubmissionValues] = useState({}); // { fieldId: value } theo submissionFormSchema
     const [formData, setFormData] = useState({
@@ -690,65 +692,70 @@ export default function MyTeam() {
                 /* VIEW 1: ĐỘI THI CHI TIẾT (Trang riêng hiển thị khi click vào một đội) */
                 <div className="space-y-6">
                     {/* Hero Section: Tên Đội thi trên cùng -> Sự kiện & Nút Lobby phía dưới */}
-                    <section className="rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-50/70 via-indigo-50/30 to-white p-6 sm:p-8 shadow-sm space-y-5">
-                        {/* Hàng 1 (TRÊN HẾT): Tên Đội Thi + Sub-info Track Badge + Trạng thái */}
-                        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-                            <div>
-                                <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-[0.04em] text-[#071936]">
-                                    {team.name}
-                                </h1>
+                    <section className="bg-white border border-slate-200 border-l-[6px] border-l-[#007EFA] rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative overflow-hidden">
+                        {/* Hàng 1 (TRÊN HẾT): Thumbnail Devpost + Tên Đội Thi + Sub-info Track Badge + Trạng thái */}
+                        <div className="flex flex-col sm:flex-row items-start gap-5">
+                            {/* Devpost Style Square Team Avatar */}
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-900 text-white font-black text-xl flex flex-col items-center justify-center shrink-0 border border-slate-800 shadow-sm uppercase tracking-wider select-none">
+                                <span className="text-[#007EFA] text-2xl sm:text-3xl font-black">{team.name ? team.name.charAt(0) : 'T'}</span>
+                                <span className="text-[9px] font-bold text-slate-400 -mt-1">TEAM</span>
+                            </div>
 
-                                <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                                    {team.trackName && (
-                                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-0.5 text-xs font-black text-[#0f63c9] border border-blue-200/90 shadow-2xs">
-                                            {team.trackName}
+                            <div className="flex-1 space-y-2 w-full">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                                        {team.name}
+                                    </h1>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="bg-slate-100 text-slate-800 text-[10px] font-black uppercase px-2.5 py-1 rounded border border-slate-200">
+                                            {team.type}
                                         </span>
-                                    )}
+                                        {(team.members?.length || team.memberCount || 0) >= 3 ? (
+                                            <span className="bg-[#16b889] text-white font-black px-2.5 py-1 rounded text-[10px] uppercase tracking-wide flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                                Đội chính thức
+                                            </span>
+                                        ) : (
+                                            <span className="bg-amber-500 text-white font-black px-2.5 py-1 rounded text-[10px] uppercase tracking-wide flex items-center gap-1.5">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                                Chưa đủ 3 TV
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <p className="mt-2.5 text-sm sm:text-base leading-relaxed text-[#5c6d83] font-medium">
+                                {team.trackName && (
+                                    <span className="inline-block bg-blue-50 text-[#007EFA] border border-blue-200 text-xs font-black px-3 py-0.5 rounded">
+                                        {team.trackName}
+                                    </span>
+                                )}
+
+                                <p className="text-sm text-slate-600 font-medium leading-relaxed">
                                     {team.description || 'Đội chưa thêm mô tả ngắn.'}
                                 </p>
                             </div>
-
-                            <div className="flex flex-wrap items-center gap-2 shrink-0">
-                                <span className="badge-status-pill">{team.type}</span>
-                                {(team.members?.length || team.memberCount || 0) >= 3 ? (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-black text-emerald-700 border border-emerald-200 shadow-2xs">
-                                        <span className="pulsing-dot-green shrink-0" />
-                                        Đội chính thức
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3.5 py-1.5 text-xs font-black text-amber-700 border border-amber-200 shadow-2xs">
-                                        <span className="pulsing-dot-amber shrink-0" />
-                                        Đội chưa chính thức
-                                    </span>
-                                )}
-                            </div>
                         </div>
 
-                        {/* Hàng 2 (PHÍA DƯỚI): Sự Kiện (Trái) + Xem các Đội thi khác (Phải - Tinh tế, nhẹ nhàng) */}
-                        <div className="pt-4 border-t border-blue-100/80 flex flex-wrap items-center justify-between gap-3">
+                        {/* Hàng 2 (PHÍA DƯỚI): Sự Kiện (Trái) + Xem các Đội thi khác (Phải - Devpost Style) */}
+                        <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                             <div className="flex items-center gap-2.5">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0f63c9] text-white shadow-md shadow-blue-500/20 shrink-0">
-                                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" />
-                                    </svg>
+                                <span className="flex h-7 w-7 items-center justify-center rounded bg-slate-900 text-white text-xs font-bold shrink-0">
+                                    📅
                                 </span>
-                                <span className="text-xs sm:text-sm font-black tracking-wide text-[#0b1f3f]">
+                                <span className="text-xs sm:text-sm font-bold tracking-tight text-slate-900">
                                     {team.eventName || 'Chưa gắn giải đấu'}
                                 </span>
                             </div>
 
                             <Link 
                                 to={`/teams?eventId=${team.eventId}`} 
-                                className="inline-flex items-center gap-1.5 text-xs font-black text-[#0f63c9] bg-white border border-blue-200/90 hover:border-[#0f63c9] hover:bg-blue-50/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 shadow-2xs group shrink-0 cursor-pointer"
+                                className="inline-flex items-center gap-1.5 text-xs font-black text-[#007EFA] bg-blue-50/80 hover:bg-[#007EFA] hover:text-white border border-blue-200 px-3.5 py-1.5 rounded transition-all duration-200 shadow-2xs group shrink-0 cursor-pointer"
                             >
-                                <svg className="w-4 h-4 text-[#0f63c9] transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <svg className="w-4 h-4 text-[#007EFA] group-hover:text-white transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94-3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                                 </svg>
                                 <span>Xem các Đội thi khác</span>
-                                <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0f63c9] transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                                 </svg>
                             </Link>
@@ -1125,64 +1132,146 @@ export default function MyTeam() {
                     </section>
                 </div>
             ) : registeringEventId ? (
-                /* VIEW 2: ĐĂNG KÝ GIẢI ĐẤU MỚI (Trang riêng tương tự lobby khi bấm Đăng ký ngay) */
+                /* VIEW 2: ĐĂNG KÝ GIẢI ĐẤU MỚI (MÀN HÌNH TẠO ĐỘI / TÌM ĐỘI CHUẨN DEVPOST) */
                 (() => {
                     const registeringEvent = events.find(e => String(e.id) === String(registeringEventId));
                     if (!registeringEvent) {
-                        return <div className="rounded-lg bg-white p-8 text-center text-[#5c6d83]">Giải đấu không tồn tại hoặc đã đóng.</div>;
+                        return (
+                            <div className="rounded-3xl bg-white border border-slate-200 p-8 text-center text-slate-500 font-medium shadow-sm">
+                                Giải đấu không tồn tại hoặc đã đóng.
+                                <button type="button" onClick={() => setRegisteringEventId(null)} className="mt-4 block mx-auto text-xs font-black text-[#007EFA]">
+                                    ← Quay lại danh sách giải đấu
+                                </button>
+                            </div>
+                        );
                     }
                     return (
                         <div className="space-y-6">
-
-                            <div className="w-full rounded-2xl bg-white p-6 shadow-md border border-[#d7e6f8]">
-                                <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                    <div>
-                                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-100 uppercase tracking-wider mb-2">
-                                            Đăng ký giải đấu
-                                        </span>
-                                        <h2 className="text-2xl font-black text-[#0b1f3f]">{registeringEvent.name}</h2>
-                                        <p className="text-sm text-[#5c6d83] mt-1">{registeringEvent.description || 'Chưa có mô tả ngắn cho giải đấu.'}</p>
+                            <div className="w-full rounded-3xl bg-white p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-100">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#16b889] border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-xs">
+                                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="inline-flex items-center rounded-md bg-emerald-50 text-[#0c7053] border border-emerald-200 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                                                    Đăng ký giải đấu
+                                                </span>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                                    {registeringEvent.season || 'SEASON'} {registeringEvent.year || ''}
+                                                </span>
+                                            </div>
+                                            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{registeringEvent.name}</h2>
+                                            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">{registeringEvent.description || 'Chưa có mô tả ngắn cho giải đấu.'}</p>
+                                        </div>
                                     </div>
-                                    <Link to={`/events/${registeringEvent.id}`} className="group inline-flex items-center gap-1.5 rounded-full bg-[#f4f7fa] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0f63c9] transition-all hover:bg-[#e6eff8] shrink-0 w-fit">
-                                        Xem chi tiết sự kiện
-                                        <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                    <Link
+                                        to={`/events/${registeringEvent.id}`}
+                                        className="group inline-flex items-center gap-2 rounded-xl bg-emerald-50 hover:bg-[#16b889] text-[#0c7053] hover:text-white border border-emerald-200/80 px-4 py-2.5 text-xs font-black transition-all shrink-0 w-fit"
+                                    >
+                                        <span>Xem chi tiết sự kiện</span>
+                                        <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                         </svg>
                                     </Link>
                                 </div>
 
-                                <div className="grid gap-3 sm:grid-cols-2 mb-6">
-                                    <button type="button" onClick={() => setMode('FIND')} className={mode === 'FIND' ? 'btn-primary' : 'btn-secondary'}>Tìm đội</button>
-                                    <button type="button" onClick={() => setMode('CREATE')} className={mode === 'CREATE' ? 'btn-primary' : 'btn-secondary'}>Tạo đội</button>
+                                {/* TAB CHUYỂN ĐỔI: TÌM ĐỘI VS TẠO ĐỘI (EMERALD THEME) */}
+                                <div className="grid gap-3 sm:grid-cols-2 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/60">
+                                    <button
+                                        type="button"
+                                        onClick={() => setMode('FIND')}
+                                        className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                                            mode === 'FIND'
+                                                ? 'bg-[#16b889] text-white shadow-md shadow-emerald-500/20'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                        }`}
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                        Tìm đội thi có sẵn
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setMode('CREATE')}
+                                        className={`py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                                            mode === 'CREATE'
+                                                ? 'bg-[#16b889] text-white shadow-md shadow-emerald-500/20'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                        }`}
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Tạo đội thi mới
+                                    </button>
                                 </div>
 
-                                <div>
+                                <div className="pt-2">
                                     {mode === 'FIND' ? (
-                                        <section className="rounded-lg border border-[#d7e6f8] bg-white p-6">
-                                            <div className="mb-5">
-                                                <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Lọc theo hạng mục</label>
-                                                <select className="input-custom max-w-md" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
-                                                    <option value="ALL">Tất cả hạng mục</option>
-                                                    {(registeringEvent.tracks || []).map((track) => (
-                                                        <option key={track.id} value={track.id}>{track.name}</option>
-                                                    ))}
-                                                </select>
+                                        <div className="space-y-6">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                                                <div>
+                                                    <h3 className="text-lg font-black text-slate-900">Sảnh chờ Đội thi (Lobby)</h3>
+                                                    <p className="text-xs text-slate-500 font-medium">Danh sách các đội thi đang mở tuyển thành viên cho giải đấu này.</p>
+                                                </div>
+                                                <div className="w-full sm:w-auto">
+                                                    <select
+                                                        className="input-custom min-w-[220px] text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 rounded-xl"
+                                                        value={teamFilter}
+                                                        onChange={(e) => setTeamFilter(e.target.value)}
+                                                    >
+                                                        <option value="ALL">Tất cả hạng mục</option>
+                                                        {(registeringEvent.tracks || []).map((track) => (
+                                                            <option key={track.id} value={track.id}>{track.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </div>
+
                                             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                                                 {filteredTeams.map((item) => (
-                                                    <article key={item.id} className="feature-card flex flex-col h-full border border-[#d7e6f8] rounded-xl p-4 bg-slate-50/50 shadow-sm">
-                                                        <h3 className="text-lg font-black uppercase tracking-[0.06em] text-[#071936] line-clamp-2" title={item.name}>{item.name}</h3>
-                                                        <p className="mt-2 text-sm text-[#5c6d83] line-clamp-3" title={item.description}>{item.description || 'Đội chưa thêm mô tả.'}</p>
-                                                        
-                                                        <div className="mt-auto pt-5">
-                                                            <p className="text-sm font-bold text-[#0f63c9] line-clamp-1" title={item.trackName}>{item.trackName || 'Chưa chọn hạng mục'}</p>
-                                                            <button type="button" onClick={() => handleJoin(item)} className="btn-primary mt-4 w-full">
-                                                                    {item.type === 'PRIVATE' ? 'Nhập mã PIN' : 'Gửi request'}
+                                                    <article key={item.id} className="group text-left p-5 rounded-2xl bg-white border border-slate-200 hover:border-[#16b889] shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[200px]">
+                                                        <div>
+                                                            <div className="flex items-start gap-3 mb-3">
+                                                                <div className="w-11 h-11 rounded-xl bg-slate-900 text-white font-black flex flex-col items-center justify-center shrink-0 shadow-xs">
+                                                                    <span className="text-sm font-black text-[#007EFA] leading-none">{item.name ? item.name.charAt(0).toUpperCase() : 'T'}</span>
+                                                                    <span className="text-[7px] font-black text-slate-400 tracking-tighter uppercase mt-0.5">TEAM</span>
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center justify-between gap-1 mb-1">
+                                                                        <h3 className="text-base font-black text-slate-900 group-hover:text-[#16b889] transition-colors truncate" title={item.name}>{item.name}</h3>
+                                                                        <span className="text-[10px] font-bold text-slate-400 shrink-0">
+                                                                            {item.type === 'PRIVATE' ? '🔒 Private' : '🌐 Public'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <span className="inline-block text-[10px] font-black text-[#007EFA] bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 rounded-md">
+                                                                        {item.trackName || 'General Track'}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-xs text-slate-500 line-clamp-2 font-medium leading-relaxed">{item.description || 'Đội thi đang mở tuyển thành viên thi đấu.'}</p>
+                                                        </div>
+
+                                                        <div className="mt-4 pt-3 border-t border-slate-100">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleJoin(item)}
+                                                                className="w-full bg-[#16b889] hover:bg-[#129a73] text-white font-black text-xs py-2.5 px-4 rounded-xl shadow-md shadow-emerald-500/20 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                                            >
+                                                                <span>{item.type === 'PRIVATE' ? 'Nhập mã PIN' : 'Gửi yêu cầu gia nhập'}</span>
+                                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                                </svg>
                                                             </button>
                                                             {lobbyActionStatus.teamId === item.id && lobbyActionStatus.message && (
-                                                                <p className={`mt-2 text-xs font-semibold text-center ${
-                                                                    lobbyActionStatus.type === 'success' ? 'text-green-600' :
-                                                                    lobbyActionStatus.type === 'error' ? 'text-red-600' : 'text-blue-600'
+                                                                <p className={`mt-2 text-xs font-bold text-center ${
+                                                                    lobbyActionStatus.type === 'success' ? 'text-emerald-600' :
+                                                                    lobbyActionStatus.type === 'error' ? 'text-red-600' : 'text-[#16b889]'
                                                                 }`}>
                                                                     {lobbyActionStatus.message}
                                                                 </p>
@@ -1191,101 +1280,143 @@ export default function MyTeam() {
                                                     </article>
                                                 ))}
                                                 {filteredTeams.length === 0 && (
-                                                    <p className="col-span-full text-center text-sm text-slate-500 py-8">Không có đội thi nào phù hợp trong lobby.</p>
+                                                    <div className="col-span-full text-center text-sm text-slate-500 py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                                        Chưa có đội thi nào mở tuyển trong sảnh chờ hạng mục này. Hãy chuyển sang Tab <strong className="text-[#16b889]">"Tạo đội thi mới"</strong> để trở thành Đội trưởng!
+                                                    </div>
                                                 )}
                                             </div>
-                                        </section>
+                                        </div>
                                     ) : (
-                                        <section className="rounded-lg border border-[#d7e6f8] bg-white p-6">
-                                            <form onSubmit={handleCreateTeam} className="space-y-5">
-                                                <div className="grid gap-5 md:grid-cols-2">
-                                                    <div className="md:col-span-2">
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Tên team</label>
-                                                        <input required className="input-custom" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                                                    </div>
-                                                </div>
-                                                <div className="grid gap-5 md:grid-cols-2">
-                                                    <div className="md:col-span-2">
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mô tả đội</label>
-                                                        <textarea className="input-custom min-h-[100px]" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Kỹ năng, mục tiêu, hoặc ý tưởng dự án..." />
-                                                    </div>
-                                                </div>
+                                        <form onSubmit={handleCreateTeam} className="space-y-6">
+                                            <div>
+                                                <label className="mb-1.5 block text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Tên Đội Thi *</label>
+                                                <input
+                                                    required
+                                                    className="input-custom text-sm font-semibold rounded-xl border-slate-200 focus:border-[#16b889] focus:ring-[#16b889]"
+                                                    placeholder="Nhập tên đội thi ấn tượng của bạn..."
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                />
+                                            </div>
 
-                                                <div className="grid gap-5 md:grid-cols-2">
-                                                    <div>
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Hạng mục</label>
-                                                        <select required className="input-custom" value={formData.trackId} onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}>
-                                                            {(registeringEvent.tracks || []).map((track) => <option key={track.id} value={track.id}>{track.name}</option>)}
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Chế độ</label>
-                                                        <select className="input-custom" value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
-                                                            <option value="PUBLIC">Public</option>
-                                                            <option value="PRIVATE">Private</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                {formData.type === 'PRIVATE' && (
-                                                    <div>
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mã PIN 4 số</label>
-                                                        <input className="input-custom max-w-xs" inputMode="numeric" maxLength={4} value={formData.joinPassword} onChange={(e) => setFormData({ ...formData, joinPassword: e.target.value.replace(/\D/g, '') })} />
-                                                    </div>
-                                                )}
+                                            <div>
+                                                <label className="mb-1.5 block text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Mô Tả Ý TƯỞNG / ĐỘI THI</label>
+                                                <textarea
+                                                    className="input-custom min-h-[100px] text-sm font-medium rounded-xl border-slate-200 focus:border-[#16b889] focus:ring-[#16b889]"
+                                                    value={formData.description}
+                                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                    placeholder="Mô tả ngắn về kỹ năng mong muốn, mục tiêu hoặc ý tưởng dự án..."
+                                                />
+                                            </div>
 
+                                            <div className="grid gap-5 md:grid-cols-2">
                                                 <div>
-                                                    <label className="mb-2 block text-sm font-bold text-[#0b1f3f]">
-                                                        Mời thành viên khác (Tối thiểu 2 người, tối đa 4)
+                                                    <label className="mb-1.5 block text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Hạng Mục Thi Đấu *</label>
+                                                    <select
+                                                        required
+                                                        className="input-custom text-sm font-bold rounded-xl border-slate-200 focus:border-[#16b889]"
+                                                        value={formData.trackId}
+                                                        onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}
+                                                    >
+                                                        {(registeringEvent.tracks || []).map((track) => (
+                                                            <option key={track.id} value={track.id}>{track.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="mb-1.5 block text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">Chế Độ Tham Gia *</label>
+                                                    <select
+                                                        className="input-custom text-sm font-bold rounded-xl border-slate-200 focus:border-[#16b889]"
+                                                        value={formData.type}
+                                                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                                    >
+                                                        <option value="PUBLIC">Public</option>
+                                                        <option value="PRIVATE">Private</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {formData.type === 'PRIVATE' && (
+                                                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                    <div>
+                                                        <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">Mã PIN 4 số riêng tư *</label>
+                                                        <p className="text-xs text-slate-500 font-medium mt-0.5">Thành viên khác cần nhập đúng mã PIN này mới xin gia nhập đội được</p>
+                                                    </div>
+                                                    <input
+                                                        className="input-custom max-w-[140px] font-mono font-black text-base text-center tracking-widest rounded-xl border-slate-300 focus:border-[#16b889] bg-white shadow-xs"
+                                                        inputMode="numeric"
+                                                        maxLength={4}
+                                                        placeholder="1234"
+                                                        value={formData.joinPassword}
+                                                        onChange={(e) => setFormData({ ...formData, joinPassword: e.target.value.replace(/\D/g, '') })}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <div className="pt-4 border-t border-slate-100 space-y-4">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <label className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider">
+                                                        Mời Thành Viên Thi Đấu (Yêu cầu tối thiểu 3 TV)
                                                     </label>
-                                                    <p className="text-xs text-[#5c6d83] mb-2">Đội của bạn phải có ít nhất 3 thành viên khi tạo (bản thân bạn và ít nhất 2 thành viên khác).</p>
-                                                    <div className="space-y-3">
-                                                        {memberEmails.map((email, index) => (
-                                                            <div key={index} className="flex items-center gap-2">
-                                                                <input
-                                                                    type="email"
-                                                                    placeholder={`Email thành viên ${index + 1} ${index < 2 ? '(Bắt buộc)' : '(Tùy chọn)'}`}
-                                                                    required={index < 2}
-                                                                    className="input-custom flex-1"
-                                                                    value={email}
-                                                                    onChange={(e) => {
-                                                                        const newEmails = [...memberEmails];
-                                                                        newEmails[index] = e.target.value;
+                                                    <span className="text-[11px] font-bold text-[#0c7053] bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200/80">
+                                                        Tối thiểu 2 email (tối đa 4)
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-500 font-medium">Đội của bạn phải có đủ từ 3 thành viên trở lên để chính thức thi đấu (gồm bạn và ít nhất 2 thành viên khác).</p>
+                                                
+                                                <div className="grid gap-3">
+                                                    {memberEmails.map((email, index) => (
+                                                        <div key={index} className="flex items-center gap-2">
+                                                            <input
+                                                                type="email"
+                                                                placeholder={`Email thành viên ${index + 1} ${index < 2 ? '(Bắt buộc)' : '(Tùy chọn)'}`}
+                                                                required={index < 2}
+                                                                className="input-custom flex-1 text-sm rounded-xl border-slate-200 focus:border-[#16b889]"
+                                                                value={email}
+                                                                onChange={(e) => {
+                                                                    const newEmails = [...memberEmails];
+                                                                    newEmails[index] = e.target.value;
+                                                                    setMemberEmails(newEmails);
+                                                                    setEmailsError('');
+                                                                }}
+                                                            />
+                                                            {memberEmails.length > 2 && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="rounded-xl bg-red-50 border border-red-200/80 px-3.5 py-2.5 text-xs font-bold text-red-600 hover:bg-red-100 transition-colors cursor-pointer shrink-0"
+                                                                    onClick={() => {
+                                                                        const newEmails = memberEmails.filter((_, i) => i !== index);
                                                                         setMemberEmails(newEmails);
                                                                         setEmailsError('');
                                                                     }}
-                                                                />
-                                                                {memberEmails.length > 2 && (
-                                                                    <button
-                                                                        type="button"
-                                                                        className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100"
-                                                                        onClick={() => {
-                                                                            const newEmails = memberEmails.filter((_, i) => i !== index);
-                                                                            setMemberEmails(newEmails);
-                                                                            setEmailsError('');
-                                                                        }}
-                                                                    >
-                                                                        Xóa
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                        {memberEmails.length < 4 && (
-                                                            <button
-                                                                type="button"
-                                                                className="btn-secondary text-xs py-1.5 px-3 block w-fit"
-                                                                onClick={() => setMemberEmails([...memberEmails, ''])}
-                                                            >
-                                                                + Thêm ô nhập email
-                                                            </button>
-                                                        )}
-                                                        {emailsError && <p className="mt-1.5 text-xs font-semibold text-red-600">{emailsError}</p>}
-                                                    </div>
+                                                                >
+                                                                    ✕ Xóa
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    {memberEmails.length < 4 && (
+                                                        <button
+                                                            type="button"
+                                                            className="inline-flex items-center gap-1.5 text-xs font-black text-[#0c7053] bg-emerald-50 hover:bg-[#16b889] hover:text-white border border-emerald-200/80 px-4 py-2.5 rounded-xl transition-all cursor-pointer w-fit mt-1 shadow-2xs"
+                                                            onClick={() => setMemberEmails([...memberEmails, ''])}
+                                                        >
+                                                            <span>+ Thêm ô nhập email</span>
+                                                        </button>
+                                                    )}
+                                                    {emailsError && <p className="mt-1 text-xs font-bold text-red-600">{emailsError}</p>}
                                                 </div>
+                                            </div>
 
-                                                {createError && <p className="text-sm font-semibold text-red-600">{createError}</p>}
-                                                <button type="submit" disabled={creating} className="btn-primary w-full">{creating ? 'Đang tạo...' : 'Tạo đội'}</button>
-                                            </form>
-                                        </section>
+                                            {createError && <p className="text-sm font-bold text-red-600 bg-red-50 p-3 rounded-xl border border-red-200">{createError}</p>}
+                                            <button
+                                                type="submit"
+                                                disabled={creating}
+                                                className="w-full bg-[#16b889] hover:bg-[#129a73] text-white font-black text-sm py-3.5 px-6 rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
+                                            >
+                                                {creating ? 'Đang khởi tạo đội thi...' : 'Tạo Đội Thi Ngay'}
+                                            </button>
+                                        </form>
                                     )}
                                 </div>
                             </div>
@@ -1349,129 +1480,276 @@ export default function MyTeam() {
                         </div>
                     )}
 
-                    {/* SECTION 1: DANH SÁCH ĐỘI THI ĐÃ THAM GIA (KHỐI CHÍNH NỔI BẬT NHẤT) */}
-                    <div className="mb-10 rounded-3xl border-2 border-blue-300/90 bg-gradient-to-br from-blue-100/60 via-indigo-50/40 to-white p-6 sm:p-8 shadow-md space-y-6">
-                        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-blue-200/80">
-                            <div>
-                                <div className="flex items-center gap-2.5">
-                                    <span className="p-2.5 rounded-xl bg-[#0f63c9] text-white shadow-md shadow-blue-500/30">
-                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
-                                    </span>
-                                    <h2 className="text-2xl sm:text-3xl font-black text-[#071936]">Đội thi của bạn</h2>
-                                </div>
-                                <p className="text-xs sm:text-sm text-[#5c6d83] font-semibold mt-1.5">Bấm vào đội thi để xem chi tiết, quản lý thành viên và nộp bài</p>
-                            </div>
-                            <span className="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-white bg-[#0f63c9] shadow-md shadow-blue-500/20">
-                                {myTeams.length} Đội thi
-                            </span>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {myTeams.map((item) => {
-                                const isLeaderOfItem = item.members?.some(m => m.email === currentEmail && m.role === 'LEADER');
-                                const isOfficial = (item.memberCount || item.members?.length || 0) >= 3;
-                                return (
-                                    <button
-                                        type="button"
-                                        key={item.id}
-                                        onClick={() => handleSelectTeam(item)}
-                                        className="group text-left p-5 rounded-2xl border-2 border-blue-200/90 bg-white hover:border-[#0f63c9] hover:shadow-[0_10px_30px_rgba(15,99,201,0.18)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden"
-                                    >
-                                        <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-bl from-blue-500/15 to-transparent rounded-bl-full pointer-events-none group-hover:from-blue-600/25 transition-colors" />
-                                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#0f63c9] bg-blue-50/90 border border-blue-200/80 px-2.5 py-0.5 rounded-full mb-2">
-                                            {item.eventName}
-                                        </span>
-                                        <h3 className="text-lg font-black text-[#0b1f3f] group-hover:text-[#0f63c9] transition-colors line-clamp-1">{item.name}</h3>
-                                        <p className="text-xs text-[#5c6d83] mt-1 font-semibold">{item.trackName}</p>
-                                        <div className="mt-4 flex items-center justify-between pt-3 border-t border-blue-100/80">
-                                            <div className="flex items-center gap-1.5 text-xs text-[#5c6d83] font-bold">
-                                                <span>{item.memberCount || 0} TV</span>
-                                                {isOfficial ? (
-                                                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                                        <span className="pulsing-dot-green shrink-0" />
-                                                        Chính thức
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                                                        <span className="pulsing-dot-amber shrink-0" />
-                                                        Chưa chính thức
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                                                isLeaderOfItem ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                            }`}>
-                                                {isLeaderOfItem ? 'Leader' : 'Member'}
-                                            </span>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                            {myTeams.length === 0 && (
-                                <div className="sm:col-span-2 lg:col-span-3 bg-white border border-dashed border-[#d7e6f8] rounded-xl p-8 text-center text-[#5c6d83]">
-                                    Bạn chưa tham gia đội thi nào. Hãy đăng ký giải đấu bên dưới để bắt đầu!
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    {/* SECTION 1: DANH SÁCH ĐỘI THI ĐÃ THAM GIA (CAROUSEL SLIDER 2 ĐỘI / LƯỢT VỚI MŨI TÊN BÊN HÔNG THẦU TÚY) */}
+                    {(() => {
+                        const TEAMS_PER_PAGE = 2;
+                        const totalTeamPages = Math.max(1, Math.ceil(myTeams.length / TEAMS_PER_PAGE));
+                        const visibleTeams = myTeams.slice(teamPage * TEAMS_PER_PAGE, (teamPage + 1) * TEAMS_PER_PAGE);
 
-                    {/* SECTION 2: ĐĂNG KÝ GIẢI ĐẤU KHÁC (KHỐI PHỤ MÀU XANH EMERALD DỊU NHẸ, KHÔNG ĐÈ LÊN KHỐI ĐỘI THI CỦA BẠN) */}
-                    {availableEventsToRegister.length > 0 && (
-                        <div className="mb-10 rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/50 via-teal-50/20 to-white p-6 sm:p-8 space-y-6">
-                            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-emerald-100/70">
-                                <div>
-                                    <div className="flex items-center gap-2.5">
-                                        <span className="p-2 rounded-xl bg-emerald-100 text-emerald-700 shrink-0 border border-emerald-200/80">
+                        return (
+                            <div className="mb-10 rounded-3xl border border-blue-900/40 bg-gradient-to-br from-slate-900 via-[#0b2247] to-slate-950 p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden">
+                                {/* Ambient glow accent in background */}
+                                <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-blue-500/20 via-orange-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+                                <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-slate-800/80 relative z-10">
+                                    <div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="p-2.5 rounded-xl bg-[#007EFA] text-white shadow-lg shadow-blue-500/30 shrink-0">
+                                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                </svg>
+                                            </span>
+                                            <div>
+                                                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2">
+                                                    Đội thi của bạn
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold">
+                                                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                                                        Active
+                                                    </span>
+                                                </h2>
+                                                <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">Bấm vào đội thi để xem chi tiết, quản lý thành viên và nộp bài dự thi</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <span className="px-4 py-1.5 rounded-xl bg-[#007EFA] text-white text-xs font-black uppercase tracking-wider shadow-md shadow-blue-500/30">
+                                        {myTeams.length} Đội thi
+                                    </span>
+                                </div>
+
+                                {/* Container Carousel với 2 Nút Mũi Tên nổi 2 bên hông */}
+                                <div className="relative px-2 relative z-10">
+                                    {/* Nút Mũi Tên Trái (Thuần mũi tên, bỏ viền ô) */}
+                                    {myTeams.length > 2 && (
+                                        <button
+                                            type="button"
+                                            disabled={teamPage === 0}
+                                            onClick={() => setTeamPage(p => Math.max(0, p - 1))}
+                                            className="absolute -left-6 sm:-left-8 top-1/2 -translate-y-1/2 z-20 p-2 text-slate-400 hover:text-white hover:scale-125 disabled:opacity-0 disabled:pointer-events-none transition-all duration-200 cursor-pointer"
+                                            title="Đội thi trước"
+                                        >
+                                            <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                    )}
+
+                                    {/* Nút Mũi Tên Phải (Thuần mũi tên, bỏ viền ô) */}
+                                    {myTeams.length > 2 && (
+                                        <button
+                                            type="button"
+                                            disabled={teamPage >= totalTeamPages - 1}
+                                            onClick={() => setTeamPage(p => Math.min(totalTeamPages - 1, p + 1))}
+                                            className="absolute -right-6 sm:-right-8 top-1/2 -translate-y-1/2 z-20 p-2 text-slate-400 hover:text-white hover:scale-125 disabled:opacity-0 disabled:pointer-events-none transition-all duration-200 cursor-pointer"
+                                            title="Đội thi tiếp theo"
+                                        >
+                                            <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    )}
+
+                                    {/* Lưới 2 Đội / Lượt side-by-side chuẩn sang trọng */}
+                                    <div className="grid gap-5 grid-cols-1 md:grid-cols-2">
+                                        {visibleTeams.map((item) => {
+                                            const isLeaderOfItem = item.members?.some(m => m.email === currentEmail && m.role === 'LEADER');
+                                            const isOfficial = (item.memberCount || item.members?.length || 0) >= 3;
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    key={item.id}
+                                                    onClick={() => handleSelectTeam(item)}
+                                                    className="group text-left p-6 sm:p-7 rounded-2xl bg-white border-l-[8px] border-l-[#007EFA] shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[195px]"
+                                                >
+                                                    <div className="space-y-3">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                                            <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#007EFA] bg-blue-50 border border-blue-200/80 px-3 py-1 rounded-lg">
+                                                                {item.eventName}
+                                                            </span>
+                                                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
+                                                                isLeaderOfItem ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                                            }`}>
+                                                                {isLeaderOfItem ? '👑 Leader' : 'Member'}
+                                                            </span>
+                                                        </div>
+
+                                                        <h3 className="text-2xl sm:text-3xl font-black text-slate-900 group-hover:text-[#007EFA] transition-colors tracking-tight line-clamp-1">{item.name}</h3>
+                                                        <p className="text-xs sm:text-sm text-slate-500 font-semibold">{item.trackName || 'Chưa phân hạng mục'}</p>
+                                                    </div>
+
+                                                    <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100">
+                                                        <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold text-slate-700">
+                                                            <span className="text-slate-900 font-black text-sm sm:text-base">{item.memberCount || 0} Thành viên</span>
+                                                            {isOfficial ? (
+                                                                <span className="bg-[#16b889] text-white font-black px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wide flex items-center gap-1">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                                                    Chính thức
+                                                                </span>
+                                                            ) : (
+                                                                <span className="bg-amber-500 text-white font-black px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wide flex items-center gap-1">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                                                    Chưa đủ 3 TV
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-xs sm:text-sm font-black text-[#007EFA] bg-blue-50 border border-blue-200/80 group-hover:bg-[#007EFA] group-hover:text-white group-hover:border-[#007EFA] group-hover:translate-x-1 transition-all inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl shadow-2xs">
+                                                            <span>Xem đội</span>
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                                            </svg>
+                                                        </span>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                        {myTeams.length === 0 && (
+                                            <div className="sm:col-span-2 bg-slate-800/60 border border-dashed border-slate-700 rounded-2xl p-8 text-center text-slate-300 font-medium">
+                                                Bạn chưa tham gia đội thi nào. Hãy chọn giải đấu bên dưới để bắt đầu đăng ký!
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Thanh Dấu Chấm Chuyển Trang (Dot Indicators) Mềm Mại */}
+                                {totalTeamPages > 1 && (
+                                    <div className="flex items-center justify-center gap-2 pt-2 relative z-10">
+                                        {Array.from({ length: totalTeamPages }).map((_, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setTeamPage(idx)}
+                                                className={`h-2 rounded-full transition-all cursor-pointer ${
+                                                    teamPage === idx ? 'w-6 bg-[#007EFA]' : 'w-2 bg-slate-700 hover:bg-slate-600'
+                                                }`}
+                                                title={`Trang ${idx + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
+
+                    {/* SECTION 2: ĐĂNG KÝ GIẢI ĐẤU KHÁC (SLIDER PRO CÓ NÚT MŨI TÊN 2 BÊN HÔNG THẺ BÀI) */}
+                    {availableEventsToRegister.length > 0 && (() => {
+                        const EVENTS_PER_PAGE = 3;
+                        const totalEventPages = Math.max(1, Math.ceil(availableEventsToRegister.length / EVENTS_PER_PAGE));
+                        const visibleEvents = availableEventsToRegister.slice(eventCarouselPage * EVENTS_PER_PAGE, (eventCarouselPage + 1) * EVENTS_PER_PAGE);
+
+                        return (
+                            <div className="mb-10 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 space-y-6 shadow-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                                    <div className="flex items-center gap-3">
+                                        <span className="p-2.5 rounded-xl bg-[#16b889] text-white shrink-0 shadow-md shadow-emerald-500/20">
                                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                         </span>
-                                        <h2 className="text-xl sm:text-2xl font-black text-emerald-950">Đăng ký giải đấu khác</h2>
-                                    </div>
-                                    <p className="text-xs sm:text-sm text-emerald-800/70 font-medium mt-1">Danh sách các giải đấu đang mở cổng đăng ký. Click vào giải đấu để tạo đội hoặc tìm đội.</p>
-                                </div>
-                                <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/70 border border-emerald-200/80">
-                                    {availableEventsToRegister.length} Mùa giải mở
-                                </span>
-                            </div>
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {availableEventsToRegister.map((event) => (
-                                    <button
-                                        type="button"
-                                        key={event.id}
-                                        onClick={() => handleSelectEventToRegister(event.id)}
-                                        className="group text-left p-5 rounded-2xl border border-emerald-200/80 bg-gradient-to-b from-white via-emerald-50/20 to-white hover:border-emerald-500 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between"
-                                    >
                                         <div>
-                                            <h3 className="text-base font-black text-[#0b1f3f] group-hover:text-emerald-700 transition-colors line-clamp-1">{event.name}</h3>
-                                            <p className="text-xs text-[#5c6d83] mt-1.5 line-clamp-2 min-h-[32px] font-medium leading-relaxed">{event.description || 'Chưa có mô tả ngắn cho giải đấu.'}</p>
-                                            
-                                            {/* Thời gian diễn ra giải đấu */}
-                                            <div className="mt-3 flex items-center gap-1.5 text-[11px] font-extrabold text-emerald-800 bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-200/70 w-fit">
-                                                <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <span>Thi đấu: {event.eventStartDate ? new Date(event.eventStartDate).toLocaleDateString('vi-VN') : 'Đang cập nhật'}{event.eventEndDate ? ` - ${new Date(event.eventEndDate).toLocaleDateString('vi-VN')}` : ''}</span>
-                                            </div>
+                                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Đăng ký giải đấu khác</h2>
+                                            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">Danh sách các giải đấu đang mở cổng đăng ký. Click để tạo đội hoặc tìm đội thi.</p>
                                         </div>
+                                    </div>
 
-                                        <div className="mt-4 flex items-center justify-between border-t border-emerald-100/90 pt-3">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
-                                                Hạn ĐK: {new Date(event.regEndDate).toLocaleDateString('vi-VN')}
-                                            </span>
-                                            <span className="text-xs font-black text-emerald-700 group-hover:translate-x-1 inline-flex items-center gap-1 transition-transform">
-                                                Đăng ký ngay
-                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                                </svg>
-                                            </span>
-                                        </div>
-                                    </button>
-                                ))}
+                                    <span className="px-4 py-1.5 rounded-xl bg-emerald-50 text-[#0c7053] border border-emerald-200 text-xs font-black uppercase tracking-wider">
+                                        {availableEventsToRegister.length} Mùa giải mở
+                                    </span>
+                                </div>
+
+                                {/* Container Carousel với 2 nút Mũi Tên nổi 2 bên hông */}
+                                <div className="relative px-2">
+                                    {/* Nút Mũi Tên Trái (Thuần mũi tên, bỏ viền ô) */}
+                                    {availableEventsToRegister.length > 3 && (
+                                        <button
+                                            type="button"
+                                            disabled={eventCarouselPage === 0}
+                                            onClick={() => setEventCarouselPage(p => Math.max(0, p - 1))}
+                                            className="absolute -left-6 sm:-left-8 top-1/2 -translate-y-1/2 z-20 p-2 text-slate-400 hover:text-[#16b889] hover:scale-125 disabled:opacity-0 disabled:pointer-events-none transition-all duration-200 cursor-pointer"
+                                            title="Giải đấu trước"
+                                        >
+                                            <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                    )}
+
+                                    {/* Nút Mũi Tên Phải (Thuần mũi tên, bỏ viền ô) */}
+                                    {availableEventsToRegister.length > 3 && (
+                                        <button
+                                            type="button"
+                                            disabled={eventCarouselPage >= totalEventPages - 1}
+                                            onClick={() => setEventCarouselPage(p => Math.min(totalEventPages - 1, p + 1))}
+                                            className="absolute -right-6 sm:-right-8 top-1/2 -translate-y-1/2 z-20 p-2 text-slate-400 hover:text-[#16b889] hover:scale-125 disabled:opacity-0 disabled:pointer-events-none transition-all duration-200 cursor-pointer"
+                                            title="Giải đấu tiếp theo"
+                                        >
+                                            <svg className="w-7 h-7 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    )}
+
+                                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                        {visibleEvents.map((event) => (
+                                            <button
+                                                type="button"
+                                                key={event.id}
+                                                onClick={() => handleSelectEventToRegister(event.id)}
+                                                className="group text-left p-5 rounded-2xl bg-white border border-slate-200 border-l-[5px] border-l-[#16b889] shadow-xs hover:shadow-md hover:border-[#16b889] hover:-translate-y-1 transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[175px]"
+                                            >
+                                                <div>
+                                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                                        <span className="text-[10px] font-black uppercase tracking-wider text-white bg-slate-900 px-2.5 py-0.5 rounded shadow-xs">
+                                                            {event.season || 'SEASON'} {event.year || ''}
+                                                        </span>
+                                                        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                                                            Hạn ĐK: {new Date(event.regEndDate).toLocaleDateString('vi-VN')}
+                                                        </span>
+                                                    </div>
+
+                                                    <h3 className="text-base font-black text-slate-900 group-hover:text-[#16b889] transition-colors line-clamp-1">{event.name}</h3>
+                                                    <p className="text-xs text-slate-600 mt-1 line-clamp-2 font-medium leading-relaxed">{event.description || 'Chưa có mô tả ngắn cho giải đấu.'}</p>
+                                                    
+                                                    {/* Thời gian diễn ra giải đấu */}
+                                                    <div className="mt-3.5 flex items-center gap-1.5 text-[11px] font-black text-[#0c7053] bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 w-fit">
+                                                        <svg className="w-3.5 h-3.5 text-[#16b889] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <span>Thi đấu: {event.eventStartDate ? new Date(event.eventStartDate).toLocaleDateString('vi-VN') : 'Đang cập nhật'}{event.eventEndDate ? ` - ${new Date(event.eventEndDate).toLocaleDateString('vi-VN')}` : ''}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-4 flex items-center justify-end border-t border-slate-100 pt-3">
+                                                    <span className="text-xs font-black text-[#16b889] group-hover:translate-x-1 inline-flex items-center gap-1 transition-transform">
+                                                        Đăng ký ngay
+                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Thanh Dấu Chấm Chuyển Trang (Dot Indicators) Mềm Mại */}
+                                {totalEventPages > 1 && (
+                                    <div className="flex items-center justify-center gap-2 pt-2">
+                                        {Array.from({ length: totalEventPages }).map((_, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setEventCarouselPage(idx)}
+                                                className={`h-2 rounded-full transition-all cursor-pointer ${
+                                                    eventCarouselPage === idx ? 'w-6 bg-[#16b889]' : 'w-2 bg-slate-200 hover:bg-slate-300'
+                                                }`}
+                                                title={`Trang ${idx + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
                 </>
             )}
 
