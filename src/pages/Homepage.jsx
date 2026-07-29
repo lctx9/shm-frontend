@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
-import heroCourt from '../assets/1.jpg';
 import logoFpt from '../assets/fpt.jpg';
 import logoFptSoftware from '../assets/fpt_software.jpg';
 import logoVpBank from '../assets/VPBank_logo.svg.webp';
@@ -9,27 +8,12 @@ import logoTechcombank from '../assets/Techcombank_logo.png';
 import logo197 from '../assets/197.png';
 import { demoWinners, formatDateTime, getCountdownParts, getEventPhase, pickFeaturedEvent } from '../utils/hackathon';
 
-function Stat({ value, label }) {
-    return (
-        <div className="min-w-24 rounded-2xl border border-white/40 bg-white/40 backdrop-blur-md px-5 py-4 text-center shadow-[0_8px_30px_rgba(31,38,135,0.02)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(36,104,238,0.08)] hover:scale-105 border-t-white/60 border-l-white/60">
-            <p className="text-3xl font-black bg-gradient-to-r from-[var(--shield-blue)] to-indigo-600 bg-clip-text text-transparent">
-                {String(value).padStart(2, '0')}
-            </p>
-            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--shield-copy)]">{label}</p>
-        </div>
-    );
-}
-
-function EditorialEventTitle({ name }) {
-    const words = String(name || '').trim().split(/\s+/);
-    const accent = words.pop();
-    return <>{words.join(' ')}{words.length > 0 && <br />}<span className="bg-gradient-to-r from-[var(--shield-blue)] to-indigo-600 bg-clip-text text-transparent italic pr-2">{accent}</span></>;
-}
-
 export default function Homepage() {
     const [events, setEvents] = useState([]);
     const [rankings, setRankings] = useState([]);
     const [activeFaq, setActiveFaq] = useState(null);
+    const [terminalLogs, setTerminalLogs] = useState([]);
+    const [terminalInput, setTerminalInput] = useState('');
 
     useEffect(() => {
         Promise.allSettled([axiosClient.get('/events'), axiosClient.get('/leaderboard')]).then(([eventRes, rankRes]) => {
@@ -44,26 +28,72 @@ export default function Homepage() {
     const winners = rankings.length ? rankings.slice(0, 3) : demoWinners;
     const isEnded = phase.key === 'ended';
 
+    // Simulate Terminal Boot-up sequence
+    useEffect(() => {
+        if (!featuredEvent) return;
+
+        const cmd = `seal init --event-id=${featuredEvent.id || 'featured'} --mode=live`;
+        let charIndex = 0;
+        setTerminalLogs([]);
+        setTerminalInput('');
+
+        // 1. Simulate command typing
+        const typingInterval = setInterval(() => {
+            if (charIndex < cmd.length) {
+                setTerminalInput(prev => prev + cmd.charAt(charIndex));
+                charIndex++;
+            } else {
+                clearInterval(typingInterval);
+                // 2. Start printing logs after typing finishes
+                startPrintingLogs();
+            }
+        }, 40);
+
+        return () => clearInterval(typingInterval);
+
+        function startPrintingLogs() {
+            const logs = [
+                `[SYSTEM] Connecting to SEAL core database... SUCCESS`,
+                `[API] Fetching active event: "${featuredEvent.name}"`,
+                `[INFO] Phase detected: [${phase.label.toUpperCase()}]`,
+                `[MONITOR] Active teams in sandbox: 24+`,
+                `[AUDIT] Security log status: SECURE`,
+                `[SYSTEM] Anti-gravity compiler initialized. Version 2.0.0`,
+                `[SUCCESS] System ready. Commits monitoring active...`
+            ];
+
+            let logIndex = 0;
+            const logInterval = setInterval(() => {
+                if (logIndex < logs.length) {
+                    setTerminalLogs(prev => [...prev, logs[logIndex]]);
+                    logIndex++;
+                } else {
+                    clearInterval(logInterval);
+                }
+            }, 300);
+        }
+    }, [featuredEvent]);
+
     const faqData = [
         {
-            q: "Sinh viên trường ngoài có được tham gia SEAL Hackathon không?",
-            a: "Hoàn toàn được! Các giải đấu SEAL mở rộng cửa cho sinh viên từ nhiều trường đối tác. Đội thi có thể gồm toàn bộ sinh viên Đại học FPT, hỗn hợp sinh viên FPT và sinh viên ngoài trường, hoặc 100% sinh viên đến từ các trường đại học đối tác cùng tham gia tranh tài."
+            q: "SYS_INFO // Sinh viên trường ngoài có được tham gia SEAL Hackathon không?",
+            a: "Hệ thống mở cổng đăng ký tự do cho sinh viên liên trường. Bạn có thể xây dựng đội hỗn hợp (Sinh viên FPT & trường ngoài) hoặc đội 100% sinh viên trường đối tác để cùng thi đấu."
         },
         {
-            q: "Ai có quyền nộp và cập nhật bài dự thi của đội?",
-            a: "Chỉ duy nhất Team Leader (Trưởng nhóm) mới có quyền tạo và chỉnh sửa bài nộp (Submissions). Trưởng nhóm có thể tải lên bài làm mới hoặc thay thế file/link dự án nhiều lần trước hạn chót (Deadline) của từng vòng đấu."
+            q: "SYS_INFO // Ai có quyền nộp và cập nhật bài dự thi của đội?",
+            a: "Chỉ Team Leader (Trưởng nhóm) mới được cấp quyền nộp bài (Submit) và sửa đổi tệp tin sản phẩm trước thời hạn kết thúc vòng đấu (Deadline)."
         },
         {
-            q: "Cách thức chấm điểm và đảm bảo tính minh bạch như thế nào?",
-            a: "Giám khảo (Judge) sẽ chấm điểm độc lập dựa trên khung tiêu chí (Rubric) công khai do Coordinator thiết lập. Để chống gian lận và đảm bảo tính minh bạch tối đa, hệ thống tích hợp Audit Log tự động lưu vết mọi thao tác chỉnh sửa điểm số: ai sửa, sửa điểm của đội nào, điểm cũ/mới và lý do thay đổi cụ thể."
+            q: "SYS_INFO // Cách thức chấm điểm và đảm bảo tính minh bạch như thế nào?",
+            a: "Điểm số được cập nhật độc lập bởi Giám khảo qua bảng Rubric quy chuẩn. Mọi thay đổi về điểm, lý do sửa đổi đều được ghi vết thời gian thực vào bảng Audit Log để bảo vệ tính công bằng."
         },
         {
-            q: "Tôi có thể liên hệ và trao đổi với Mentor hỗ trợ ở đâu?",
-            a: "Sau khi ban tổ chức phân công Mentor cho từng đội/hạng mục thi, các thành viên đội thi có thể truy cập trực tiếp vào mục 'Trò chuyện' (Chat) để trao đổi thông tin, nhận tư vấn học thuật và định hướng kỹ thuật theo thời gian thực từ Mentor."
+            q: "SYS_INFO // Tôi có thể liên hệ và trao đổi với Mentor hỗ trợ ở đâu?",
+            a: "Khi giải đấu bắt đầu, kênh Chat phân chia theo đội đấu sẽ tự động kết nối các thành viên với Mentor cố vấn trực tiếp trên hệ thống."
         },
         {
-            q: "Các đội đạt giải làm thế nào để nhận chứng nhận/bằng khen?",
-            a: "Các đội thi xuất sắc đạt giải Nhất, Nhì, Ba của giải đấu có thể truy cập vào Hồ sơ cá nhân (Profile), nhấp chọn thông tin giải thưởng đã nhận để xuất file PDF bằng khen số (Digital Certificate) trực tiếp từ hệ thống."
+            q: "SYS_INFO // Các đội đạt giải làm thế nào để nhận chứng nhận/bằng khen?",
+            a: "Các chứng nhận số (Digital Certificate PDF) kèm chữ ký số ban tổ chức có thể tải xuống trực tiếp thông qua Hồ sơ cá nhân (Profile) của từng thành viên đạt giải."
         }
     ];
 
@@ -72,270 +102,269 @@ export default function Homepage() {
     };
 
     return (
-        <main className="bg-transparent text-[var(--shield-ink)] min-h-screen">
-            {/* Hero Section with Aurora Floating Backdrop */}
-            <section className="hero-stage aurora-container relative overflow-hidden min-h-[720px] flex items-center py-12">
-                {/* Aurora Mesh Gradient Spheres */}
-                <div className="aurora-bg">
-                    <div className="aurora-sphere aurora-sphere--1" />
-                    <div className="aurora-sphere aurora-sphere--2" />
-                    <div className="aurora-sphere aurora-sphere--3" />
-                </div>
+        <main className="cyber-container cyber-grid-overlay cyber-scanlines relative min-h-screen text-slate-200 overflow-hidden py-10 px-4 sm:px-6 md:px-8">
+            {/* Ambient Spotlights */}
+            <div className="cyber-spotlight cyber-spotlight--cyan" />
+            <div className="cyber-spotlight cyber-spotlight--magenta" />
 
-                <div className="hero-bg absolute inset-0 z-0 bg-center bg-cover opacity-[0.04] mix-blend-overlay" style={{ backgroundImage: `url(${heroCourt})` }} />
-                <div className="hero-overlay absolute inset-0 z-10 pointer-events-none bg-gradient-to-b from-transparent to-[var(--shield-canvas)]" />
+            {/* HERO SECTION: Cyber Dashboard & Terminal */}
+            <section className="max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center py-12 md:py-20 relative z-10 border-b border-slate-900/60 pb-20">
+                
+                {/* Left Side: Cyber Title & Countdown */}
+                <div className="lg:col-span-7 space-y-8 animate-fade-up">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded border border-cyan-500/30 bg-cyan-950/20 text-xs font-black tracking-widest text-cyan-400 uppercase">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                        Live Connection
+                    </div>
 
-                <div className="hero-content relative z-20 w-full max-w-[960px] mx-auto px-5 text-center animate-fade-up">
-                    <div className="glass-panel rounded-[32px] p-8 sm:p-12 md:p-16 border-t-white/80 border-l-white/80 shadow-[0_32px_64px_rgba(0,0,0,0.03)]">
-                        <p className="inline-flex items-center gap-3 px-5 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider text-[var(--shield-blue)] bg-white/85 border border-blue-200/40 backdrop-blur-md transition-all duration-300 hover:scale-105 shadow-sm">
-                            <span className="pulsing-live-dot shrink-0" />
-                            Giải đấu nổi bật
-                        </p>
-                        
-                        <h1 className="hero-title mt-6 text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-[var(--shield-ink)] leading-tight">
-                            <EditorialEventTitle name={featuredEvent.name} />
-                        </h1>
-                        
-                        <div className="mt-6 flex justify-center">
-                            <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-extrabold tracking-widest border uppercase shadow-sm ${
-                                isEnded 
-                                    ? 'border-amber-300 bg-amber-50 text-amber-700' 
-                                    : 'border-[var(--shield-line)] bg-[var(--shield-blue-soft)]/50 text-[var(--shield-blue)]'
-                            }`}>
-                                {phase.label}
-                            </span>
-                        </div>
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.1] text-white">
+                        DECODE THE<br />
+                        <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-500 bg-clip-text text-transparent cyber-glow-cyan">
+                            FUTURE WITH SEAL
+                        </span>
+                    </h1>
 
-                        <p className="hero-subtitle mt-6 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed text-[var(--shield-copy)] font-semibold">
-                            {phase.key === 'registration'
-                                ? `Cổng đăng ký đang mở đến ngày ${formatDateTime(featuredEvent.regEndDate)}. Hãy nhanh chóng chọn hạng mục, lập đội thi và sẵn sàng bước vào thử thách lập trình.`
-                                : phase.key === 'running'
-                                ? `Giải đấu đang diễn ra từ ${formatDateTime(featuredEvent.eventStartDate)} đến ${formatDateTime(featuredEvent.eventEndDate)}. Các đội thi đang tích cực hoàn thiện sản phẩm.`
-                                : `Giải đấu đã khép lại trọn vẹn từ ${formatDateTime(featuredEvent.eventEndDate)}. Cảm ơn toàn bộ thí sinh, mentor và ban giám khảo đã tạo nên một mùa giải SEAL bùng nổ.`}
-                        </p>
-
-                        {countdown && (
-                            <div className="mt-8 flex flex-wrap justify-center gap-4">
-                                {countdown.map((item) => <Stat key={item.label} {...item} />)}
-                            </div>
+                    <p className="text-sm sm:text-base text-slate-400 font-medium leading-relaxed max-w-2xl">
+                        {featuredEvent ? (
+                            <>
+                                Đang trực quan hóa giải đấu: <strong className="text-white">{featuredEvent.name}</strong>. 
+                                {phase.key === 'registration'
+                                    ? ` Cổng đăng ký hệ thống đang mở đến ngày ${formatDateTime(featuredEvent.regEndDate)}. Hãy lập đội và tải lên mã nguồn dự thi của bạn.`
+                                    : phase.key === 'running'
+                                    ? ` Giải đấu đang diễn ra. Các đội thi đang phát triển sản phẩm trong môi trường ảo từ ${formatDateTime(featuredEvent.eventStartDate)}.`
+                                    : ` Sự kiện đã khép lại thành công tốt đẹp vào lúc ${formatDateTime(featuredEvent.eventEndDate)}.`}
+                            </>
+                        ) : (
+                            "Hệ thống quản lý Hackathon tự động hóa toàn diện. Nơi chuyển đổi ý tưởng công nghệ thành sản phẩm thực chiến."
                         )}
+                    </p>
 
-                        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                            <Link to={isEnded ? '/leaderboard' : `/my-team?registerEventId=${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-white bg-[var(--shield-blue)] hover:bg-[var(--shield-blue-dark)] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                                {isEnded ? 'Xem bảng xếp hạng' : 'Đăng ký tham gia ngay'}
-                            </Link>
-                            <Link to={`/events/${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-[var(--shield-blue)] bg-white/60 border border-[var(--shield-line)] shadow-sm hover:bg-[var(--shield-blue-soft)] hover:-translate-y-0.5 transition-all duration-200">
-                                Xem chi tiết giải đấu
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Key Statistics Section: Asymmetric Bento Grid */}
-            <section className="py-20 px-5 max-w-[1180px] mx-auto">
-                <div className="text-center mb-16 animate-fade-up">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--shield-blue)]">Về SEAL Hackathon</p>
-                    <h2 className="text-3xl sm:text-4xl font-black mt-2 text-[var(--shield-ink)]">Những con số ấn tượng</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-up">
-                    {/* Bento Box 1: Tổng giải thưởng (Spans 2 columns on desktop) */}
-                    <div className="glass-card rounded-[24px] p-8 md:col-span-2 flex flex-col sm:flex-row items-center gap-8 bg-gradient-to-br from-white/60 to-blue-50/20 border-t-white border-l-white">
-                        <div className="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center shrink-0">
-                            <svg className="w-10 h-10 text-[var(--shield-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div className="text-center sm:text-left">
-                            <span className="text-xs font-extrabold tracking-widest text-[var(--shield-blue)] uppercase">Tổng giải thưởng</span>
-                            <h3 className="text-4xl font-black text-[var(--shield-ink)] mt-2">50 Tr+ VNĐ</h3>
-                            <p className="text-sm text-[var(--shield-copy)] mt-3 leading-relaxed">Bao gồm tiền mặt, các gói học bổng công nghệ và các chương trình hỗ trợ cố vấn phát triển sản phẩm giá trị cao từ đối tác liên kết doanh nghiệp.</p>
-                        </div>
-                    </div>
-
-                    {/* Bento Box 2: Đội thi tham gia */}
-                    <div className="glass-card rounded-[24px] p-8 flex flex-col justify-between border-t-white border-l-white">
-                        <div>
-                            <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center mb-6">
-                                <svg className="w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
+                    {/* LED Countdown Box */}
+                    {countdown && featuredEvent && (
+                        <div className="space-y-3">
+                            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Time remaining to launch</span>
+                            <div className="flex flex-wrap gap-4 items-center">
+                                {countdown.map((item) => (
+                                    <div key={item.label} className="border border-slate-800 bg-[#070b19]/80 rounded-xl p-4 min-w-20 text-center shadow-lg relative overflow-hidden group">
+                                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-cyan-500/50" />
+                                        <p className="text-3xl font-mono font-black text-cyan-400 cyber-glow-cyan leading-none">
+                                            {String(item.value).padStart(2, '0')}
+                                        </p>
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 block mt-2">{item.label}</span>
+                                    </div>
+                                ))}
                             </div>
-                            <span className="text-xs font-extrabold tracking-widest text-indigo-600 uppercase">Quy mô sự kiện</span>
-                            <h3 className="text-3xl font-black text-[var(--shield-ink)] mt-2">24+ Đội thi</h3>
                         </div>
-                        <p className="text-xs text-[var(--shield-copy)] mt-4 leading-relaxed">Thu hút hàng trăm tài năng trẻ từ Đại học FPT cùng các trường Đại học lớn khu vực cùng tranh tài.</p>
-                    </div>
+                    )}
 
-                    {/* Bento Box 3: Số mùa giải */}
-                    <div className="glass-card rounded-[24px] p-8 flex flex-col justify-between border-t-white border-l-white">
-                        <div>
-                            <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-6">
-                                <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                            <span className="text-xs font-extrabold tracking-widest text-emerald-600 uppercase">Tần suất tổ chức</span>
-                            <h3 className="text-3xl font-black text-[var(--shield-ink)] mt-2">03 Mùa</h3>
-                        </div>
-                        <p className="text-xs text-[var(--shield-copy)] mt-4 leading-relaxed">Tổ chức đều đặn 3 mùa mỗi năm: Spring, Summer và Fall đồng hành cùng hành trình sinh viên.</p>
-                    </div>
-
-                    {/* Bento Box 4: Giám khảo & Mentor (Spans 2 columns on desktop) */}
-                    <div className="glass-card rounded-[24px] p-8 md:col-span-2 flex flex-col sm:flex-row items-center gap-8 bg-gradient-to-br from-white/60 to-emerald-50/10 border-t-white border-l-white">
-                        <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center shrink-0">
-                            <svg className="w-10 h-10 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                        </div>
-                        <div className="text-center sm:text-left">
-                            <span className="text-xs font-extrabold tracking-widest text-emerald-600 uppercase">Hội đồng cố vấn</span>
-                            <h3 className="text-4xl font-black text-[var(--shield-ink)] mt-2">15+ Mentor & Giám khảo</h3>
-                            <p className="text-sm text-[var(--shield-copy)] mt-3 leading-relaxed">Đội ngũ giảng viên kỳ cựu từ trường Đại học và các chuyên gia, kỹ sư trưởng giàu kinh nghiệm thực chiến từ doanh nghiệp.</p>
-                        </div>
+                    <div className="flex flex-wrap items-center gap-4 pt-4">
+                        <Link to={isEnded ? '/leaderboard' : `/my-team?registerEventId=${featuredEvent?.id}`} className="px-8 py-3.5 rounded border border-cyan-500 bg-cyan-950/20 text-cyan-400 hover:bg-cyan-500 hover:text-black font-extrabold text-sm uppercase tracking-wider transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)]">
+                            {isEnded ? 'Xem Bảng Xếp Hạng' : 'Đăng ký tham gia'}
+                        </Link>
+                        <Link to="/events" className="px-8 py-3.5 rounded border border-slate-700 bg-slate-900/40 text-slate-300 hover:bg-slate-800 font-extrabold text-sm uppercase tracking-wider transition-all duration-200">
+                            Xem tất cả sự kiện
+                        </Link>
                     </div>
                 </div>
-            </section>
 
-            {/* Timeline Roadmap or Hall of Fame */}
-            {isEnded ? (
-                /* Hall of Fame (Bảng Vàng Danh Vọng) */
-                <section className="py-20 px-5 bg-white/40 border-y border-[var(--shield-line)] backdrop-blur-md">
-                    <div className="max-w-[1180px] mx-auto">
-                        <div className="text-center mb-16">
-                            <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600">Nhà vô địch</p>
-                            <h2 className="text-3xl sm:text-4xl font-black mt-2 text-[var(--shield-ink)]">Bảng vàng vinh danh</h2>
-                            <p className="text-sm text-[var(--shield-copy)] mt-3">Những đội thi xuất sắc nhất đã chứng minh năng lực sáng tạo vượt trội trước hội đồng giám khảo.</p>
+                {/* Right Side: Animated Mock Cyber Terminal */}
+                <div className="lg:col-span-5 animate-fade-up" style={{ animationDelay: '150ms' }}>
+                    <div className="border border-slate-800 bg-[#030712]/90 rounded-2xl overflow-hidden shadow-2xl relative">
+                        {/* Terminal Header */}
+                        <div className="bg-slate-950/90 border-b border-slate-800/80 px-4 py-3.5 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-3 h-3 rounded-full bg-red-500/70" />
+                                <span className="w-3 h-3 rounded-full bg-yellow-500/70" />
+                                <span className="w-3 h-3 rounded-full bg-green-500/70" />
+                            </div>
+                            <span className="text-[10px] font-mono font-bold tracking-widest text-slate-500 uppercase">seal-terminal v2.0</span>
+                            <div className="w-10" />
                         </div>
-                        
-                        <div className="grid gap-8 md:grid-cols-3 items-stretch max-w-5xl mx-auto">
-                            {winners.map((team, index) => {
-                                const rankColors = [
-                                    { border: 'border-amber-400', bg: 'bg-gradient-to-br from-amber-50/30 to-white/90', text: 'text-amber-700', badge: '🥇 Vô địch' },
-                                    { border: 'border-slate-350', bg: 'bg-gradient-to-br from-slate-50/30 to-white/90', text: 'text-slate-700', badge: '🥈 Á quân 1' },
-                                    { border: 'border-orange-350', bg: 'bg-gradient-to-br from-orange-50/30 to-white/90', text: 'text-orange-700', badge: '🥉 Á quân 2' }
-                                ][index] || { border: 'border-white/50', bg: 'bg-white/50', text: 'text-[var(--shield-blue)]', badge: `Top ${index + 1}` };
-
+                        {/* Terminal Window */}
+                        <div className="p-6 font-mono text-xs sm:text-sm h-[320px] overflow-y-auto space-y-2.5 text-cyan-400 scrollbar-thin">
+                            <div>
+                                <span className="text-pink-500">guest@seal-network:~$</span>
+                                <span className="text-white ml-2">{terminalInput}</span>
+                                <span className="cyber-cursor" />
+                            </div>
+                            {terminalLogs.map((log, index) => {
+                                let color = 'text-cyan-400';
+                                if (log.includes('[SYSTEM]')) color = 'text-purple-400';
+                                if (log.includes('[SUCCESS]')) color = 'text-emerald-400';
+                                if (log.includes('[API]')) color = 'text-yellow-400';
                                 return (
-                                    <article key={`${team.teamName}-${index}`} className={`glass-card border-2 ${rankColors.border} ${rankColors.bg} rounded-[24px] p-8 flex flex-col justify-between shadow-md relative overflow-hidden`}>
-                                        {index === 0 && (
-                                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400 text-white font-black text-[10px] flex items-center justify-center transform rotate-45 translate-x-8 -translate-y-8">
-                                                CHAMPION
-                                            </div>
-                                        )}
-                                        <div>
-                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-black uppercase ${rankColors.text} bg-white/80 border border-current mb-4 shadow-sm`}>
-                                                {rankColors.badge}
-                                            </span>
-                                            <h3 className="text-2xl font-black uppercase tracking-tight text-[var(--shield-ink)] mt-2">{team.teamName}</h3>
-                                            <p className="text-xs font-extrabold text-[var(--shield-blue)] mt-1">{team.track || 'Chuyên mục chung'}</p>
-                                            
-                                            <div className="mt-6 border-t border-dashed border-[var(--shield-line)] pt-4">
-                                                <p className="text-[10px] font-black text-[var(--shield-copy)] uppercase tracking-wider">Thành viên:</p>
-                                                <p className="mt-1 text-sm font-semibold leading-relaxed text-[var(--shield-copy)]">
-                                                    {(team.members || []).map((m) => m.fullName || m.email).join(', ') || 'Đang cập nhật thành viên'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="mt-8 border-t border-[var(--shield-line)] pt-4 flex items-baseline justify-between">
-                                            <span className="text-xs font-bold text-[var(--shield-copy)]">Điểm số tích lũy:</span>
-                                            <span className="text-3xl font-black text-[var(--shield-ink)]">{team.score || 0} <span className="text-xs font-bold text-[var(--shield-copy)]">điểm</span></span>
-                                        </div>
-                                    </article>
+                                    <div key={index} className={`${color} leading-relaxed`}>
+                                        {log}
+                                    </div>
                                 );
                             })}
                         </div>
-                        <div className="mt-12 text-center">
-                            <Link to="/leaderboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-[var(--shield-blue)] hover:bg-[var(--shield-blue-dark)] transition-colors shadow-sm">
-                                Xem tất cả kết quả và hồ sơ thí sinh
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* KEY NUMBERS: Cyber Bento Grid */}
+            <section className="max-w-[1240px] mx-auto py-20 relative z-10 border-b border-slate-900/60">
+                <div className="text-center mb-16 animate-fade-up">
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] bg-gradient-to-r from-cyan-400 to-indigo-500 bg-clip-text text-transparent">System Telemetry</span>
+                    <h2 className="text-3xl font-black tracking-tight text-white mt-2">Bảng Số Liệu Hackathon</h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 animate-fade-up" style={{ animationDelay: '100ms' }}>
+                    {/* Grid Card 1: Prize Pool (Spans 8 columns on desktop) */}
+                    <div className="cyber-card md:col-span-8 rounded-2xl p-8 flex flex-col sm:flex-row items-center gap-8 bg-slate-950/40">
+                        <div className="w-16 h-16 rounded-xl border border-cyan-500/20 bg-cyan-950/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+                            <svg className="w-8 h-8 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
                         </div>
+                        <div className="text-center sm:text-left space-y-2">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400">Total Prize Pool Allocation</span>
+                            <h3 className="text-4xl font-black text-white cyber-glow-cyan">50.000.000+ VNĐ</h3>
+                            <p className="text-sm text-slate-400 leading-relaxed max-w-xl">Hệ thống giải thưởng minh bạch bao gồm tiền mặt, các gói học bổng lập trình chuyên sâu, cùng cơ hội tuyển dụng đặc cách từ mạng lưới doanh nghiệp đối tác SEAL.</p>
+                        </div>
+                    </div>
+
+                    {/* Grid Card 2: Teams Count (Spans 4 columns) */}
+                    <div className="cyber-card md:col-span-4 rounded-2xl p-8 flex flex-col justify-between">
+                        <div className="w-12 h-12 rounded-lg border border-purple-500/20 bg-purple-950/20 flex items-center justify-center shadow-[0_0_15px_rgba(147,51,234,0.1)]">
+                            <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <div className="mt-8 space-y-1">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-purple-400">Registered Teams</span>
+                            <h3 className="text-3xl font-black text-white">24+ Đội Thi</h3>
+                            <p className="text-[11px] text-slate-400 mt-2">Mạng lưới tài năng trẻ hội tụ từ nhiều trường đại học công nghệ hàng đầu toàn quốc.</p>
+                        </div>
+                    </div>
+
+                    {/* Grid Card 3: Seasons (Spans 4 columns) */}
+                    <div className="cyber-card md:col-span-4 rounded-2xl p-8 flex flex-col justify-between">
+                        <div className="w-12 h-12 rounded-lg border border-emerald-500/20 bg-emerald-950/20 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                            <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div className="mt-8 space-y-1">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Frequency cycle</span>
+                            <h3 className="text-3xl font-black text-white">03 Mùa / Năm</h3>
+                            <p className="text-[11px] text-slate-400 mt-2">Khởi động liên tục qua các học kỳ chính khóa: Spring, Summer và Fall.</p>
+                        </div>
+                    </div>
+
+                    {/* Grid Card 4: Mentors (Spans 8 columns) */}
+                    <div className="cyber-card md:col-span-8 rounded-2xl p-8 flex flex-col sm:flex-row items-center gap-8 bg-slate-950/40">
+                        <div className="w-16 h-16 rounded-xl border border-pink-500/20 bg-pink-950/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(236,72,153,0.1)]">
+                            <svg className="w-8 h-8 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                        </div>
+                        <div className="text-center sm:text-left space-y-2">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-pink-400">Experts Panel</span>
+                            <h3 className="text-4xl font-black text-white cyber-glow-magenta">15+ Mentor & Giám Khảo</h3>
+                            <p className="text-sm text-slate-400 leading-relaxed max-w-xl">Hội đồng ban giám khảo độc lập và đội ngũ chuyên gia hướng dẫn kỹ thuật cao cấp, đảm bảo sự công bằng và hỗ trợ tối đa cho sản phẩm đội thi.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* PROCESS OR WINNERS CORNER */}
+            {isEnded ? (
+                /* Hall of Fame - Cyber Winner Layout */
+                <section className="max-w-[1240px] mx-auto py-20 relative z-10 border-b border-slate-900/60">
+                    <div className="text-center mb-16 animate-fade-up">
+                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-500">Hall Of Fame</span>
+                        <h2 className="text-3xl font-black text-white mt-2">Bảng Vàng Vinh Danh</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch max-w-5xl mx-auto animate-fade-up">
+                        {winners.map((team, index) => {
+                            const config = [
+                                { border: 'border-amber-500/50 bg-[#0d0a02]/40', glow: 'cyber-glow-cyan', badge: '🥇 Winner (Vô địch)', color: 'text-amber-400' },
+                                { border: 'border-slate-500/40 bg-[#04060e]/40', glow: 'text-slate-100', badge: '🥈 Runner-up (Á quân 1)', color: 'text-slate-300' },
+                                { border: 'border-orange-500/40 bg-[#090502]/40', glow: 'text-orange-400', badge: '🥉 Third Place (Á quân 2)', color: 'text-orange-400' }
+                            ][index] || { border: 'border-slate-800/80 bg-[#05070f]/40', glow: 'text-cyan-400', badge: `Top ${index + 1}`, color: 'text-cyan-400' };
+
+                            return (
+                                <div key={`${team.teamName}-${index}`} className={`cyber-card border ${config.border} rounded-2xl p-8 flex flex-col justify-between relative`}>
+                                    <div>
+                                        <span className={`inline-block px-3 py-1 rounded-sm border border-current text-[10px] font-black uppercase ${config.color} mb-6`}>
+                                            {config.badge}
+                                        </span>
+                                        <h3 className="text-2xl font-mono font-black text-white tracking-tight uppercase">{team.teamName}</h3>
+                                        <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block mt-1">{team.track || 'Track Chung'}</span>
+
+                                        <div className="mt-8 border-t border-slate-800/60 pt-4 space-y-2">
+                                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Crew members:</span>
+                                            <p className="text-xs text-slate-300 font-semibold leading-relaxed">
+                                                {(team.members || []).map(m => m.fullName || m.email).join(', ') || 'N/A'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 border-t border-slate-800/60 pt-4 flex items-center justify-between">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase">Score Matrix:</span>
+                                        <span className="text-2xl font-mono font-black text-white">{team.score || 0} PTS</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </section>
             ) : (
-                /* Roadmap Timeline (Hành trình chinh phục SEAL) styled as Glass Bento cards */
-                <section className="py-20 px-5 bg-white/40 border-y border-[var(--shield-line)] backdrop-blur-md">
-                    <div className="max-w-[1180px] mx-auto">
-                        <div className="text-center mb-16">
-                            <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--shield-blue)]">Quy trình tham gia</p>
-                            <h2 className="text-3xl sm:text-4xl font-black mt-2 text-[var(--shield-ink)]">Hành trình từ Ý tưởng đến Bằng khen</h2>
-                            <p className="text-sm text-[var(--shield-copy)] mt-3">Toàn bộ hoạt động thi đấu được vận hành tinh gọn, số hóa toàn diện và minh bạch.</p>
-                        </div>
+                /* Cyber Participate Steps (Roadmap) */
+                <section className="max-w-[1240px] mx-auto py-20 relative z-10 border-b border-slate-900/60">
+                    <div className="text-center mb-16 animate-fade-up">
+                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-cyan-400">Operation Protocol</span>
+                        <h2 className="text-3xl font-black text-white mt-2">Quy Trình Thi Đấu</h2>
+                    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                            {[
-                                {
-                                    step: "01",
-                                    title: "Lập đội thi đấu",
-                                    desc: "Đăng ký cá nhân và tạo đội (2-5 thành viên). Lựa chọn hạng mục (Track) phù hợp và cài đặt chế độ Phòng đấu Công khai/Riêng tư."
-                                },
-                                {
-                                    step: "02",
-                                    title: "Tìm kiếm đồng đội",
-                                    desc: "Sử dụng sảnh chờ (Lobby) để mời các thành viên còn trống hoặc gửi yêu cầu gia nhập các nhóm đang tuyển người tài."
-                                },
-                                {
-                                    step: "03",
-                                    title: "Nhận đề & Mentor",
-                                    desc: "Đề thi và quy chế thi chính thức sẽ tự động mở khi giải đấu khai mạc. Ban tổ chức sẽ gán Mentor hỗ trợ sát cánh cùng đội."
-                                },
-                                {
-                                    step: "04",
-                                    title: "Lập trình & Nộp bài",
-                                    desc: "Tập trung giải quyết thử thách và nộp bài trên hệ thống. Trưởng nhóm có quyền thay thế và cập nhật sản phẩm liên tục."
-                                },
-                                {
-                                    step: "05",
-                                    title: "Đánh giá minh bạch",
-                                    desc: "Ban giám khảo cho điểm theo tiêu chí. Lịch sử chấm điểm (Audit Log) ghi nhận tức thời mọi lượt cập nhật để chống gian lận."
-                                },
-                                {
-                                    step: "06",
-                                    title: "Vinh danh giải thưởng",
-                                    desc: "Theo dõi bảng xếp hạng real-time. Các đội đạt giải có thể tải về Chứng nhận số (Certificate PDF) trực tiếp từ Hồ sơ cá nhân."
-                                }
-                            ].map((step, idx) => (
-                                <div key={idx} className="glass-card relative rounded-[24px] p-8 hover:scale-[1.03] group border-t-white border-l-white bg-white/50">
-                                    <div className="absolute top-6 right-6 text-5xl font-black text-blue-500/10 group-hover:text-blue-500/20 transition-colors font-mono">
-                                        {step.step}
-                                    </div>
-                                    <h3 className="text-lg font-black text-[var(--shield-ink)] mb-3 pr-8 group-hover:text-[var(--shield-blue)] transition-colors">{step.title}</h3>
-                                    <p className="text-xs leading-relaxed text-[var(--shield-copy)]">{step.desc}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto animate-fade-up">
+                        {[
+                            { step: "PROTOCOL_01", title: "Lập Đội Thi Đấu", desc: "Khởi tạo tài khoản, thành lập đội (2-5 thành viên) và lựa chọn chuyên mục công nghệ dự thi." },
+                            { step: "PROTOCOL_02", title: "Tuyển Mộ Thành Viên", desc: "Mở rộng sảnh đợi để tìm kiếm nhân lực thiết kế/lập trình còn trống cho đội của bạn." },
+                            { step: "PROTOCOL_03", title: "Kích Hoạt Đề & Mentor", desc: "Đề bài và hệ thống chatbot tương tác với Mentor được kích hoạt tức thời khi giải đấu nổ ra." },
+                            { step: "PROTOCOL_04", title: "Nộp Bài Sandbox", desc: "Trưởng nhóm thực hiện tải tệp tin và đường dẫn dự án lên hệ thống lưu trữ dự thi." },
+                            { step: "PROTOCOL_05", title: "Đánh Giá Tiêu Chí", desc: "Thang điểm được ghi vết tức thời vào sổ cái giám sát, minh bạch 100% lịch sử sửa điểm." },
+                            { step: "PROTOCOL_06", title: "Cấp Chứng Nhận Số", desc: "Hệ thống kiểm tra kết quả xếp hạng và tự động phát hành Bằng khen PDF trực tiếp tại Profile." }
+                        ].map((item, idx) => (
+                            <div key={idx} className="cyber-card rounded-xl p-8 relative group bg-[#070b19]/30">
+                                <div className="absolute top-6 right-6 text-2xl font-mono font-black text-slate-800/30 group-hover:text-cyan-500/20 transition-all duration-300">
+                                    {item.step}
                                 </div>
-                            ))}
-                        </div>
+                                <h3 className="text-base font-black text-white mb-3 tracking-wide group-hover:text-cyan-400 transition-colors">{item.title}</h3>
+                                <p className="text-[11px] leading-relaxed text-slate-400">{item.desc}</p>
+                            </div>
+                        ))}
                     </div>
                 </section>
             )}
 
-            {/* Interactive FAQ Section with Premium Glass cards */}
-            <section className="py-20 px-5 max-w-[800px] mx-auto">
-                <div className="text-center mb-12">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--shield-blue)]">Giải đáp thắc mắc</p>
-                    <h2 className="text-3xl font-black mt-2 text-[var(--shield-ink)]">Câu hỏi thường gặp</h2>
+            {/* CYBER FAQs SECTION */}
+            <section className="max-w-[800px] mx-auto py-20 relative z-10 border-b border-slate-900/60">
+                <div className="text-center mb-12 animate-fade-up">
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-pink-500">Secure FAQ Channels</span>
+                    <h2 className="text-3xl font-black text-white mt-2">Hỗ Trợ Kỹ Thuật</h2>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 animate-fade-up">
                     {faqData.map((faq, index) => {
                         const isOpen = activeFaq === index;
                         return (
-                            <div key={index} className={`glass-card rounded-[20px] overflow-hidden border border-white/50 shadow-[0_4px_24px_rgba(0,0,0,0.01)] transition-all duration-300 ${isOpen ? 'bg-white/80 border-blue-200/60' : 'bg-white/40'}`}>
+                            <div key={index} className={`border rounded-lg overflow-hidden transition-all duration-300 ${isOpen ? 'border-cyan-500 bg-slate-950/80 shadow-[0_0_15px_rgba(6,182,212,0.1)]' : 'border-slate-800 bg-[#070b19]/40'}`}>
                                 <button
                                     type="button"
                                     onClick={() => toggleFaq(index)}
-                                    className="w-full px-6 py-5 flex items-center justify-between text-left font-bold text-sm sm:text-base text-[var(--shield-ink)] hover:text-[var(--shield-blue)] transition-colors"
+                                    className="w-full px-6 py-5 flex items-center justify-between text-left font-mono font-bold text-xs sm:text-sm text-slate-200 hover:text-cyan-400 transition-colors"
                                 >
                                     <span>{faq.q}</span>
-                                    <span className={`text-xl font-semibold transition-transform duration-300 ${isOpen ? 'rotate-45 text-[var(--shield-blue)]' : 'text-gray-400'}`}>
-                                        ＋
+                                    <span className={`text-sm transition-transform duration-300 ${isOpen ? 'rotate-45 text-cyan-400' : 'text-slate-500'}`}>
+                                        {isOpen ? '✕' : '＋'}
                                     </span>
                                 </button>
                                 {isOpen && (
-                                    <div className="px-6 pb-5 text-xs sm:text-sm leading-relaxed text-[var(--shield-copy)] border-t border-[var(--shield-line)]/50 pt-4 animate-fade-down font-medium">
+                                    <div className="px-6 pb-5 text-[11px] sm:text-xs leading-relaxed text-slate-400 border-t border-slate-900 pt-4 animate-fade-down font-sans">
                                         {faq.a}
                                     </div>
                                 )}
@@ -345,37 +374,34 @@ export default function Homepage() {
                 </div>
             </section>
 
-            {/* Sponsors & Partners Banner */}
-            <section className="py-16 px-5 bg-white/30 border-t border-[var(--shield-line)] backdrop-blur-md">
-                <div className="max-w-[1180px] mx-auto">
-                    <p className="text-center text-[10px] font-black uppercase tracking-[0.25em] text-[var(--shield-copy)] mb-10">
-                        Đồng hành & Đối tác liên kết
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-x-16 gap-y-8 opacity-75">
-                        {[
-                            { name: "Đại học FPT", logo: logoFpt },
-                            { name: "FPT Software", logo: logoFptSoftware },
-                            { name: "VPBank", logo: logoVpBank },
-                            { name: "Techcombank", logo: logoTechcombank },
-                            { name: "197", logo: logo197 }
-                        ].map((partner, i) => (
-                            partner.logo ? (
-                                <img 
-                                    key={i} 
-                                    src={partner.logo} 
-                                    alt={partner.name} 
-                                    className="h-10 w-auto object-contain hover:scale-105 transition-all duration-200 cursor-default filter grayscale hover:grayscale-0" 
-                                />
-                            ) : (
-                                <span key={i} className="text-sm sm:text-base font-black tracking-widest text-[var(--shield-copy)] hover:text-[var(--shield-blue)] hover:scale-105 transition-all cursor-default">
-                                    {partner.name.toUpperCase()}
-                                </span>
-                            )
-                        ))}
-                    </div>
+            {/* PARTNERS BANNER */}
+            <section className="max-w-[1240px] mx-auto py-16 relative z-10">
+                <p className="text-center text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 mb-10">
+                    MẠNG LƯỚI ĐỐI TÁC CỦA CHÚNG TÔI
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-x-16 gap-y-8 opacity-50 hover:opacity-75 transition-opacity duration-300">
+                    {[
+                        { name: "Đại học FPT", logo: logoFpt },
+                        { name: "FPT Software", logo: logoFptSoftware },
+                        { name: "VPBank", logo: logoVpBank },
+                        { name: "Techcombank", logo: logoTechcombank },
+                        { name: "197", logo: logo197 }
+                    ].map((partner, i) => (
+                        partner.logo ? (
+                            <img 
+                                key={i} 
+                                src={partner.logo} 
+                                alt={partner.name} 
+                                className="h-10 w-auto object-contain hover:scale-105 transition-transform duration-200 cursor-default filter grayscale invert brightness-200" 
+                            />
+                        ) : (
+                            <span key={i} className="text-sm sm:text-base font-mono font-black tracking-widest text-slate-400 hover:text-cyan-400 transition-colors cursor-default">
+                                {partner.name.toUpperCase()}
+                            </span>
+                        )
+                    ))}
                 </div>
             </section>
         </main>
     );
 }
-
