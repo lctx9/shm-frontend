@@ -41,6 +41,12 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
 
                 <div className="grid gap-6 p-6 lg:grid-cols-[0.9fr_1.1fr]">
                     <section className="space-y-5">
+                        {team.disqualificationStatus === 'APPROVED' && (
+                            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-900 shadow-sm">
+                                <h4 className="font-black text-red-900 text-sm">Đội thi này đã bị loại khỏi giải đấu</h4>
+                                <p className="text-xs text-red-800 mt-1">Lý do: "{team.disqualificationReason || 'Vi phạm quy chế thi'}"</p>
+                            </div>
+                        )}
                         <div className="rounded-lg border border-blue-100 bg-blue-50 p-5">
                             <div className="flex items-center justify-between gap-4">
                                 <div>
@@ -320,7 +326,12 @@ export default function TeamExplorer() {
                                         <dt className="font-bold text-slate-800">Thành viên</dt>
                                         <dd className="flex items-center gap-1.5 font-semibold">
                                             <span>{team.memberCount || 0}/5</span>
-                                            {(team.memberCount || 0) >= 3 ? (
+                                            {(team.disqualificationStatus === 'APPROVED') ? (
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+                                                    <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-red-600" />
+                                                    Đã bị loại
+                                                </span>
+                                            ) : (team.memberCount || 0) >= 3 ? (
                                                 <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                                                     <span className="pulsing-dot-green shrink-0" />
                                                     Chính thức
@@ -344,7 +355,7 @@ export default function TeamExplorer() {
                                         <button type="button" onClick={() => setSelectedTeam(team)} className="btn-secondary">Chi tiết</button>
                                         {isMentor || staffRoles.has(role) ? (
                                             <button type="button" onClick={() => openChatForTeam(team)} className="btn-primary">Trao đổi</button>
-                                        ) : canJoin && (
+                                        ) : canJoin && team.disqualificationStatus !== 'APPROVED' && (
                                             <button
                                                 type="button"
                                                 onClick={() => team.type === 'PUBLIC' ? handleJoinPublic(team.id) : setJoinTeam(team)}

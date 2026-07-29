@@ -677,7 +677,16 @@ export default function MyTeam() {
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="badge-status-pill">{team.type}</span>
-                                {(team.members?.length || team.memberCount || 0) >= 3 ? (
+                                {team.disqualificationStatus === 'APPROVED' ? (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700 border border-red-200">
+                                        <span className="shrink-0 w-2 h-2 rounded-full bg-red-600" />
+                                        Đã bị loại
+                                    </span>
+                                ) : team.disqualificationStatus === 'PENDING' ? (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700 border border-amber-200">
+                                        Chờ duyệt loại
+                                    </span>
+                                ) : (team.members?.length || team.memberCount || 0) >= 3 ? (
                                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 border border-emerald-200">
                                         <span className="pulsing-dot-green shrink-0" />
                                         Đội chính thức
@@ -691,7 +700,23 @@ export default function MyTeam() {
                             </div>
                         </div>
 
-                        {(team.members?.length || team.memberCount || 0) < 3 && (
+                        {team.disqualificationStatus === 'APPROVED' && (
+                            <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900 shadow-sm flex items-start gap-3">
+                                <svg className="w-5 h-5 text-red-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <div>
+                                    <h4 className="font-black text-red-900 text-sm">Đội thi của bạn đã bị loại khỏi giải đấu</h4>
+                                    <p className="text-xs text-red-800 mt-1 leading-relaxed">
+                                        Lý do: <strong>"{team.disqualificationReason || 'Vi phạm quy chế thi'}"</strong>.
+                                        {team.disqualifierEmail && <span> Người thực hiện: <strong>{team.disqualifierEmail}</strong>.</span>}
+                                        {' '}Tất cả các tính năng nộp bài và cập nhật đã bị khóa. Các thông tin nộp bài trước đó vẫn được lưu giữ để phục vụ tra cứu.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {team.disqualificationStatus !== 'APPROVED' && (team.members?.length || team.memberCount || 0) < 3 && (
                             <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-amber-900 shadow-sm flex items-start gap-3">
                                 <svg className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -810,23 +835,28 @@ export default function MyTeam() {
                                         </div>
                                     )}
 
-                                    <form onSubmit={handleSubmission} className="space-y-5">
-                                        {!isEventStarted && currentEvent?.eventStartDate && (
+                                     <form onSubmit={handleSubmission} className="space-y-5">
+                                        {team?.disqualificationStatus === 'APPROVED' && (
+                                            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800">
+                                                Đội thi của bạn đã bị loại khỏi cuộc thi. Cổng nộp bài và chỉnh sửa bài làm đã bị đóng.
+                                            </div>
+                                        )}
+                                        {team?.disqualificationStatus !== 'APPROVED' && !isEventStarted && currentEvent?.eventStartDate && (
                                             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
                                                 Giải đấu chưa chính thức bắt đầu. Thời gian bắt đầu: {formatDateTime(currentEvent.eventStartDate)}.
                                             </div>
                                         )}
-                                        {isEventStarted && !isPreviousRoundEnded && (
+                                        {team?.disqualificationStatus !== 'APPROVED' && isEventStarted && !isPreviousRoundEnded && (
                                             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
                                                 Vui lòng đợi vòng thi trước kết thúc mới được nộp bài cho vòng này.
                                             </div>
                                         )}
-                                        {isEventStarted && isPreviousRoundEnded && !isSubmissionStarted && selectedMatrix?.submissionStartDate && (
+                                        {team?.disqualificationStatus !== 'APPROVED' && isEventStarted && isPreviousRoundEnded && !isSubmissionStarted && selectedMatrix?.submissionStartDate && (
                                             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
                                                 Cổng nộp bài chưa mở. Vui lòng quay lại sau thời gian mở nộp bài.
                                             </div>
                                         )}
-                                        {isSubmissionEnded && (
+                                        {team?.disqualificationStatus !== 'APPROVED' && isSubmissionEnded && (
                                             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800">
                                                 Đã quá hạn nộp bài của vòng thi này.
                                             </div>
@@ -846,7 +876,7 @@ export default function MyTeam() {
                                                                 className="input-custom min-h-[80px] resize-y"
                                                                 placeholder={field.placeholder || ''}
                                                                 value={submissionValues[field.id] || ''}
-                                                                disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
+                                                                disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
                                                                 onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
                                                             />
                                                         ) : (
@@ -855,7 +885,7 @@ export default function MyTeam() {
                                                                 className="input-custom"
                                                                 placeholder={field.type === 'url' ? 'https://' : (field.placeholder || '')}
                                                                 value={submissionValues[field.id] || ''}
-                                                                disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
+                                                                disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
                                                                 onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
                                                             />
                                                         )}
@@ -864,11 +894,11 @@ export default function MyTeam() {
                                             </div>
                                         ) : (
                                             /* Fallback: form cũ — event chưa cấu hình schema */
-                                            <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={!isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
+                                            <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
                                         )}
 
-                                        <button type="submit" disabled={savingSubmission || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
-                                            {!isLeader ? 'Chỉ Team Leader mới được sửa / nộp bài' : savingSubmission ? 'Đang lưu...' : !isEventStarted ? 'Giải đấu chưa bắt đầu' : !isPreviousRoundEnded ? 'Vòng trước chưa kết thúc' : !isSubmissionStarted ? 'Cổng nộp bài chưa mở' : isSubmissionEnded ? 'Đã hết hạn nộp bài' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
+                                         <button type="submit" disabled={team?.disqualificationStatus === 'APPROVED' || savingSubmission || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
+                                            {team?.disqualificationStatus === 'APPROVED' ? 'Đội thi đã bị loại' : !isLeader ? 'Chỉ Team Leader mới được sửa / nộp bài' : savingSubmission ? 'Đang lưu...' : !isEventStarted ? 'Giải đấu chưa bắt đầu' : !isPreviousRoundEnded ? 'Vòng trước chưa kết thúc' : !isSubmissionStarted ? 'Cổng nộp bài chưa mở' : isSubmissionEnded ? 'Đã hết hạn nộp bài' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
                                         </button>
                                         {submitError && <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p>}
                                         {submitSuccess && <p className="mt-2 text-sm font-semibold text-green-600">{submitSuccess}</p>}
@@ -1281,7 +1311,16 @@ export default function MyTeam() {
                                         <div className="mt-4 flex items-center justify-between pt-3 border-t border-blue-100/80">
                                             <div className="flex items-center gap-1.5 text-xs text-[#5c6d83] font-bold">
                                                 <span>{item.memberCount || 0} TV</span>
-                                                {isOfficial ? (
+                                                {item.disqualificationStatus === 'APPROVED' ? (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+                                                        <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-red-600" />
+                                                        Đã bị loại
+                                                    </span>
+                                                ) : item.disqualificationStatus === 'PENDING' ? (
+                                                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                                        Chờ duyệt loại
+                                                    </span>
+                                                ) : isOfficial ? (
                                                     <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                                                         <span className="pulsing-dot-green shrink-0" />
                                                         Chính thức
