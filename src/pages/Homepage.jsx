@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
+import heroCourt from '../assets/1.jpg';
 import logoFpt from '../assets/fpt.jpg';
 import logoFptSoftware from '../assets/fpt_software.jpg';
 import logoVpBank from '../assets/VPBank_logo.svg.webp';
@@ -54,107 +55,178 @@ export default function Homepage() {
     };
 
     return (
-        <main className="apple-container bg-white text-black min-h-screen font-sans antialiased selection:bg-slate-100 pb-20">
-            {/* HERO SECTION: Ultra-Large Typography & Spacious Layout */}
-            <section className="max-w-[1200px] mx-auto px-6 py-24 sm:py-32 md:py-40 text-left animate-fade-up">
-                <div className="space-y-10">
-                    {/* Event Status Badge */}
+        <main className="mlh-grid-container relative min-h-screen text-slate-900 overflow-hidden font-sans pb-20">
+            {/* MLH Grid Background */}
+            <div className="mlh-grid-overlay" />
+
+            {/* HERO SECTION: 2-Column Responsive Layout */}
+            <section className="max-w-[1240px] mx-auto px-6 py-12 md:py-24 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                
+                {/* Left Column: Bold Blue Typography, Monospace Subtitle, Yellow CTA Button, Isometric SVG */}
+                <div className="lg:col-span-7 flex flex-col justify-center space-y-9 text-left">
+                    {/* Live Event Indicator */}
                     {featuredEvent && (
-                        <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full border border-black/10 bg-slate-50 text-[10px] font-extrabold uppercase tracking-widest text-slate-600">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-blue-50 border border-blue-200/40 text-[10px] font-black uppercase tracking-widest text-[#1854C4] w-fit">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                             {phase.label}
                         </div>
                     )}
 
-                    <h1 className="text-5xl sm:text-7xl md:text-[84px] font-black tracking-tighter leading-[0.95] text-black apple-heading">
-                        {featuredEvent ? (
-                            featuredEvent.name.toUpperCase()
-                        ) : (
-                            "SEAL HACKATHON"
-                        )}
+                    <h1 className="text-[#1854C4] text-5xl sm:text-6xl md:text-[68px] font-black leading-[1.05] tracking-tight">
+                        The World's<br />
+                        Largest Developer<br />
+                        Community
                     </h1>
 
-                    <p className="text-base sm:text-lg text-slate-500 font-normal leading-relaxed max-w-3xl apple-body">
-                        {featuredEvent ? (
-                            <>
-                                Hệ thống đang giám sát sự kiện hiện tại. 
-                                {phase.key === 'registration'
-                                    ? ` Cổng đăng ký và thành lập đội thi đang mở. Thời gian kết thúc nhận đơn: ${formatDateTime(featuredEvent.regEndDate)}.`
-                                    : phase.key === 'running'
-                                    ? ` Giải đấu đang diễn ra. Các đội thi đang phát triển sản phẩm thực tế từ ngày ${formatDateTime(featuredEvent.eventStartDate)}.`
-                                    : ` Sự kiện đã khép lại trọn vẹn vào ngày ${formatDateTime(featuredEvent.eventEndDate)}.`}
-                            </>
-                        ) : (
-                            "Nền tảng quản lý giải đấu Hackathon tối giản, tự động hóa mọi quy trình lập đội thi, nộp bài, cố vấn học thuật và chấm điểm."
-                        )}
+                    <p className="text-slate-600 font-mono tracking-wide text-xs sm:text-sm leading-relaxed max-w-xl">
+                        Hackathons, fellowships, and DEV's online community. 
+                        5 million software creators learn, build, and share together.
                     </p>
 
-                    {/* Minimalist Countdown Timer */}
+                    {/* Countdown indicator */}
                     {countdown && featuredEvent && (
-                        <div className="pt-4 space-y-4">
-                            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Launch Timeline</span>
-                            <div className="flex flex-wrap gap-12 items-baseline">
-                                {countdown.map((item) => (
-                                    <div key={item.label} className="text-left">
-                                        <p className="text-5xl sm:text-6xl font-extrabold tracking-tighter text-black">
-                                            {String(item.value).padStart(2, '0')}
-                                            <span className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">
-                                                {item.label[0]}
-                                            </span>
-                                        </p>
-                                    </div>
+                        <div className="flex items-center gap-6 font-mono text-slate-500 text-xs py-2 border-y border-slate-100 w-fit">
+                            <span className="font-bold uppercase tracking-wider text-slate-400">Launch Clock:</span>
+                            <div className="flex gap-4">
+                                {countdown.map((c) => (
+                                    <span key={c.label}>
+                                        <strong className="text-black font-extrabold">{String(c.value).padStart(2, '0')}</strong>{c.label[0]}
+                                    </span>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-4 pt-6">
-                        <Link to={isEnded ? '/leaderboard' : `/my-team?registerEventId=${featuredEvent?.id}`} className="px-8 py-3.5 rounded bg-black text-white hover:bg-slate-900 font-bold text-xs uppercase tracking-wider transition-colors apple-interactive">
-                            {isEnded ? 'Xem bảng vàng' : 'Đăng ký ngay'}
+                    <div>
+                        <Link 
+                            to={isEnded ? '/leaderboard' : `/my-team?registerEventId=${featuredEvent?.id}`} 
+                            className="inline-flex items-center justify-between bg-[#f1a81f] text-black font-extrabold text-xs uppercase tracking-wider px-6 py-4 rounded-sm w-[220px] hover:bg-[#d89218] transition-colors shadow-[0_4px_12px_rgba(241,168,31,0.2)]"
+                        >
+                            <span>Attend an Event</span>
+                            <span className="text-sm font-light">→</span>
                         </Link>
-                        <Link to="/events" className="px-8 py-3.5 rounded border border-slate-200 text-slate-800 hover:bg-slate-50 font-bold text-xs uppercase tracking-wider transition-colors">
-                            Xem các giải đấu
-                        </Link>
+                    </div>
+
+                    {/* Left Bottom: Isometric 3D MLH SVG Illustration */}
+                    <div className="pt-6">
+                        <svg className="w-[360px] h-[220px] hover:scale-102 transition-transform duration-500" viewBox="0 0 360 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            {/* --- RED BLOCK (Letter M) --- */}
+                            <g transform="translate(10, 110)">
+                                {/* Pillar 1 */}
+                                <polygon points="30,20 45,28 45,78 30,70" fill="#dc2626" />
+                                <polygon points="45,28 60,20 60,70 45,78" fill="#991b1b" />
+                                <polygon points="45,20 60,28 45,36 30,28" fill="#ef4444" />
+                                {/* Diagonal connecting 1 */}
+                                <polygon points="60,40 75,48 75,70 60,62" fill="#dc2626" />
+                                <polygon points="75,48 90,40 90,62 75,70" fill="#991b1b" />
+                                <polygon points="75,40 90,48 75,56 60,48" fill="#ef4444" />
+                                {/* Diagonal connecting 2 */}
+                                <polygon points="90,40 105,48 105,70 90,62" fill="#dc2626" />
+                                <polygon points="105,48 120,40 120,62 105,70" fill="#991b1b" />
+                                <polygon points="105,40 120,48 105,56 90,48" fill="#ef4444" />
+                                {/* Pillar 2 */}
+                                <polygon points="120,20 135,28 135,78 120,70" fill="#dc2626" />
+                                <polygon points="135,28 150,20 150,70 135,78" fill="#991b1b" />
+                                <polygon points="135,20 150,28 135,36 120,28" fill="#ef4444" />
+                                {/* Little climbing figure */}
+                                <circle cx="35" cy="12" r="3" fill="#000000" />
+                                <line x1="35" y1="15" x2="35" y2="22" stroke="#000000" strokeWidth="2" />
+                                <line x1="35" y1="18" x2="30" y2="15" stroke="#000000" strokeWidth="1.5" />
+                                <line x1="35" y1="18" x2="40" y2="15" stroke="#000000" strokeWidth="1.5" />
+                            </g>
+
+                            {/* --- BLUE BLOCK (Letter L) --- */}
+                            <g transform="translate(145, 80)">
+                                {/* Vertical Pillar */}
+                                <polygon points="20,10 35,18 35,68 20,60" fill="#2563eb" />
+                                <polygon points="35,18 50,10 50,60 35,68" fill="#1e40af" />
+                                <polygon points="35,10 50,18 35,26 20,18" fill="#3b82f6" />
+                                {/* Bottom Base extending to front-right */}
+                                <polygon points="35,68 50,60 50,75 35,83" fill="#2563eb" />
+                                <polygon points="50,60 65,68 65,75 50,83" fill="#1e40af" />
+                                <polygon points="50,68 65,60 50,52 35,60" fill="#3b82f6" />
+                                {/* Little sitting figure */}
+                                <circle cx="35" cy="-2" r="3" fill="#000000" />
+                                <line x1="35" y1="1" x2="35" y2="8" stroke="#000000" strokeWidth="2" />
+                            </g>
+
+                            {/* --- YELLOW BLOCK (Letter H) --- */}
+                            <g transform="translate(200, 50)">
+                                {/* Pillar 1 */}
+                                <polygon points="20,10 35,18 35,98 20,90" fill="#d97706" />
+                                <polygon points="35,18 50,10 50,90 35,98" fill="#92400e" />
+                                <polygon points="35,10 50,18 35,26 20,18" fill="#fbbf24" />
+                                {/* Crossbar */}
+                                <polygon points="50,40 65,48 65,60 50,52" fill="#d97706" />
+                                <polygon points="65,48 80,40 80,52 65,60" fill="#92400e" />
+                                <polygon points="65,40 80,48 65,56 50,48" fill="#fbbf24" />
+                                {/* Pillar 2 */}
+                                <polygon points="80,10 95,18 95,98 80,90" fill="#d97706" />
+                                <polygon points="95,18 110,10 110,90 95,98" fill="#92400e" />
+                                <polygon points="95,10 110,18 95,26 80,18" fill="#fbbf24" />
+                                {/* Ladder Lines */}
+                                <line x1="83" y1="35" x2="83" y2="85" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="88" y1="38" x2="88" y2="88" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="83" y1="45" x2="88" y2="48" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="83" y1="55" x2="88" y2="58" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="83" y1="65" x2="88" y2="68" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="83" y1="75" x2="88" y2="78" stroke="#4b5563" strokeWidth="1.5" />
+                                {/* Little climbing figure */}
+                                <circle cx="85" cy="50" r="3" fill="#000000" />
+                                <line x1="85" y1="53" x2="82" y2="60" stroke="#000000" strokeWidth="2" />
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+                {/* Right Column: Big rounded vertical photo card */}
+                <div className="lg:col-span-5 flex justify-center animate-fade-up" style={{ animationDelay: '150ms' }}>
+                    <div className="w-full max-w-[420px] aspect-[4/5] sm:aspect-[3/4] rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-2xl bg-slate-100 border-4 border-white relative group">
+                        <img 
+                            src={heroCourt} 
+                            alt="MLH Hackathon Event Floor" 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                        />
                     </div>
                 </div>
             </section>
 
-            {/* KEY STATISTICS: Hairline Grid */}
-            <section className="max-w-[1200px] mx-auto px-6 py-20 border-t border-slate-100">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-12 sm:gap-16">
-                    <div className="space-y-3">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Prize Allocation</span>
-                        <h3 className="text-5xl font-extrabold tracking-tighter text-black">50M+</h3>
-                        <p className="text-xs text-slate-500 leading-relaxed">Tổng giải thưởng bằng tiền mặt và các chương trình hỗ trợ cố vấn phát triển.</p>
+            {/* KEY NUMBERS: Flat Minimal Layout */}
+            <section className="max-w-[1240px] mx-auto px-6 py-20 relative z-10 border-t border-slate-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12 text-left">
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Telemetry // 01</span>
+                        <h3 className="text-4xl font-extrabold text-[#1854C4]">50 Tr+</h3>
+                        <p className="text-xs text-slate-500">Tổng giải thưởng bằng tiền mặt & học bổng hỗ trợ phát triển.</p>
                     </div>
-                    <div className="space-y-3">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Teams Sandboxed</span>
-                        <h3 className="text-5xl font-extrabold tracking-tighter text-black">24+</h3>
-                        <p className="text-xs text-slate-500 leading-relaxed">Đội thi ưu tú từ Đại học FPT cùng các trường Đại học công nghệ khu vực.</p>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Telemetry // 02</span>
+                        <h3 className="text-4xl font-extrabold text-[#1854C4]">24+ Teams</h3>
+                        <p className="text-xs text-slate-500">Đội thi lập trình sáng tạo từ mạng lưới Đại học đối tác liên kết.</p>
                     </div>
-                    <div className="space-y-3">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Annual Seasons</span>
-                        <h3 className="text-5xl font-extrabold tracking-tighter text-black">03</h3>
-                        <p className="text-xs text-slate-500 leading-relaxed">Mùa giải tổ chức cố định tại học kỳ Spring, Summer và Fall mỗi năm.</p>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Telemetry // 03</span>
+                        <h3 className="text-4xl font-extrabold text-[#1854C4]">03 Seasons</h3>
+                        <p className="text-xs text-slate-500">Chu kỳ tổ chức thường niên tại Spring, Summer và Fall học kỳ.</p>
                     </div>
-                    <div className="space-y-3">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Assigned Experts</span>
-                        <h3 className="text-5xl font-extrabold tracking-tighter text-black">15+</h3>
-                        <p className="text-xs text-slate-500 leading-relaxed">Ban giám khảo chấm điểm độc lập và Mentor hướng dẫn chuyên sâu.</p>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Telemetry // 04</span>
+                        <h3 className="text-4xl font-extrabold text-[#1854C4]">15+ Experts</h3>
+                        <p className="text-xs text-slate-500">Hội đồng cố vấn Mentor và ban giám khảo độc lập chấm điểm.</p>
                     </div>
                 </div>
             </section>
 
-            {/* PARTICIPATION ROADMAP OR WINNERS */}
+            {/* EVENT PROCESS OR WINNERS CORNER */}
             {isEnded ? (
-                /* Hall of Fame - Minimal List Layout */
-                <section className="max-w-[1200px] mx-auto px-6 py-24 border-t border-slate-100">
-                    <div className="mb-20">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono">Archive / Winner Registry</span>
-                        <h2 className="text-3xl sm:text-4xl font-extrabold text-black mt-2 tracking-tight">Bảng Vàng Vinh Danh</h2>
+                /* Hall of Fame */
+                <section className="max-w-[1240px] mx-auto px-6 py-20 relative z-10 border-t border-slate-100">
+                    <div className="text-left mb-16">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono">Archive // Leaderboard</span>
+                        <h2 className="text-3xl font-extrabold text-black mt-2">Bảng Vàng Vinh Danh</h2>
                     </div>
 
-                    <div className="grid gap-12 md:grid-cols-3 items-stretch max-w-5xl mx-auto">
+                    <div className="grid gap-8 md:grid-cols-3 items-stretch max-w-5xl mx-auto">
                         {winners.map((team, index) => {
                             const config = [
                                 { badge: '🥇 Winner (Vô địch)', text: 'text-black font-extrabold' },
@@ -163,13 +235,13 @@ export default function Homepage() {
                             ][index] || { badge: `Top ${index + 1}`, text: 'text-slate-600' };
 
                             return (
-                                <div key={`${team.teamName}-${index}`} className="border-t border-slate-200/80 pt-6 flex flex-col justify-between space-y-8 apple-interactive">
+                                <div key={`${team.teamName}-${index}`} className="border border-slate-100 bg-white rounded-2xl p-8 flex flex-col justify-between space-y-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                                     <div className="space-y-4">
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block">
+                                        <span className="inline-block px-3 py-1 rounded bg-slate-50 border border-slate-200 text-[10px] font-black uppercase text-slate-600 tracking-wider">
                                             {config.badge}
                                         </span>
                                         <h3 className="text-2xl font-black uppercase tracking-tight text-black">{team.teamName}</h3>
-                                        <span className="text-xs font-bold text-slate-500 block">{team.track || 'Track Chung'}</span>
+                                        <span className="text-xs font-bold text-[#1854C4] block">{team.track || 'Track Chung'}</span>
 
                                         <div className="border-t border-dashed border-slate-100 pt-4 space-y-1">
                                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Thành viên:</span>
@@ -189,24 +261,24 @@ export default function Homepage() {
                     </div>
                 </section>
             ) : (
-                /* Roadmap Timeline - Minimal Grid */
-                <section className="max-w-[1200px] mx-auto px-6 py-24 border-t border-slate-100">
-                    <div className="mb-20">
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono">Operation Roadmap</span>
-                        <h2 className="text-3xl sm:text-4xl font-extrabold text-black mt-2 tracking-tight">Quy Trình Thi Đấu</h2>
+                /* Protocol Steps (Roadmap) */
+                <section className="max-w-[1240px] mx-auto px-6 py-20 relative z-10 border-t border-slate-100">
+                    <div className="text-left mb-16">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono">Operation Guidelines</span>
+                        <h2 className="text-3xl font-extrabold text-black mt-2">Quy Trình Thi Đấu</h2>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16 max-w-5xl mx-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 max-w-5xl mx-auto">
                         {[
                             { step: "01", title: "Lập Đội Thi Đấu", desc: "Đăng ký tài khoản và thành lập đội thi (2-5 thành viên) trên hệ thống." },
-                            { step: "02", title: "Tìm Kiếm Thành Viên", desc: "Sử dụng sảnh đợi Lobby để tuyển dụng hoặc xin gia nhập các nhóm còn chỗ." },
-                            { step: "03", title: "Nhận Đề & Mentor", desc: "Đề bài chính thức mở tự động. Hệ thống gán cố vấn kỹ thuật đồng hành cùng nhóm." },
-                            { step: "04", title: "Nộp Bài Dự Án", desc: "Trưởng nhóm thực hiện gửi mã nguồn sản phẩm và cập nhật file trước hạn kết thúc." },
-                            { step: "05", title: "Chấm Điểm Tiêu Chí", desc: "Ban giám khảo đánh giá độc lập. Nhật ký Audit Log tự động ghi nhận mọi thay đổi." },
-                            { step: "06", title: "Nhận Chứng Nhận Số", desc: "Xuất file PDF bằng khen số có chữ ký điện tử trực tiếp từ trang cá nhân." }
+                            { step: "02", title: "Tuyển Mộ Nhân Lực", desc: "Sử dụng sảnh đợi Lobby để gửi lời mời tuyển dụng hoặc xin gia nhập các nhóm còn chỗ." },
+                            { step: "03", title: "Kích Hoạt Đề & Mentor", desc: "Đề bài chính thức mở tự động. Hệ thống gán cố vấn kỹ thuật đồng hành cùng nhóm." },
+                            { step: "04", title: "Nộp Bài Sandbox", desc: "Trưởng nhóm thực hiện tải tệp tin và đường dẫn dự án lên hệ thống trước hạn kết thúc." },
+                            { step: "05", title: "Đánh Giá Minh Bạch", desc: "Ban giám khảo chấm điểm độc lập. Nhật ký Audit Log tự động ghi nhận mọi sự điều chỉnh." },
+                            { step: "06", title: "Cấp Chứng Nhận Số", desc: "Hồ sơ cá nhân tự động phát hành Bằng khen PDF trực tiếp có chữ ký số xác thực." }
                         ].map((item, idx) => (
-                            <div key={idx} className="border-t border-slate-200/80 pt-6 space-y-3 apple-interactive">
-                                <span className="text-xs font-extrabold text-slate-400 font-mono tracking-widest block">{item.step} // protocol</span>
+                            <div key={idx} className="border-t border-slate-200/80 pt-6 space-y-2 hover:border-[#1854C4] transition-colors duration-300">
+                                <span className="text-[10px] font-bold text-slate-400 font-mono tracking-widest block">{item.step} // protocol</span>
                                 <h3 className="text-base font-extrabold text-black tracking-tight">{item.title}</h3>
                                 <p className="text-xs leading-relaxed text-slate-500">{item.desc}</p>
                             </div>
@@ -215,30 +287,30 @@ export default function Homepage() {
                 </section>
             )}
 
-            {/* CYBER FAQs SECTION */}
-            <section className="max-w-[800px] mx-auto px-6 py-24 border-t border-slate-100">
-                <div className="mb-16">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono">SUPPORT CHANNELS</span>
-                    <h2 className="text-3xl font-extrabold text-black mt-2 tracking-tight">Giải Đáp Thắc Mắc</h2>
+            {/* FAQs Accordion */}
+            <section className="max-w-[800px] mx-auto px-6 py-20 relative z-10 border-t border-slate-100">
+                <div className="text-left mb-12">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono">FAQ DATABASE</span>
+                    <h2 className="text-3xl font-extrabold text-black mt-2">Hỗ Trợ Kỹ Thuật</h2>
                 </div>
 
-                <div className="space-y-0 border-t border-slate-200/80">
+                <div className="space-y-0 border-t border-slate-200/85">
                     {faqData.map((faq, index) => {
                         const isOpen = activeFaq === index;
                         return (
-                            <div key={index} className="border-b border-slate-200/80">
+                            <div key={index} className="border-b border-slate-200/85">
                                 <button
                                     type="button"
                                     onClick={() => toggleFaq(index)}
-                                    className="w-full py-6 flex items-center justify-between text-left font-bold text-sm sm:text-base text-black hover:text-slate-600 transition-colors"
+                                    className="w-full py-6 flex items-center justify-between text-left font-bold text-sm sm:text-base text-black hover:text-[#1854C4] transition-colors"
                                 >
                                     <span>{faq.q}</span>
-                                    <span className="text-xs text-slate-400 font-mono">
+                                    <span className="text-xs text-slate-400 font-mono font-bold">
                                         {isOpen ? 'CLOSE' : 'OPEN'}
                                     </span>
                                 </button>
                                 {isOpen && (
-                                    <div className="pb-6 text-xs sm:text-sm leading-relaxed text-slate-500 animate-fade-up font-normal apple-body">
+                                    <div className="pb-6 text-xs sm:text-sm leading-relaxed text-slate-500 animate-fade-up font-normal font-sans">
                                         {faq.a}
                                     </div>
                                 )}
@@ -249,11 +321,11 @@ export default function Homepage() {
             </section>
 
             {/* PARTNERS BANNER */}
-            <section className="max-w-[1200px] mx-auto px-6 py-16 border-t border-slate-100">
-                <p className="text-center text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-12">
-                    Mạng lưới đối tác của chúng tôi
+            <section className="max-w-[1240px] mx-auto px-6 py-16 border-t border-slate-100 relative z-10">
+                <p className="text-center text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-12 font-mono">
+                    Mạng lưới đối tác liên kết
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-x-20 gap-y-8 opacity-40 hover:opacity-60 transition-opacity duration-300">
+                <div className="flex flex-wrap items-center justify-center gap-x-20 gap-y-8 opacity-50 hover:opacity-75 transition-opacity duration-300">
                     {[
                         { name: "Đại học FPT", logo: logoFpt },
                         { name: "FPT Software", logo: logoFptSoftware },
