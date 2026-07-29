@@ -192,13 +192,13 @@ export default function EventManagement() {
         [selectedEvent, selectedMatrixId]
     );
 
-    const handlePublishAndAdvanceRound = async (matrixId) => {
-        if (!matrixId) return;
+    const handlePublishAndAdvanceRound = async (roundOrder) => {
+        if (!selectedEventId || !roundOrder) return;
         try {
             setLoading(true);
-            const res = await axiosClient.post(`/matrices/${matrixId}/publish-and-advance`);
+            const res = await axiosClient.post(`/matrices/events/${selectedEventId}/rounds/${roundOrder}/publish-and-advance`);
             setMessage({ type: 'success', text: res.result || 'Đã công bố kết quả và mở vòng tiếp theo thành công!' });
-            await fetchEvents();
+            await fetchAll(selectedEventId);
         } catch (err) {
             setMessage({ type: 'error', text: err.message || 'Không thể công bố kết quả và mở vòng mới.' });
         } finally {
@@ -1217,13 +1217,19 @@ export default function EventManagement() {
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        const firstMatrix = selectedEvent.matrices?.[0];
-                                        if (firstMatrix) {
-                                            if (window.confirm(`Xác nhận công bố kết quả và mở vòng tiếp theo cho giải đấu "${selectedEvent.name}"?`)) {
-                                                handlePublishAndAdvanceRound(firstMatrix.id);
+                                        const unpublishedMatrices = (selectedEvent.matrices || []).filter((matrix) => !matrix.isPublished);
+                                        const nextRoundOrder = unpublishedMatrices.length
+                                            ? Math.min(...unpublishedMatrices.map((matrix) => Number(matrix.roundOrder)))
+                                            : null;
+                                        const roundMatrices = unpublishedMatrices.filter((matrix) => Number(matrix.roundOrder) === nextRoundOrder);
+                                        if (roundMatrices.length) {
+                                            const roundName = roundMatrices[0].roundName || `Vòng ${nextRoundOrder}`;
+                                            const action = roundMatrices[0].finalRound ? 'chốt kết quả' : 'công bố kết quả và mở vòng tiếp theo';
+                                            if (window.confirm(`Xác nhận ${action} cho toàn bộ ${roundMatrices.length} bảng thuộc ${roundName} của giải đấu "${selectedEvent.name}"?`)) {
+                                                handlePublishAndAdvanceRound(nextRoundOrder);
                                             }
                                         } else {
-                                            alert('Sự kiện chưa được cấu hình ma trận vòng đấu.');
+                                            alert('Không còn vòng đấu nào đang chờ công bố.');
                                         }
                                     }}
                                     disabled={loading}

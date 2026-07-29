@@ -9,23 +9,6 @@ import logoTechcombank from '../assets/Techcombank_logo.png';
 import logo197 from '../assets/197.png';
 import { demoWinners, formatDateTime, getCountdownParts, getEventPhase, pickFeaturedEvent } from '../utils/hackathon';
 
-function Stat({ value, label }) {
-    return (
-        <div className="min-w-24 rounded-2xl border border-white/60 bg-white/70 backdrop-blur-md px-5 py-4 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:scale-105">
-            <p className="text-3xl font-black bg-gradient-to-r from-[var(--shield-blue)] to-indigo-600 bg-clip-text text-transparent">
-                {String(value).padStart(2, '0')}
-            </p>
-            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--shield-copy)]">{label}</p>
-        </div>
-    );
-}
-
-function EditorialEventTitle({ name }) {
-    const words = String(name || '').trim().split(/\s+/);
-    const accent = words.pop();
-    return <>{words.join(' ')}{words.length > 0 && <br />}<span className="bg-gradient-to-r from-[var(--shield-blue)] to-indigo-600 bg-clip-text text-transparent italic pr-2">{accent}</span></>;
-}
-
 export default function Homepage() {
     const [events, setEvents] = useState([]);
     const [rankings, setRankings] = useState([]);
@@ -47,23 +30,23 @@ export default function Homepage() {
     const faqData = [
         {
             q: "Sinh viên trường ngoài có được tham gia SEAL Hackathon không?",
-            a: "Hoàn toàn được! Các giải đấu SEAL mở rộng cửa cho sinh viên từ nhiều trường đối tác. Đội thi có thể gồm toàn bộ sinh viên Đại học FPT, hỗn hợp sinh viên FPT và sinh viên ngoài trường, hoặc 100% sinh viên đến từ các trường đại học đối tác cùng tham gia tranh tài."
+            a: "Hoàn toàn được. Các giải đấu SEAL mở rộng cửa cho mọi đội thi liên trường, sinh viên tự do hoặc hỗn hợp từ các trường đại học đối tác khác."
         },
         {
             q: "Ai có quyền nộp và cập nhật bài dự thi của đội?",
-            a: "Chỉ duy nhất Team Leader (Trưởng nhóm) mới có quyền tạo và chỉnh sửa bài nộp (Submissions). Trưởng nhóm có thể tải lên bài làm mới hoặc thay thế file/link dự án nhiều lần trước hạn chót (Deadline) của từng vòng đấu."
+            a: "Quyền nộp và cập nhật các tệp tin bài thi, link sản phẩm thuộc về duy nhất Trưởng nhóm (Team Leader) để đảm bảo tính nhất quán của dữ liệu."
         },
         {
             q: "Cách thức chấm điểm và đảm bảo tính minh bạch như thế nào?",
-            a: "Giám khảo (Judge) sẽ chấm điểm độc lập dựa trên khung tiêu chí (Rubric) công khai do Coordinator thiết lập. Để chống gian lận và đảm bảo tính minh bạch tối đa, hệ thống tích hợp Audit Log tự động lưu vết mọi thao tác chỉnh sửa điểm số: ai sửa, sửa điểm của đội nào, điểm cũ/mới và lý do thay đổi cụ thể."
+            a: "Mọi thành viên chấm điểm độc lập dựa trên thang tiêu chí rõ ràng. Bất cứ điều chỉnh điểm số nào từ ban giám khảo đều bắt buộc phải nhập lý do và được lưu vết tự động trong nhật ký Audit Log hệ thống."
         },
         {
             q: "Tôi có thể liên hệ và trao đổi với Mentor hỗ trợ ở đâu?",
-            a: "Sau khi ban tổ chức phân công Mentor cho từng đội/hạng mục thi, các thành viên đội thi có thể truy cập trực tiếp vào mục 'Trò chuyện' (Chat) để trao đổi thông tin, nhận tư vấn học thuật và định hướng kỹ thuật theo thời gian thực từ Mentor."
+            a: "Kênh trò chuyện thời gian thực sẽ tự động kích hoạt kết nối đội thi với Mentor ngay sau khi ban tổ chức gán cố vấn học thuật cho hạng mục thi."
         },
         {
             q: "Các đội đạt giải làm thế nào để nhận chứng nhận/bằng khen?",
-            a: "Các đội thi xuất sắc đạt giải Nhất, Nhì, Ba của giải đấu có thể truy cập vào Hồ sơ cá nhân (Profile), nhấp chọn thông tin giải thưởng đã nhận để xuất file PDF bằng khen số (Digital Certificate) trực tiếp từ hệ thống."
+            a: "Tất cả các thành viên của đội đạt giải đều có quyền xuất tệp Chứng nhận số (Digital Certificate PDF) có mã xác thực trực tiếp tại trang Hồ sơ cá nhân."
         }
     ];
 
@@ -72,257 +55,262 @@ export default function Homepage() {
     };
 
     return (
-        <main className="bg-transparent text-[var(--shield-ink)] min-h-screen">
-            {/* Hero Section */}
-            <section className="hero-stage relative overflow-hidden min-h-[680px] flex items-center">
-                <div className="hero-bg absolute inset-0 z-0 bg-center bg-cover" style={{ backgroundImage: `url(${heroCourt})` }} />
-                <div className="hero-overlay absolute inset-0 z-10 pointer-events-none" />
+        <main className="mlh-grid-container relative min-h-screen text-slate-900 overflow-hidden font-sans pb-20">
+            {/* MLH Grid Background */}
+            <div className="mlh-grid-overlay" />
 
-                <div className="hero-content relative z-20 w-full max-w-[1180px] mx-auto px-5 py-16 text-center animate-fade-up">
-                    <p className="inline-flex items-center gap-3 px-5 py-2 rounded-full text-base sm:text-lg md:text-xl font-black uppercase tracking-wider text-[var(--shield-blue)] bg-white/95 shadow-lg border-2 border-blue-200/90 backdrop-blur-md transition-all duration-300 hover:scale-105">
-                        <span className="pulsing-live-dot shrink-0" />
-                        Giải đấu nổi bật
-                    </p>
-                    
-                    <h1 className="hero-title mt-6 text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-[var(--shield-ink)] leading-tight">
-                        <EditorialEventTitle name={featuredEvent.name} />
-                    </h1>
-                    
-                    <div className="mt-6 flex justify-center">
-                        <span className={`inline-block px-4 py-1.5 rounded-full text-xs font-extrabold tracking-widest border uppercase shadow-sm ${
-                            isEnded 
-                                ? 'border-amber-300 bg-amber-50 text-amber-700' 
-                                : 'border-[var(--shield-line)] bg-[var(--shield-blue-soft)]/50 text-[var(--shield-blue)]'
-                        }`}>
+            {/* HERO SECTION: 2-Column Responsive Layout */}
+            <section className="max-w-[1240px] mx-auto px-6 py-12 md:py-24 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                
+                {/* Left Column: Bold Blue Typography, Monospace Subtitle, Yellow CTA Button, Isometric SVG */}
+                <div className="lg:col-span-7 flex flex-col justify-center space-y-9 text-left">
+                    {/* Live Event Indicator */}
+                    {featuredEvent && (
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-blue-50 border border-blue-200/40 text-[10px] font-black uppercase tracking-widest text-[#1854C4] w-fit">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                             {phase.label}
-                        </span>
-                    </div>
-
-                    <p className="hero-subtitle mt-6 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed text-[var(--shield-copy)] font-medium">
-                        {phase.key === 'registration'
-                            ? `Cổng đăng ký đang mở đến ngày ${formatDateTime(featuredEvent.regEndDate)}. Hãy nhanh chóng chọn hạng mục, lập đội thi và sẵn sàng bước vào thử thách lập trình.`
-                            : phase.key === 'running'
-                            ? `Giải đấu đang diễn ra từ ${formatDateTime(featuredEvent.eventStartDate)} đến ${formatDateTime(featuredEvent.eventEndDate)}. Các đội thi đang tích cực hoàn thiện sản phẩm.`
-                            : `Giải đấu đã khép lại trọn vẹn từ ${formatDateTime(featuredEvent.eventEndDate)}. Cảm ơn toàn bộ thí sinh, mentor và ban giám khảo đã tạo nên một mùa giải SEAL bùng nổ.`}
-                    </p>
-
-                    {countdown && (
-                        <div className="mt-8 flex flex-wrap justify-center gap-4">
-                            {countdown.map((item) => <Stat key={item.label} {...item} />)}
                         </div>
                     )}
 
-                    <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-                        <Link to={isEnded ? '/leaderboard' : `/my-team?registerEventId=${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-[var(--shield-blue)] bg-white border border-[var(--shield-blue)] hover:bg-[var(--shield-blue-soft)] shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                            {isEnded ? 'Xem bảng xếp hạng' : 'Đăng ký tham gia ngay'}
+                    <h1 className="text-[#1854C4] text-5xl sm:text-6xl md:text-[68px] font-black leading-[1.05] tracking-tight">
+                        The World's<br />
+                        Largest Developer<br />
+                        Community
+                    </h1>
+
+                    <p className="text-slate-600 font-mono tracking-wide text-xs sm:text-sm leading-relaxed max-w-xl">
+                        Hackathons, fellowships, and DEV's online community. 
+                        5 million software creators learn, build, and share together.
+                    </p>
+
+                    {/* Countdown indicator */}
+                    {countdown && featuredEvent && (
+                        <div className="flex items-center gap-6 font-mono text-slate-500 text-xs py-2 border-y border-slate-100 w-fit">
+                            <span className="font-bold uppercase tracking-wider text-slate-400">Launch Clock:</span>
+                            <div className="flex gap-4">
+                                {countdown.map((c) => (
+                                    <span key={c.label}>
+                                        <strong className="text-black font-extrabold">{String(c.value).padStart(2, '0')}</strong>{c.label[0]}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div>
+                        <Link 
+                            to={isEnded ? '/leaderboard' : `/my-team?registerEventId=${featuredEvent?.id}`} 
+                            className="inline-flex items-center justify-between bg-[#f1a81f] text-black font-extrabold text-xs uppercase tracking-wider px-6 py-4 rounded-sm w-[220px] hover:bg-[#d89218] transition-colors shadow-[0_4px_12px_rgba(241,168,31,0.2)]"
+                        >
+                            <span>Attend an Event</span>
+                            <span className="text-sm font-light">→</span>
                         </Link>
-                        <Link to={`/events/${featuredEvent.id}`} className="px-8 py-3.5 rounded-xl font-bold text-[var(--shield-blue)] bg-white border border-[var(--shield-line)] shadow-sm hover:bg-[var(--shield-blue-soft)] transition-all duration-200">
-                            Xem chi tiết giải đấu
-                        </Link>
+                    </div>
+
+                    {/* Left Bottom: Isometric 3D MLH SVG Illustration */}
+                    <div className="pt-6">
+                        <svg className="w-[360px] h-[220px] hover:scale-102 transition-transform duration-500" viewBox="0 0 360 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            {/* --- RED BLOCK (Letter M) --- */}
+                            <g transform="translate(10, 110)">
+                                {/* Pillar 1 */}
+                                <polygon points="30,20 45,28 45,78 30,70" fill="#dc2626" />
+                                <polygon points="45,28 60,20 60,70 45,78" fill="#991b1b" />
+                                <polygon points="45,20 60,28 45,36 30,28" fill="#ef4444" />
+                                {/* Diagonal connecting 1 */}
+                                <polygon points="60,40 75,48 75,70 60,62" fill="#dc2626" />
+                                <polygon points="75,48 90,40 90,62 75,70" fill="#991b1b" />
+                                <polygon points="75,40 90,48 75,56 60,48" fill="#ef4444" />
+                                {/* Diagonal connecting 2 */}
+                                <polygon points="90,40 105,48 105,70 90,62" fill="#dc2626" />
+                                <polygon points="105,48 120,40 120,62 105,70" fill="#991b1b" />
+                                <polygon points="105,40 120,48 105,56 90,48" fill="#ef4444" />
+                                {/* Pillar 2 */}
+                                <polygon points="120,20 135,28 135,78 120,70" fill="#dc2626" />
+                                <polygon points="135,28 150,20 150,70 135,78" fill="#991b1b" />
+                                <polygon points="135,20 150,28 135,36 120,28" fill="#ef4444" />
+                                {/* Little climbing figure */}
+                                <circle cx="35" cy="12" r="3" fill="#000000" />
+                                <line x1="35" y1="15" x2="35" y2="22" stroke="#000000" strokeWidth="2" />
+                                <line x1="35" y1="18" x2="30" y2="15" stroke="#000000" strokeWidth="1.5" />
+                                <line x1="35" y1="18" x2="40" y2="15" stroke="#000000" strokeWidth="1.5" />
+                            </g>
+
+                            {/* --- BLUE BLOCK (Letter L) --- */}
+                            <g transform="translate(145, 80)">
+                                {/* Vertical Pillar */}
+                                <polygon points="20,10 35,18 35,68 20,60" fill="#2563eb" />
+                                <polygon points="35,18 50,10 50,60 35,68" fill="#1e40af" />
+                                <polygon points="35,10 50,18 35,26 20,18" fill="#3b82f6" />
+                                {/* Bottom Base extending to front-right */}
+                                <polygon points="35,68 50,60 50,75 35,83" fill="#2563eb" />
+                                <polygon points="50,60 65,68 65,75 50,83" fill="#1e40af" />
+                                <polygon points="50,68 65,60 50,52 35,60" fill="#3b82f6" />
+                                {/* Little sitting figure */}
+                                <circle cx="35" cy="-2" r="3" fill="#000000" />
+                                <line x1="35" y1="1" x2="35" y2="8" stroke="#000000" strokeWidth="2" />
+                            </g>
+
+                            {/* --- YELLOW BLOCK (Letter H) --- */}
+                            <g transform="translate(200, 50)">
+                                {/* Pillar 1 */}
+                                <polygon points="20,10 35,18 35,98 20,90" fill="#d97706" />
+                                <polygon points="35,18 50,10 50,90 35,98" fill="#92400e" />
+                                <polygon points="35,10 50,18 35,26 20,18" fill="#fbbf24" />
+                                {/* Crossbar */}
+                                <polygon points="50,40 65,48 65,60 50,52" fill="#d97706" />
+                                <polygon points="65,48 80,40 80,52 65,60" fill="#92400e" />
+                                <polygon points="65,40 80,48 65,56 50,48" fill="#fbbf24" />
+                                {/* Pillar 2 */}
+                                <polygon points="80,10 95,18 95,98 80,90" fill="#d97706" />
+                                <polygon points="95,18 110,10 110,90 95,98" fill="#92400e" />
+                                <polygon points="95,10 110,18 95,26 80,18" fill="#fbbf24" />
+                                {/* Ladder Lines */}
+                                <line x1="83" y1="35" x2="83" y2="85" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="88" y1="38" x2="88" y2="88" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="83" y1="45" x2="88" y2="48" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="83" y1="55" x2="88" y2="58" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="83" y1="65" x2="88" y2="68" stroke="#4b5563" strokeWidth="1.5" />
+                                <line x1="83" y1="75" x2="88" y2="78" stroke="#4b5563" strokeWidth="1.5" />
+                                {/* Little climbing figure */}
+                                <circle cx="85" cy="50" r="3" fill="#000000" />
+                                <line x1="85" y1="53" x2="82" y2="60" stroke="#000000" strokeWidth="2" />
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+                {/* Right Column: Big rounded vertical photo card */}
+                <div className="lg:col-span-5 flex justify-center animate-fade-up" style={{ animationDelay: '150ms' }}>
+                    <div className="w-full max-w-[420px] aspect-[4/5] sm:aspect-[3/4] rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-2xl bg-slate-100 border-4 border-white relative group">
+                        <img 
+                            src={heroCourt} 
+                            alt="MLH Hackathon Event Floor" 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                        />
                     </div>
                 </div>
             </section>
 
-            {/* Key Statistics Section */}
-            <section className="py-16 px-5 max-w-[1180px] mx-auto">
-                <div className="text-center mb-12">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--shield-blue)]">Về SEAL Hackathon</p>
-                    <h2 className="text-3xl font-black mt-2 text-[var(--shield-ink)]">Những con số ấn tượng</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[
-                        {
-                            num: "50 Tr+",
-                            label: "Tổng giải thưởng",
-                            desc: "Tiền mặt, học bổng và các gói cố vấn khởi nghiệp giá trị.",
-                            icon: (
-                                <svg className="w-8 h-8 text-[var(--shield-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            )
-                        },
-                        {
-                            num: "24+",
-                            label: "Đội thi tham gia",
-                            desc: "Hội tụ các tài năng trẻ từ Đại học FPT và các trường đại học đối tác.",
-                            icon: (
-                                <svg className="w-8 h-8 text-[var(--shield-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                            )
-                        },
-                        {
-                            num: "03 Mùa",
-                            label: "Giải đấu mỗi năm",
-                            desc: "Tổ chức thường niên theo chu kỳ học thuật: Spring, Summer và Fall.",
-                            icon: (
-                                <svg className="w-8 h-8 text-[var(--shield-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            )
-                        },
-                        {
-                            num: "15+",
-                            label: "Giám khảo & Mentor",
-                            desc: "Giảng viên kỳ cựu và các kỹ sư, chuyên gia công nghệ đến từ doanh nghiệp.",
-                            icon: (
-                                <svg className="w-8 h-8 text-[var(--shield-blue)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                </svg>
-                            )
-                        }
-                    ].map((stat, i) => (
-                        <div key={i} className="bg-white border border-[var(--shield-line)] rounded-2xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
-                            <div className="w-12 h-12 bg-[var(--shield-blue-soft)] rounded-xl flex items-center justify-center mb-4">
-                                {stat.icon}
-                            </div>
-                            <h3 className="text-2xl font-black text-[var(--shield-ink)]">{stat.num}</h3>
-                            <p className="text-sm font-bold text-[var(--shield-blue)] mt-1">{stat.label}</p>
-                            <p className="text-xs text-[var(--shield-copy)] mt-2 leading-relaxed">{stat.desc}</p>
-                        </div>
-                    ))}
+            {/* KEY NUMBERS: Flat Minimal Layout */}
+            <section className="max-w-[1240px] mx-auto px-6 py-20 relative z-10 border-t border-slate-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12 text-left">
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Telemetry // 01</span>
+                        <h3 className="text-4xl font-extrabold text-[#1854C4]">50 Tr+</h3>
+                        <p className="text-xs text-slate-500">Tổng giải thưởng bằng tiền mặt & học bổng hỗ trợ phát triển.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Telemetry // 02</span>
+                        <h3 className="text-4xl font-extrabold text-[#1854C4]">24+ Teams</h3>
+                        <p className="text-xs text-slate-500">Đội thi lập trình sáng tạo từ mạng lưới Đại học đối tác liên kết.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Telemetry // 03</span>
+                        <h3 className="text-4xl font-extrabold text-[#1854C4]">03 Seasons</h3>
+                        <p className="text-xs text-slate-500">Chu kỳ tổ chức thường niên tại Spring, Summer và Fall học kỳ.</p>
+                    </div>
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Telemetry // 04</span>
+                        <h3 className="text-4xl font-extrabold text-[#1854C4]">15+ Experts</h3>
+                        <p className="text-xs text-slate-500">Hội đồng cố vấn Mentor và ban giám khảo độc lập chấm điểm.</p>
+                    </div>
                 </div>
             </section>
 
-            {/* Main Interactive Content depending on Event State */}
+            {/* EVENT PROCESS OR WINNERS CORNER */}
             {isEnded ? (
-                /* Hall of Fame (Bảng Vàng Danh Vọng) */
-                <section className="py-16 px-5 bg-white border-y border-[var(--shield-line)]">
-                    <div className="max-w-[1180px] mx-auto">
-                        <div className="text-center mb-12">
-                            <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600">Nhà vô địch</p>
-                            <h2 className="text-3xl font-black mt-2 text-[var(--shield-ink)]">Bảng vàng vinh danh</h2>
-                            <p className="text-sm text-[var(--shield-copy)] mt-2">Dưới đây là các đội thi xuất sắc nhất đã chinh phục hội đồng giám khảo tại sự kiện vừa qua.</p>
-                        </div>
-                        
-                        <div className="grid gap-8 md:grid-cols-3 items-stretch max-w-5xl mx-auto">
-                            {winners.map((team, index) => {
-                                const rankColors = [
-                                    { border: 'border-amber-400', bg: 'bg-gradient-to-b from-amber-50/50 to-white', text: 'text-amber-600', badge: '🥇 Vô địch' },
-                                    { border: 'border-slate-300', bg: 'bg-gradient-to-b from-slate-50/50 to-white', text: 'text-slate-600', badge: '🥈 Á quân 1' },
-                                    { border: 'border-orange-300', bg: 'bg-gradient-to-b from-orange-50/50 to-white', text: 'text-orange-600', badge: '🥉 Á quân 2' }
-                                ][index] || { border: 'border-[var(--shield-line)]', bg: 'bg-white', text: 'text-[var(--shield-blue)]', badge: `Top ${index + 1}` };
+                /* Hall of Fame */
+                <section className="max-w-[1240px] mx-auto px-6 py-20 relative z-10 border-t border-slate-100">
+                    <div className="text-left mb-16">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono">Archive // Leaderboard</span>
+                        <h2 className="text-3xl font-extrabold text-black mt-2">Bảng Vàng Vinh Danh</h2>
+                    </div>
 
-                                return (
-                                    <article key={`${team.teamName}-${index}`} className={`border-2 ${rankColors.border} ${rankColors.bg} rounded-3xl p-8 flex flex-col justify-between shadow-sm relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1`}>
-                                        {index === 0 && (
-                                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400 text-white font-black text-xs flex items-center justify-center transform rotate-45 translate-x-8 -translate-y-8">
-                                                CHAMPION
-                                            </div>
-                                        )}
-                                        <div>
-                                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-black uppercase ${rankColors.text} bg-white border border-current mb-4`}>
-                                                {rankColors.badge}
-                                            </span>
-                                            <h3 className="text-2xl font-black uppercase tracking-tight text-[var(--shield-ink)] mt-2">{team.teamName}</h3>
-                                            <p className="text-xs font-bold text-[var(--shield-blue)] mt-1">{team.track || 'Chuyên mục chung'}</p>
-                                            
-                                            <div className="mt-6 border-t border-dashed border-[var(--shield-line)] pt-4">
-                                                <p className="text-xs font-bold text-[var(--shield-copy)] uppercase tracking-wider">Thành viên:</p>
-                                                <p className="mt-1 text-sm font-semibold leading-relaxed text-[var(--shield-copy)]">
-                                                    {(team.members || []).map((m) => m.fullName || m.email).join(', ') || 'Đang cập nhật thành viên'}
-                                                </p>
-                                            </div>
+                    <div className="grid gap-8 md:grid-cols-3 items-stretch max-w-5xl mx-auto">
+                        {winners.map((team, index) => {
+                            const config = [
+                                { badge: '🥇 Winner (Vô địch)', text: 'text-black font-extrabold' },
+                                { badge: '🥈 Runner-up (Á quân 1)', text: 'text-slate-700' },
+                                { badge: '🥉 Third Place (Á quân 2)', text: 'text-slate-600' }
+                            ][index] || { badge: `Top ${index + 1}`, text: 'text-slate-600' };
+
+                            return (
+                                <div key={`${team.teamName}-${index}`} className="border border-slate-100 bg-white rounded-2xl p-8 flex flex-col justify-between space-y-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                                    <div className="space-y-4">
+                                        <span className="inline-block px-3 py-1 rounded bg-slate-50 border border-slate-200 text-[10px] font-black uppercase text-slate-600 tracking-wider">
+                                            {config.badge}
+                                        </span>
+                                        <h3 className="text-2xl font-black uppercase tracking-tight text-black">{team.teamName}</h3>
+                                        <span className="text-xs font-bold text-[#1854C4] block">{team.track || 'Track Chung'}</span>
+
+                                        <div className="border-t border-dashed border-slate-100 pt-4 space-y-1">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Thành viên:</span>
+                                            <p className="text-xs text-slate-500 leading-relaxed">
+                                                {(team.members || []).map(m => m.fullName || m.email).join(', ') || 'N/A'}
+                                            </p>
                                         </div>
-                                        
-                                        <div className="mt-8 border-t border-[var(--shield-line)] pt-4 flex items-baseline justify-between">
-                                            <span className="text-xs font-bold text-[var(--shield-copy)]">Điểm số tích lũy:</span>
-                                            <span className="text-3xl font-black text-[var(--shield-ink)]">{team.score || 0} <span className="text-xs font-bold text-[var(--shield-copy)]">điểm</span></span>
-                                        </div>
-                                    </article>
-                                );
-                            })}
-                        </div>
-                        <div className="mt-10 text-center">
-                            <Link to="/leaderboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white bg-[var(--shield-blue)] hover:bg-[var(--shield-blue-dark)] transition-colors shadow-sm">
-                                Xem tất cả kết quả và hồ sơ thí sinh
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </Link>
-                        </div>
+                                    </div>
+
+                                    <div className="flex items-baseline justify-between border-t border-slate-100 pt-4">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase">Tích lũy</span>
+                                        <span className="text-2xl font-extrabold text-black">{team.score || 0} PTS</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </section>
             ) : (
-                /* Roadmap Timeline (Hành trình chinh phục SEAL) */
-                <section className="py-16 px-5 bg-white border-y border-[var(--shield-line)]">
-                    <div className="max-w-[1180px] mx-auto">
-                        <div className="text-center mb-12">
-                            <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--shield-blue)]">Quy trình tham gia</p>
-                            <h2 className="text-3xl font-black mt-2 text-[var(--shield-ink)]">Hành trình từ Ý tưởng đến Bằng khen</h2>
-                            <p className="text-sm text-[var(--shield-copy)] mt-2">Toàn bộ hoạt động thi đấu được triển khai tinh gọn, số hóa hoàn toàn và minh bạch.</p>
-                        </div>
+                /* Protocol Steps (Roadmap) */
+                <section className="max-w-[1240px] mx-auto px-6 py-20 relative z-10 border-t border-slate-100">
+                    <div className="text-left mb-16">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono">Operation Guidelines</span>
+                        <h2 className="text-3xl font-extrabold text-black mt-2">Quy Trình Thi Đấu</h2>
+                    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                            {[
-                                {
-                                    step: "01",
-                                    title: "Lập đội thi đấu",
-                                    desc: "Đăng ký cá nhân và thành lập đội thi (2-5 thành viên). Chọn Track thi phù hợp, thiết lập chế độ Public hoặc Private bảo mật bằng mã PIN."
-                                },
-                                {
-                                    step: "02",
-                                    title: "Tìm kiếm đồng đội",
-                                    desc: "Lọc lobby phòng chờ để gửi lời mời tham gia các nhóm còn thiếu người hoặc gửi yêu cầu tham gia các nhóm công khai."
-                                },
-                                {
-                                    step: "03",
-                                    title: "Nhận đề & Mentor",
-                                    desc: "Đề thi chính thức cùng quy chế sẽ tự động kích hoạt khi giải đấu bắt đầu. Mỗi nhóm thi được ban tổ chức phân công 1-2 Mentor cố vấn."
-                                },
-                                {
-                                    step: "04",
-                                    title: "Lập trình & Nộp bài",
-                                    desc: "Làm việc nhóm và nộp bài dự thi trực tuyến. Trưởng nhóm có toàn quyền cập nhật/thay thế file nộp bài cho đến sát giờ deadline."
-                                },
-                                {
-                                    step: "05",
-                                    title: "Đánh giá minh bạch",
-                                    desc: "Ban giám khảo chấm điểm dựa theo các tiêu chí (Rubric) cụ thể. Nhật ký Audit Log tự động ghi nhận mọi sự điều chỉnh điểm số."
-                                },
-                                {
-                                    step: "06",
-                                    title: "Vinh danh giải thưởng",
-                                    desc: "Theo dõi bảng xếp hạng trực tiếp. Các đội thi đạt giải Nhất, Nhì, Ba được quyền xuất bằng khen số PDF từ trang hồ sơ cá nhân."
-                                }
-                            ].map((step, idx) => (
-                                <div key={idx} className="relative bg-[var(--shield-blue-soft)] border border-[var(--shield-line)] rounded-2xl p-6 hover:bg-white hover:border-[var(--shield-blue)] transition-all duration-300 group">
-                                    <div className="absolute top-4 right-4 text-4xl font-black text-[var(--shield-blue)]/20 group-hover:text-[var(--shield-blue)]/30 transition-colors">
-                                        {step.step}
-                                    </div>
-                                    <h3 className="text-lg font-black text-[var(--shield-ink)] mb-3 pr-8">{step.title}</h3>
-                                    <p className="text-xs leading-relaxed text-[var(--shield-copy)]">{step.desc}</p>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 max-w-5xl mx-auto">
+                        {[
+                            { step: "01", title: "Lập Đội Thi Đấu", desc: "Đăng ký tài khoản và thành lập đội thi (2-5 thành viên) trên hệ thống." },
+                            { step: "02", title: "Tuyển Mộ Nhân Lực", desc: "Sử dụng sảnh đợi Lobby để gửi lời mời tuyển dụng hoặc xin gia nhập các nhóm còn chỗ." },
+                            { step: "03", title: "Kích Hoạt Đề & Mentor", desc: "Đề bài chính thức mở tự động. Hệ thống gán cố vấn kỹ thuật đồng hành cùng nhóm." },
+                            { step: "04", title: "Nộp Bài Sandbox", desc: "Trưởng nhóm thực hiện tải tệp tin và đường dẫn dự án lên hệ thống trước hạn kết thúc." },
+                            { step: "05", title: "Đánh Giá Minh Bạch", desc: "Ban giám khảo chấm điểm độc lập. Nhật ký Audit Log tự động ghi nhận mọi sự điều chỉnh." },
+                            { step: "06", title: "Cấp Chứng Nhận Số", desc: "Hồ sơ cá nhân tự động phát hành Bằng khen PDF trực tiếp có chữ ký số xác thực." }
+                        ].map((item, idx) => (
+                            <div key={idx} className="border-t border-slate-200/80 pt-6 space-y-2 hover:border-[#1854C4] transition-colors duration-300">
+                                <span className="text-[10px] font-bold text-slate-400 font-mono tracking-widest block">{item.step} // protocol</span>
+                                <h3 className="text-base font-extrabold text-black tracking-tight">{item.title}</h3>
+                                <p className="text-xs leading-relaxed text-slate-500">{item.desc}</p>
+                            </div>
+                        ))}
                     </div>
                 </section>
             )}
 
-            {/* Interactive FAQ Section */}
-            <section className="py-16 px-5 max-w-[800px] mx-auto">
-                <div className="text-center mb-10">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--shield-blue)]">Giải đáp thắc mắc</p>
-                    <h2 className="text-3xl font-black mt-2 text-[var(--shield-ink)]">Câu hỏi thường gặp</h2>
+            {/* FAQs Accordion */}
+            <section className="max-w-[800px] mx-auto px-6 py-20 relative z-10 border-t border-slate-100">
+                <div className="text-left mb-12">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 font-mono">FAQ DATABASE</span>
+                    <h2 className="text-3xl font-extrabold text-black mt-2">Hỗ Trợ Kỹ Thuật</h2>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-0 border-t border-slate-200/85">
                     {faqData.map((faq, index) => {
                         const isOpen = activeFaq === index;
                         return (
-                            <div key={index} className="bg-white border border-[var(--shield-line)] rounded-2xl overflow-hidden transition-all duration-200">
+                            <div key={index} className="border-b border-slate-200/85">
                                 <button
                                     type="button"
                                     onClick={() => toggleFaq(index)}
-                                    className="w-full px-6 py-5 flex items-center justify-between text-left font-bold text-sm sm:text-base text-[var(--shield-ink)] hover:bg-[var(--shield-blue-soft)] transition-colors"
+                                    className="w-full py-6 flex items-center justify-between text-left font-bold text-sm sm:text-base text-black hover:text-[#1854C4] transition-colors"
                                 >
                                     <span>{faq.q}</span>
-                                    <span className={`text-xl font-semibold transition-transform duration-200 ${isOpen ? 'rotate-45 text-[var(--shield-blue)]' : 'text-gray-400'}`}>
-                                        ＋
+                                    <span className="text-xs text-slate-400 font-mono font-bold">
+                                        {isOpen ? 'CLOSE' : 'OPEN'}
                                     </span>
                                 </button>
                                 {isOpen && (
-                                    <div className="px-6 pb-5 text-xs sm:text-sm leading-relaxed text-[var(--shield-copy)] border-t border-[var(--shield-line)]/50 pt-3 animate-fade-down">
+                                    <div className="pb-6 text-xs sm:text-sm leading-relaxed text-slate-500 animate-fade-up font-normal font-sans">
                                         {faq.a}
                                     </div>
                                 )}
@@ -332,37 +320,34 @@ export default function Homepage() {
                 </div>
             </section>
 
-            {/* Sponsors & Partners Banner */}
-            <section className="py-12 px-5 bg-white/50 border-t border-[var(--shield-line)]">
-                <div className="max-w-[1180px] mx-auto">
-                    <p className="text-center text-[10px] font-black uppercase tracking-[0.25em] text-[var(--shield-copy)] mb-8">
-                        Đồng hành & Đối tác liên kết
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 opacity-60">
-                        {[
-                            { name: "Đại học FPT", logo: logoFpt },
-                            { name: "FPT Software", logo: logoFptSoftware },
-                            { name: "VPBank", logo: logoVpBank },
-                            { name: "Techcombank", logo: logoTechcombank },
-                            { name: "197", logo: logo197 }
-                        ].map((partner, i) => (
-                            partner.logo ? (
-                                <img 
-                                    key={i} 
-                                    src={partner.logo} 
-                                    alt={partner.name} 
-                                    className="h-10 w-auto object-contain hover:scale-105 transition-all cursor-default" 
-                                />
-                            ) : (
-                                <span key={i} className="text-sm sm:text-base font-black tracking-widest text-[var(--shield-copy)] hover:text-[var(--shield-blue)] hover:scale-105 transition-all cursor-default">
-                                    {partner.name.toUpperCase()}
-                                </span>
-                            )
-                        ))}
-                    </div>
+            {/* PARTNERS BANNER */}
+            <section className="max-w-[1240px] mx-auto px-6 py-16 border-t border-slate-100 relative z-10">
+                <p className="text-center text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-12 font-mono">
+                    Mạng lưới đối tác liên kết
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-x-20 gap-y-8 opacity-50 hover:opacity-75 transition-opacity duration-300">
+                    {[
+                        { name: "Đại học FPT", logo: logoFpt },
+                        { name: "FPT Software", logo: logoFptSoftware },
+                        { name: "VPBank", logo: logoVpBank },
+                        { name: "Techcombank", logo: logoTechcombank },
+                        { name: "197", logo: logo197 }
+                    ].map((partner, i) => (
+                        partner.logo ? (
+                            <img 
+                                key={i} 
+                                src={partner.logo} 
+                                alt={partner.name} 
+                                className="h-8 w-auto object-contain filter grayscale" 
+                            />
+                        ) : (
+                            <span key={i} className="text-xs sm:text-sm font-mono font-black tracking-widest text-slate-400 cursor-default">
+                                {partner.name.toUpperCase()}
+                            </span>
+                        )
+                    ))}
                 </div>
             </section>
         </main>
     );
 }
-
