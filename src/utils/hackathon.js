@@ -4,9 +4,9 @@ export const demoEvent = {
     season: 'SUMMER',
     year: 2026,
     regStartDate: '2026-07-01T08:00:00',
-    regEndDate: '2026-07-20T23:59:00',
-    eventStartDate: '2026-07-25T08:00:00',
-    eventEndDate: '2026-07-27T18:00:00',
+    regEndDate: '2026-08-30T23:59:00',
+    eventStartDate: '2026-08-01T08:00:00',
+    eventEndDate: '2026-09-30T18:00:00',
     teamCount: 24,
     tracks: [
         { id: 'ai', name: 'AI for Education', description: 'Sản phẩm AI hỗ trợ học tập, cố vấn và vận hành đào tạo.' },

@@ -233,11 +233,42 @@ export default function MyTeam() {
         });
     }, [events]);
 
+    // Kiểm tra mốc thời gian thi đấu của 2 sự kiện có bị chồng chéo (trùng) hay không
+    const isTimelineOverlapping = (eventA, eventB) => {
+        if (!eventA || !eventB) return false;
+        const startA = eventA.eventStartDate || eventA.regStartDate;
+        const endA = eventA.eventEndDate || eventA.regEndDate;
+        const startB = eventB.eventStartDate || eventB.regStartDate;
+        const endB = eventB.eventEndDate || eventB.regEndDate;
+
+        if (!startA || !endA || !startB || !endB) return false;
+
+        const tStartA = new Date(startA).getTime();
+        const tEndA = new Date(endA).getTime();
+        const tStartB = new Date(startB).getTime();
+        const tEndB = new Date(endB).getTime();
+
+        return tStartA <= tEndB && tEndA >= tStartB;
+    };
+
     const availableEventsToRegister = useMemo(() => {
-        return activeOrUpcomingEvents.filter(
-            (event) => !myTeams.some((t) => String(t.eventId) === String(event.id))
+        const joinedEvents = events.filter((e) =>
+            myTeams.some((t) => String(t.eventId) === String(e.id))
         );
-    }, [activeOrUpcomingEvents, myTeams]);
+
+        return activeOrUpcomingEvents.filter((event) => {
+            // 1. Chặn các giải mà thí sinh ĐÃ THAM GIA rồi
+            const alreadyJoined = joinedEvents.some((e) => String(e.id) === String(event.id));
+            if (alreadyJoined) return false;
+
+            // 2. Chặn các giải BỊ TRÙNG THỜI GIAN THI ĐẤU với bất kỳ giải nào thí sinh đã tham gia trước đó
+            const hasTimeConflict = joinedEvents.some((joinedEvent) =>
+                isTimelineOverlapping(event, joinedEvent)
+            );
+
+            return !hasTimeConflict;
+        });
+    }, [activeOrUpcomingEvents, myTeams, events]);
 
     const selectedEvent = useMemo(() => events.find((event) => String(event.id) === String(formData.eventId)), [events, formData.eventId]);
     const currentEvent = useMemo(() => events.find((event) => String(event.id) === String(team?.eventId)), [events, team]);
@@ -658,38 +689,71 @@ export default function MyTeam() {
             {activeTeamId && team ? (
                 /* VIEW 1: ĐỘI THI CHI TIẾT (Trang riêng hiển thị khi click vào một đội) */
                 <div className="space-y-6">
-                    <div className="flex justify-end mb-4">
-                        <Link to="/teams" className="btn-secondary flex items-center gap-1.5 font-bold text-xs py-2 px-3 shrink-0">
-                            <span>Xem Lobby</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-slate-500">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94-3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                            </svg>
-                        </Link>
-                    </div>
-
-                    <section className="rounded-lg border border-[#d7e6f8] bg-white p-6">
+                    {/* Hero Section: Tên Đội thi trên cùng -> Sự kiện & Nút Lobby phía dưới */}
+                    <section className="rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-50/70 via-indigo-50/30 to-white p-6 sm:p-8 shadow-sm space-y-5">
+                        {/* Hàng 1 (TRÊN HẾT): Tên Đội Thi + Sub-info Track Badge + Trạng thái */}
                         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                             <div>
-                                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">{team.eventName || 'Chưa gắn giải đấu'}</p>
-                                <h1 className="mt-2 text-3xl font-black uppercase tracking-[0.06em] text-[#071936]">{team.name}</h1>
-                                <p className="mt-2 text-sm leading-7 text-[#5c6d83]">{team.description || 'Đội chưa thêm mô tả.'}</p>
-                                <p className="mt-3 text-sm font-bold text-[#0f63c9]">{team.trackName}</p>
+                                <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-[0.04em] text-[#071936]">
+                                    {team.name}
+                                </h1>
+
+                                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                                    {team.trackName && (
+                                        <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-0.5 text-xs font-black text-[#0f63c9] border border-blue-200/90 shadow-2xs">
+                                            {team.trackName}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <p className="mt-2.5 text-sm sm:text-base leading-relaxed text-[#5c6d83] font-medium">
+                                    {team.description || 'Đội chưa thêm mô tả ngắn.'}
+                                </p>
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
+
+                            <div className="flex flex-wrap items-center gap-2 shrink-0">
                                 <span className="badge-status-pill">{team.type}</span>
                                 {(team.members?.length || team.memberCount || 0) >= 3 ? (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 border border-emerald-200">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-black text-emerald-700 border border-emerald-200 shadow-2xs">
                                         <span className="pulsing-dot-green shrink-0" />
                                         Đội chính thức
                                     </span>
                                 ) : (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 border border-amber-200">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3.5 py-1.5 text-xs font-black text-amber-700 border border-amber-200 shadow-2xs">
                                         <span className="pulsing-dot-amber shrink-0" />
                                         Đội chưa chính thức
                                     </span>
                                 )}
                             </div>
                         </div>
+
+                        {/* Hàng 2 (PHÍA DƯỚI): Sự Kiện (Trái) + Xem các Đội thi khác (Phải - Tinh tế, nhẹ nhàng) */}
+                        <div className="pt-4 border-t border-blue-100/80 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
+                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0f63c9] text-white shadow-md shadow-blue-500/20 shrink-0">
+                                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" />
+                                    </svg>
+                                </span>
+                                <span className="text-xs sm:text-sm font-black tracking-wide text-[#0b1f3f]">
+                                    {team.eventName || 'Chưa gắn giải đấu'}
+                                </span>
+                            </div>
+
+                            <Link 
+                                to={`/teams?eventId=${team.eventId}`} 
+                                className="inline-flex items-center gap-1.5 text-xs font-black text-[#0f63c9] bg-white border border-blue-200/90 hover:border-[#0f63c9] hover:bg-blue-50/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 shadow-2xs group shrink-0 cursor-pointer"
+                            >
+                                <svg className="w-4 h-4 text-[#0f63c9] transition-transform group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94-3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                                </svg>
+                                <span>Xem các Đội thi khác</span>
+                                <svg className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0f63c9] transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+                            </Link>
+                        </div>
+                    </section>
 
                         {(team.members?.length || team.memberCount || 0) < 3 && (
                             <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-amber-900 shadow-sm flex items-start gap-3">
@@ -714,7 +778,6 @@ export default function MyTeam() {
                                 ))}
                             </div>
                         )}
-                    </section>
 
                     <section className="team-workspace">
                         <div className="team-mentor-chat">
@@ -880,32 +943,75 @@ export default function MyTeam() {
                         <div className="team-members-panel rounded-lg border border-[#d7e6f8] bg-white p-6">
                             <div className="flex items-center justify-between gap-3">
                                 <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Thành viên ({team.members?.length || 0})</h2>
-                                <div className="flex items-center gap-2.5">
-                                    {isLeader && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {isLeader ? (
                                         <>
-                                            <button type="button" onClick={() => setShowActions((value) => !value)} className="btn-secondary">Thao tác</button>
+                                            {/* Nút 1: Quản lý thành viên (Gear Icon) */}
+                                            <div className="relative group inline-block">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setShowActions((value) => !value)} 
+                                                    aria-label="Quản lý thành viên"
+                                                    className={`flex items-center justify-center rounded-xl p-2.5 transition-all duration-200 cursor-pointer border ${
+                                                        showActions 
+                                                            ? 'bg-[#0f63c9] text-white border-[#0f63c9] shadow-md scale-105' 
+                                                            : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-blue-50 hover:border-blue-300 hover:text-[#0f63c9]'
+                                                    }`}
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    </svg>
+                                                </button>
+                                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 whitespace-nowrap">
+                                                    <div className="bg-[#0b1f3f] text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-lg">
+                                                        {showActions ? 'Đóng menu quản lý' : 'Quản lý thành viên'}
+                                                    </div>
+                                                    <div className="w-2 h-2 bg-[#0b1f3f] rotate-45 mx-auto -mt-1" />
+                                                </div>
+                                            </div>
+
+                                            {/* Nút 2: Giải tán đội thi (Trash Icon) */}
+                                            <div className="relative group inline-block">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={handleDisbandTeam} 
+                                                    aria-label="Giải tán đội thi"
+                                                    className="flex items-center justify-center rounded-xl border border-red-200 bg-red-50 hover:bg-red-600 hover:border-red-600 hover:text-white text-red-600 p-2.5 transition-all duration-200 cursor-pointer shadow-xs"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 whitespace-nowrap">
+                                                    <div className="bg-red-900 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-lg">
+                                                        Giải tán đội thi
+                                                    </div>
+                                                    <div className="w-2 h-2 bg-red-900 rotate-45 mx-auto -mt-1" />
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        /* Nút 3: Rời khỏi đội (LogOut Icon) */
+                                        <div className="relative group inline-block">
                                             <button 
                                                 type="button" 
-                                                onClick={handleDisbandTeam} 
-                                                title="Xóa đội (Dành cho Trưởng nhóm)" 
-                                                className="flex items-center justify-center rounded-lg border border-red-300 bg-red-100 hover:bg-red-200 text-red-700 p-2.5 transition-all duration-200 cursor-pointer shadow-sm"
+                                                onClick={handleLeave} 
+                                                aria-label="Rời khỏi đội thi"
+                                                className="flex items-center justify-center rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-600 hover:border-amber-600 hover:text-white text-amber-700 p-2.5 transition-all duration-200 cursor-pointer shadow-xs"
                                             >
                                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                                 </svg>
                                             </button>
-                                        </>
+                                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-20 whitespace-nowrap">
+                                                <div className="bg-amber-950 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-lg">
+                                                    Rời khỏi đội thi
+                                                </div>
+                                                <div className="w-2 h-2 bg-amber-950 rotate-45 mx-auto -mt-1" />
+                                            </div>
+                                        </div>
                                     )}
-                                    <button 
-                                        type="button" 
-                                        onClick={handleLeave} 
-                                        title="Rời khỏi đội" 
-                                        className="flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 p-2.5 transition-all duration-200 cursor-pointer shadow-sm"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                                        </svg>
-                                    </button>
                                 </div>
                             </div>
                             {actionMessage.text && (
@@ -1243,21 +1349,21 @@ export default function MyTeam() {
                         </div>
                     )}
 
-                    {/* SECTION 1: DANH SÁCH ĐỘI THI ĐÃ THAM GIA */}
-                    <div className="mb-10 rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-50/70 via-indigo-50/30 to-white p-6 sm:p-8 shadow-sm space-y-6">
-                        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-blue-100">
+                    {/* SECTION 1: DANH SÁCH ĐỘI THI ĐÃ THAM GIA (KHỐI CHÍNH NỔI BẬT NHẤT) */}
+                    <div className="mb-10 rounded-3xl border-2 border-blue-300/90 bg-gradient-to-br from-blue-100/60 via-indigo-50/40 to-white p-6 sm:p-8 shadow-md space-y-6">
+                        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-blue-200/80">
                             <div>
                                 <div className="flex items-center gap-2.5">
-                                    <span className="p-2 rounded-xl bg-[#0f63c9] text-white shadow-md shadow-blue-500/20">
-                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    <span className="p-2.5 rounded-xl bg-[#0f63c9] text-white shadow-md shadow-blue-500/30">
+                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                         </svg>
                                     </span>
-                                    <h2 className="text-xl sm:text-2xl font-black text-[#0b1f3f]">Đội thi của bạn</h2>
+                                    <h2 className="text-2xl sm:text-3xl font-black text-[#071936]">Đội thi của bạn</h2>
                                 </div>
-                                <p className="text-xs sm:text-sm text-[#5c6d83] font-medium mt-1">Bấm vào đội thi để xem chi tiết, quản lý thành viên và nộp bài</p>
+                                <p className="text-xs sm:text-sm text-[#5c6d83] font-semibold mt-1.5">Bấm vào đội thi để xem chi tiết, quản lý thành viên và nộp bài</p>
                             </div>
-                            <span className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-[#0f63c9] bg-blue-100/80 border border-blue-200 shadow-inner">
+                            <span className="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider text-white bg-[#0f63c9] shadow-md shadow-blue-500/20">
                                 {myTeams.length} Đội thi
                             </span>
                         </div>
@@ -1270,13 +1376,13 @@ export default function MyTeam() {
                                         type="button"
                                         key={item.id}
                                         onClick={() => handleSelectTeam(item)}
-                                        className="group text-left p-5 rounded-2xl border border-blue-100/90 bg-white hover:border-[#0f63c9] hover:shadow-[0_8px_25px_rgba(15,99,201,0.14)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden"
+                                        className="group text-left p-5 rounded-2xl border-2 border-blue-200/90 bg-white hover:border-[#0f63c9] hover:shadow-[0_10px_30px_rgba(15,99,201,0.18)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden"
                                     >
-                                        <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-bl from-blue-400/10 to-transparent rounded-bl-full pointer-events-none group-hover:from-blue-500/20 transition-colors" />
+                                        <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-bl from-blue-500/15 to-transparent rounded-bl-full pointer-events-none group-hover:from-blue-600/25 transition-colors" />
                                         <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#0f63c9] bg-blue-50/90 border border-blue-200/80 px-2.5 py-0.5 rounded-full mb-2">
                                             {item.eventName}
                                         </span>
-                                        <h3 className="text-base font-black text-[#0b1f3f] group-hover:text-[#0f63c9] transition-colors line-clamp-1">{item.name}</h3>
+                                        <h3 className="text-lg font-black text-[#0b1f3f] group-hover:text-[#0f63c9] transition-colors line-clamp-1">{item.name}</h3>
                                         <p className="text-xs text-[#5c6d83] mt-1 font-semibold">{item.trackName}</p>
                                         <div className="mt-4 flex items-center justify-between pt-3 border-t border-blue-100/80">
                                             <div className="flex items-center gap-1.5 text-xs text-[#5c6d83] font-bold">
@@ -1310,23 +1416,23 @@ export default function MyTeam() {
                         </div>
                     </div>
 
-                    {/* SECTION 2: ĐĂNG KÝ GIẢI ĐẤU KHÁC */}
+                    {/* SECTION 2: ĐĂNG KÝ GIẢI ĐẤU KHÁC (KHỐI PHỤ MÀU XANH EMERALD DỊU NHẸ, KHÔNG ĐÈ LÊN KHỐI ĐỘI THI CỦA BẠN) */}
                     {availableEventsToRegister.length > 0 && (
-                        <div className="mb-10 rounded-3xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/70 via-teal-50/30 to-white p-6 sm:p-8 shadow-sm space-y-6">
-                            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-emerald-100">
+                        <div className="mb-10 rounded-3xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/50 via-teal-50/20 to-white p-6 sm:p-8 space-y-6">
+                            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-emerald-100/70">
                                 <div>
                                     <div className="flex items-center gap-2.5">
-                                        <span className="p-2 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20">
+                                        <span className="p-2 rounded-xl bg-emerald-100 text-emerald-700 shrink-0 border border-emerald-200/80">
                                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                         </span>
                                         <h2 className="text-xl sm:text-2xl font-black text-emerald-950">Đăng ký giải đấu khác</h2>
                                     </div>
-                                    <p className="text-xs sm:text-sm text-emerald-800/80 font-medium mt-1">Danh sách các giải đấu đang mở cổng đăng ký. Click vào giải đấu để tạo đội hoặc tìm đội.</p>
+                                    <p className="text-xs sm:text-sm text-emerald-800/70 font-medium mt-1">Danh sách các giải đấu đang mở cổng đăng ký. Click vào giải đấu để tạo đội hoặc tìm đội.</p>
                                 </div>
-                                <span className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/90 border border-emerald-300 shadow-inner">
-                                    {availableEventsToRegister.length} Mùa giải mới
+                                <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/70 border border-emerald-200/80">
+                                    {availableEventsToRegister.length} Mùa giải mở
                                 </span>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1335,18 +1441,24 @@ export default function MyTeam() {
                                         type="button"
                                         key={event.id}
                                         onClick={() => handleSelectEventToRegister(event.id)}
-                                        className="group text-left p-5 rounded-2xl border border-emerald-200/90 bg-white hover:border-emerald-500 hover:shadow-[0_8px_25px_rgba(16,185,129,0.15)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden"
+                                        className="group text-left p-5 rounded-2xl border border-emerald-200/80 bg-gradient-to-b from-white via-emerald-50/20 to-white hover:border-emerald-500 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between"
                                     >
-                                        <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-bl from-emerald-400/10 to-transparent rounded-bl-full pointer-events-none group-hover:from-emerald-500/20 transition-colors" />
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-black text-emerald-700 border border-emerald-200/80 uppercase tracking-wider mb-2">
-                                            <span className="pulsing-dot-green shrink-0" />
-                                            Đang mở đăng ký
-                                        </span>
-                                        <h3 className="text-base font-black text-[#0b1f3f] group-hover:text-emerald-700 transition-colors line-clamp-1">{event.name}</h3>
-                                        <p className="text-xs text-[#5c6d83] mt-1 line-clamp-2 min-h-[32px]">{event.description || 'Chưa có mô tả ngắn cho giải đấu.'}</p>
-                                        <div className="mt-4 flex items-center justify-between border-t border-emerald-100/80 pt-3">
-                                            <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                                                Hạn: {new Date(event.regEndDate).toLocaleDateString('vi-VN')}
+                                        <div>
+                                            <h3 className="text-base font-black text-[#0b1f3f] group-hover:text-emerald-700 transition-colors line-clamp-1">{event.name}</h3>
+                                            <p className="text-xs text-[#5c6d83] mt-1.5 line-clamp-2 min-h-[32px] font-medium leading-relaxed">{event.description || 'Chưa có mô tả ngắn cho giải đấu.'}</p>
+                                            
+                                            {/* Thời gian diễn ra giải đấu */}
+                                            <div className="mt-3 flex items-center gap-1.5 text-[11px] font-extrabold text-emerald-800 bg-emerald-50/80 px-2.5 py-1 rounded-lg border border-emerald-200/70 w-fit">
+                                                <svg className="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span>Thi đấu: {event.eventStartDate ? new Date(event.eventStartDate).toLocaleDateString('vi-VN') : 'Đang cập nhật'}{event.eventEndDate ? ` - ${new Date(event.eventEndDate).toLocaleDateString('vi-VN')}` : ''}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-4 flex items-center justify-between border-t border-emerald-100/90 pt-3">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                                                Hạn ĐK: {new Date(event.regEndDate).toLocaleDateString('vi-VN')}
                                             </span>
                                             <span className="text-xs font-black text-emerald-700 group-hover:translate-x-1 inline-flex items-center gap-1 transition-transform">
                                                 Đăng ký ngay
