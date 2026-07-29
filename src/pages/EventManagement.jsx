@@ -139,6 +139,7 @@ function WizardField({ label, hint, children }) {
 }
 
 export default function EventManagement() {
+    const readOnly = localStorage.getItem('role') === 'ADMIN';
     const [events, setEvents] = useState([]);
     const [teams, setTeams] = useState([]);
     const [mentors, setMentors] = useState([]);
@@ -163,6 +164,12 @@ export default function EventManagement() {
     const didBootstrap = useRef(false);
 
     const [searchParams, setSearchParams] = useSearchParams();
+
+    const ensureCoordinator = () => {
+        if (!readOnly) return true;
+        setMessage({ type: 'error', text: 'Admin chỉ được xem dữ liệu cuộc thi. Coordinator mới có quyền vận hành.' });
+        return false;
+    };
 
     useEffect(() => {
         const evId = searchParams.get('eventId');
@@ -193,6 +200,7 @@ export default function EventManagement() {
     );
 
     const handlePublishAndAdvanceRound = async (roundOrder) => {
+        if (!ensureCoordinator()) return;
         if (!selectedEventId || !roundOrder) return;
         try {
             setLoading(true);
@@ -203,6 +211,23 @@ export default function EventManagement() {
             setMessage({ type: 'error', text: err.message || 'Không thể công bố kết quả và mở vòng mới.' });
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleEndEventEarly = async () => {
+        if (!ensureCoordinator()) return;
+        if (!selectedEventId) return;
+        if (window.confirm(`Xác nhận kết thúc sự kiện "${selectedEvent?.name}" sớm hơn dự kiến?`)) {
+            try {
+                setLoading(true);
+                await axiosClient.post(`/events/${selectedEventId}/end-early`);
+                setMessage({ type: 'success', text: 'Đã kết thúc sự kiện sớm hơn dự kiến thành công!' });
+                await fetchAll(selectedEventId);
+            } catch (err) {
+                setMessage({ type: 'error', text: err.message || 'Không thể kết thúc sự kiện sớm.' });
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -488,6 +513,7 @@ export default function EventManagement() {
     };
 
     const createCompetition = async () => {
+        if (!ensureCoordinator()) return;
         const error = validateCreateStep(2);
         if (error) {
             setMessage({ type: 'error', text: error });
@@ -519,6 +545,7 @@ export default function EventManagement() {
 
     const saveEvent = async (e) => {
         e.preventDefault();
+        if (!ensureCoordinator()) return;
         if (form.tracks.some((track) => track.mentorIds.length < 1 || track.mentorIds.length > 2)) {
             setMessage({ type: 'error', text: 'Mỗi bảng đấu cần được phân công từ 1 đến 2 mentor.' });
             return;
@@ -540,6 +567,7 @@ export default function EventManagement() {
     };
 
     const deleteEvent = async () => {
+        if (!ensureCoordinator()) return;
         if (!selectedEventId) return;
         const hasTeams = selectedEvent && Number(selectedEvent.teamCount || 0) > 0;
         const confirmMsg = hasTeams 
@@ -569,6 +597,7 @@ export default function EventManagement() {
     };
 
     const handleApproveDisqualify = async (teamId, teamName) => {
+        if (!ensureCoordinator()) return;
         if (window.confirm(`XÁC NHẬN: Bạn thực sự muốn LOẠI đội "${teamName}" khỏi giải đấu?\nHành động này không thể hoàn tác, mọi bài nộp và thành viên của đội sẽ bị xóa khỏi giải.`)) {
             try {
                 setLoading(true);
@@ -584,6 +613,7 @@ export default function EventManagement() {
     };
 
     const handleRejectDisqualify = async (teamId, teamName) => {
+        if (!ensureCoordinator()) return;
         const reason = window.prompt(`Nhập lý do từ chối yêu cầu loại đội "${teamName}" (lý do này sẽ được gửi tới Giám khảo):`);
         if (reason === null) return;
         if (!reason.trim()) {
@@ -604,6 +634,7 @@ export default function EventManagement() {
     };
 
     const togglePublishResults = async () => {
+        if (!ensureCoordinator()) return;
         if (!selectedEventId || !selectedEvent) return;
         const newStatus = !selectedEvent.resultsPublished;
         const confirmMsg = newStatus
@@ -633,6 +664,7 @@ export default function EventManagement() {
     };
 
     const initializeStructure = async () => {
+        if (!ensureCoordinator()) return;
         if (!selectedEventId) return;
         setLoading(true);
         try {
@@ -648,6 +680,7 @@ export default function EventManagement() {
 
     const saveMatrix = async (e) => {
         e.preventDefault();
+        if (!ensureCoordinator()) return;
         if (!selectedMatrixId) return;
         if (matrixForm.judgeIds.length < 2 || matrixForm.judgeIds.length > 4) {
             setMessage({ type: 'error', text: 'Mỗi vòng đấu cần từ 2 đến 4 giám khảo.' });
@@ -719,6 +752,7 @@ export default function EventManagement() {
     };
 
     const applyMatrixToSameRound = async () => {
+        if (!ensureCoordinator()) return;
         if (!selectedMatrix || matrixForm.judgeIds.length < 2 || matrixForm.judgeIds.length > 4) {
             setMessage({ type: 'error', text: 'Hãy chọn từ 2 đến 4 giám khảo trước khi áp dụng hàng loạt.' });
             return;
@@ -799,6 +833,7 @@ export default function EventManagement() {
     };
 
     const saveTemplate = async () => {
+        if (!ensureCoordinator()) return;
         if (!form.competitionRules.trim()) {
             setMessage({ type: 'error', text: 'Nội dung thể lệ trống, không thể lưu.' });
             return;
@@ -828,6 +863,7 @@ export default function EventManagement() {
     };
 
     const deleteTemplate = async () => {
+        if (!ensureCoordinator()) return;
         if (!selectedTemplateId) return;
         const found = templates.find((t) => String(t.id) === String(selectedTemplateId));
         if (!found) return;
@@ -849,6 +885,7 @@ export default function EventManagement() {
 
     const savePrize = async (e) => {
         e.preventDefault();
+        if (!ensureCoordinator()) return;
         if (!selectedEventId) return;
 
         setLoading(true);
@@ -906,11 +943,13 @@ export default function EventManagement() {
                             <h2 className="mt-2 text-2xl font-black text-white md:text-3xl">Tổng quan sự kiện</h2>
                             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-100 font-medium">Theo dõi toàn bộ mùa giải, tiến độ cấu hình và trạng thái vận hành tại một nơi.</p>
                         </div>
-                        <button type="button" className="rounded-xl bg-white px-5 py-3 text-sm font-black shadow-sm transition hover:bg-teal-50" style={{ color: '#0b3d49', backgroundColor: '#ffffff' }} onClick={() => { setForm(emptyEvent()); setShowCreate(true); setCreateStep(0); setMessage(null); }}>+ Tạo sự kiện mới</button>
+                        <button type="button" disabled={readOnly} className="rounded-xl bg-white px-5 py-3 text-sm font-black shadow-sm transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60" style={{ color: '#0b3d49', backgroundColor: '#ffffff' }} onClick={() => { setForm(emptyEvent()); setShowCreate(true); setCreateStep(0); setMessage(null); }}>{readOnly ? 'Admin chỉ được xem' : '+ Tạo sự kiện mới'}</button>
                     </div>
                 </section>
 
                 <Toast message={message} onClose={() => setMessage(null)} />
+
+                {readOnly && <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-800">Chế độ chỉ xem dành cho Admin. Coordinator phụ trách vận hành cuộc thi.</div>}
 
                 <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {[
@@ -952,7 +991,7 @@ export default function EventManagement() {
                                         <td className="px-5 py-4"><p className="text-sm font-bold text-slate-700">{shortDate(event.eventStartDate)} → {shortDate(event.eventEndDate)}</p><p className="mt-1 text-xs text-slate-500">Đóng đăng ký: {shortDate(event.regEndDate)}</p></td>
                                         <td className="px-5 py-4"><p className="text-sm font-bold text-slate-700">{event.tracks?.length || 0} bảng · {event.roundCount || 0} vòng</p><p className={`mt-1 text-xs font-bold ${configured === matrixTotal && matrixTotal > 0 ? 'text-emerald-600' : 'text-amber-700'}`}>{matrixTotal ? `${configured}/${matrixTotal} vòng đã cấu hình` : 'Chưa khởi tạo vòng đấu'}</p></td>
                                         <td className="px-5 py-4 text-center text-lg font-black text-slate-900">{event.teamCount || 0}</td>
-                                        <td className="px-5 py-4"><div className="flex justify-end gap-2"><Link to={`/events/${event.id}`} className="btn-secondary">Trang công khai</Link><button type="button" className="btn-primary" onClick={() => { selectEvent(event.id); setActiveTab('overview'); }}>Quản lý</button></div></td>
+                                        <td className="px-5 py-4"><div className="flex justify-end gap-2"><Link to={`/events/${event.id}`} className="btn-secondary">Trang công khai</Link><button type="button" className="btn-primary" onClick={() => { selectEvent(event.id); setActiveTab('overview'); }}>{readOnly ? 'Xem' : 'Quản lý'}</button></div></td>
                                     </tr>;
                                 })}
                                 {!eventOverview.length && <tr><td colSpan="6" className="px-5 py-12 text-center text-sm text-slate-500">Không tìm thấy sự kiện phù hợp.</td></tr>}
@@ -1198,6 +1237,8 @@ export default function EventManagement() {
         <div className="mx-auto max-w-7xl space-y-6">
             <Toast message={message} onClose={() => setMessage(null)} />
 
+            {readOnly && <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-800">Chế độ chỉ xem dành cho Admin. Coordinator phụ trách chỉnh sửa, công bố và mở vòng mới.</div>}
+
             <div className="space-y-6">
                 <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#0b3d49] via-[#0e5362] to-[#0f6b7e] p-6 text-white shadow-lg md:p-8">
                     <button type="button" className="text-xs font-black text-teal-200 hover:underline" onClick={() => { setForm(emptyEvent()); setSelectedEventId(''); setShowCreate(false); setMessage(null); }}>← Quay lại danh sách sự kiện</button>
@@ -1210,49 +1251,70 @@ export default function EventManagement() {
                             <h2 className="mt-3 text-2xl font-black text-white md:text-3xl">{selectedEvent?.name}</h2>
                             <p className="mt-2 text-sm text-teal-100/90">{selectedEvent?.teamCount || 0} đội thi · {selectedEvent?.tracks?.length || 0} bảng đấu · {selectedEvent?.roundCount || 0} vòng</p>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-[#071936] px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#071936', color: '#ffffff' }}>Xem trang công khai</Link>
-                            <Link to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="rounded-xl border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#ffffff', color: '#0b3d49' }}>Cấu hình chấm điểm</Link>
-                            {selectedEvent && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const unpublishedMatrices = (selectedEvent.matrices || []).filter((matrix) => !matrix.isPublished);
-                                        const nextRoundOrder = unpublishedMatrices.length
-                                            ? Math.min(...unpublishedMatrices.map((matrix) => Number(matrix.roundOrder)))
-                                            : null;
-                                        const roundMatrices = unpublishedMatrices.filter((matrix) => Number(matrix.roundOrder) === nextRoundOrder);
-                                        if (roundMatrices.length) {
-                                            const roundName = roundMatrices[0].roundName || `Vòng ${nextRoundOrder}`;
-                                            const action = roundMatrices[0].finalRound ? 'chốt kết quả' : 'công bố kết quả và mở vòng tiếp theo';
-                                            if (window.confirm(`Xác nhận ${action} cho toàn bộ ${roundMatrices.length} bảng thuộc ${roundName} của giải đấu "${selectedEvent.name}"?`)) {
-                                                handlePublishAndAdvanceRound(nextRoundOrder);
-                                            }
-                                        } else {
-                                            alert('Không còn vòng đấu nào đang chờ công bố.');
-                                        }
-                                    }}
-                                    disabled={loading}
-                                    className="rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white bg-indigo-600 border-indigo-600 hover:bg-indigo-700 cursor-pointer flex items-center gap-1.5"
-                                >
-                                    <span>⚡ Công bố kết quả & Mở Vòng mới</span>
-                                </button>
-                            )}
-                            {selectedEvent && eventLifecycle(selectedEvent).id === 'ended' && (
-                                <button
-                                    type="button"
-                                    onClick={togglePublishResults}
-                                    disabled={loading}
-                                    className="rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white"
-                                    style={{
-                                        backgroundColor: selectedEvent.resultsPublished ? '#dc2626' : '#16a34a',
-                                        borderColor: selectedEvent.resultsPublished ? '#dc2626' : '#16a34a'
-                                    }}
-                                >
-                                    {selectedEvent.resultsPublished ? 'Hủy công bố kết quả' : 'Công bố kết quả'}
-                                </button>
-                            )}
-                        </div>
+                            {selectedEvent && (() => {
+                                const unpublishedMatrices = (selectedEvent.matrices || []).filter((matrix) => !matrix.isPublished);
+                                const nextRoundOrder = unpublishedMatrices.length
+                                    ? Math.min(...unpublishedMatrices.map((matrix) => Number(matrix.roundOrder)))
+                                    : null;
+                                const roundMatrices = unpublishedMatrices.filter((matrix) => Number(matrix.roundOrder) === nextRoundOrder);
+                                const isNextRoundFinal = roundMatrices.length > 0 && Boolean(roundMatrices[0].finalRound);
+                                const finalRoundPublished = (selectedEvent.matrices || []).some((m) => m.finalRound && m.isPublished);
+                                const isEventEnded = Boolean(selectedEvent.endedEarly || eventLifecycle(selectedEvent).id === 'ended');
+
+                                return (
+                                    <div className="flex flex-wrap gap-2">
+                                        <Link to={`/events/${selectedEventId}`} className="rounded-xl border border-[#071936] px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#071936', color: '#ffffff' }}>Xem trang công khai</Link>
+                                        <Link to={`/dashboard/scoring-config?eventId=${selectedEventId}`} className="rounded-xl border border-[#0b3d49]/20 px-4 py-2.5 text-sm font-black transition shadow-sm" style={{ backgroundColor: '#ffffff', color: '#0b3d49' }}>{readOnly ? 'Xem cấu hình chấm điểm' : 'Cấu hình chấm điểm'}</Link>
+
+                                        {/* Nút 1: Công bố kết quả vòng thi */}
+                                        {roundMatrices.length > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const roundName = roundMatrices[0].roundName || `Vòng ${nextRoundOrder}`;
+                                                    if (isNextRoundFinal) {
+                                                        if (window.confirm(`Xác nhận CÔNG BỐ ĐIỂM & BẢNG XẾP HẠNG Vòng chung kết cho toàn bộ bảng thuộc ${roundName} của giải đấu "${selectedEvent.name}"?\n\nThông báo sẽ được tự động gửi tới toàn bộ thí sinh và giám khảo.`)) {
+                                                            handlePublishAndAdvanceRound(nextRoundOrder);
+                                                        }
+                                                    } else {
+                                                        if (window.confirm(`Xác nhận công bố kết quả và mở vòng tiếp theo cho toàn bộ ${roundMatrices.length} bảng thuộc ${roundName} của giải đấu "${selectedEvent.name}"?`)) {
+                                                            handlePublishAndAdvanceRound(nextRoundOrder);
+                                                        }
+                                                    }
+                                                }}
+                                                disabled={loading || readOnly}
+                                                className={`rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white cursor-pointer flex items-center gap-1.5 ${
+                                                    isNextRoundFinal
+                                                        ? 'bg-purple-600 border-purple-600 hover:bg-purple-700'
+                                                        : 'bg-indigo-600 border-indigo-600 hover:bg-indigo-700'
+                                                }`}
+                                            >
+                                                {isNextRoundFinal ? (
+                                                    <span>🏆 Công bố kết quả & Xếp hạng</span>
+                                                ) : (
+                                                    <span>⚡ Công bố kết quả & Mở Vòng mới</span>
+                                                )}
+                                            </button>
+                                        )}
+
+                                        {/* Nút 2: Kết thúc sự kiện - CHỈ HIỆN SAU KHI VÒNG CHUNG KẾT ĐÃ CÔNG BỐ và sự kiện chưa đóng */}
+                                        {finalRoundPublished && !isEventEnded && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (window.confirm(`Xác nhận KẾT THÚC SỰ KIỆN "${selectedEvent.name}"?\n\nHệ thống sẽ chốt giải đấu và gửi THƯ CẢM ƠN tới toàn bộ Giám khảo, Mentor và Thí sinh.`)) {
+                                                        handleEndEventEarly();
+                                                    }
+                                                }}
+                                                disabled={loading || readOnly}
+                                                className="rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white bg-red-600 border-red-600 hover:bg-red-700 cursor-pointer flex items-center gap-1.5"
+                                            >
+                                                <span>🏁 Kết thúc sự kiện</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                     </div>
                 </section>
 
@@ -1306,13 +1368,14 @@ export default function EventManagement() {
                                     type="button" 
                                     className="btn-secondary" 
                                     onClick={deleteEvent} 
-                                    disabled={loading}
+                                    disabled={loading || readOnly}
                                 >
                                     {Number(selectedEvent.teamCount || 0) > 0 ? 'Tạm dừng sự kiện' : 'Xóa sự kiện'}
                                 </button>
                             )}
                         >
                             <form onSubmit={saveEvent} className="space-y-5">
+                                <fieldset disabled={readOnly} className="contents">
                                 <div><h3 className="font-black text-slate-900">1. Thông tin nhận diện</h3><p className="mt-1 text-sm text-slate-500">Nội dung cơ bản hiển thị cho người tham gia trên trang công khai.</p></div>
                                 <div className="grid gap-4 md:grid-cols-[1fr_180px_140px]">
                                     <input required className="input-custom" placeholder="Tên sự kiện" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -1380,7 +1443,8 @@ export default function EventManagement() {
                                     <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
                                     Cho phép sự kiện hiển thị và hoạt động
                                 </label>
-                                <button type="submit" className="btn-primary w-full" disabled={loading}>{loading ? 'Đang lưu...' : 'Lưu thay đổi'}</button>
+                                <button type="submit" className="btn-primary w-full" disabled={loading || readOnly}>{loading ? 'Đang lưu...' : 'Lưu thay đổi'}</button>
+                                </fieldset>
                             </form>
                         </Section>
                     )}
@@ -1388,6 +1452,7 @@ export default function EventManagement() {
                     {activeTab === 'submission' && (
                         <Section title="Form bài nộp của đội thi" eyebrow="Nội dung Team Leader cần cung cấp">
                             <form onSubmit={saveEvent} className="space-y-4">
+                                <fieldset disabled={readOnly} className="contents">
                                 {form.submissionFields.map((field, index) => (
                                     <div key={field.id || index} className="grid gap-3 rounded-lg border border-blue-100 p-4 md:grid-cols-[1fr_150px_120px_auto]">
                                         <input className="input-custom" value={field.label} onChange={(e) => updateArrayItem('submissionFields', index, { label: e.target.value, id: field.id || e.target.value.toLowerCase().replaceAll(' ', '_') })} placeholder="Ten truong" />
@@ -1406,8 +1471,9 @@ export default function EventManagement() {
                                 ))}
                                 <div className="flex flex-col gap-3 md:flex-row">
                                     <button type="button" className="btn-secondary" onClick={() => setForm((current) => ({ ...current, submissionFields: [...current.submissionFields, { id: `field_${Date.now()}`, label: '', type: 'text', required: false }] }))}>+ Thêm trường</button>
-                                    <button type="submit" className="btn-primary" disabled={loading || !form.name}>Lưu form bài nộp</button>
+                                    <button type="submit" className="btn-primary" disabled={loading || readOnly || !form.name}>Lưu form bài nộp</button>
                                 </div>
+                                </fieldset>
                             </form>
                         </Section>
                     )}
@@ -1416,7 +1482,7 @@ export default function EventManagement() {
                         <Section
                             title="Vòng đấu, Top N & giám khảo"
                             eyebrow="Cấu trúc thi đấu"
-                            actions={<button type="button" className="btn-secondary" disabled={!selectedEvent || selectedEvent.structureInitialized || loading} onClick={initializeStructure}>Tạo lịch đấu tự động</button>}
+                            actions={<button type="button" className="btn-secondary" disabled={readOnly || !selectedEvent || selectedEvent.structureInitialized || loading} onClick={initializeStructure}>Tạo lịch đấu tự động</button>}
                         >
                             {!selectedEvent?.structureInitialized ? (
                                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm font-bold text-amber-800">
@@ -1424,6 +1490,7 @@ export default function EventManagement() {
                                 </div>
                             ) : (
                                 <form onSubmit={saveMatrix} className="space-y-5">
+                                    <fieldset disabled={readOnly} className="contents">
                                     <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                         {(selectedEvent?.matrices || []).map((matrix) => (
                                             <button key={matrix.id} type="button" onClick={() => setSelectedMatrixId(matrix.id)} className={`rounded-lg border p-3 text-left ${String(selectedMatrixId) === String(matrix.id) ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-100' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
@@ -1479,9 +1546,10 @@ export default function EventManagement() {
                                             </div>
                                     </div>
                                     <div className="grid gap-3 sm:grid-cols-2">
-                                        <button type="submit" className="btn-primary w-full" disabled={loading}>Lưu riêng vòng đấu này</button>
-                                        <button type="button" className="btn-secondary w-full" disabled={loading} onClick={applyMatrixToSameRound}>Áp dụng cho mọi bảng cùng vòng</button>
+                                        <button type="submit" className="btn-primary w-full" disabled={loading || readOnly}>Lưu riêng vòng đấu này</button>
+                                        <button type="button" className="btn-secondary w-full" disabled={loading || readOnly} onClick={applyMatrixToSameRound}>Áp dụng cho mọi bảng cùng vòng</button>
                                     </div>
+                                    </fieldset>
                                 </form>
                             )}
                         </Section>
@@ -1491,6 +1559,7 @@ export default function EventManagement() {
                         <div className="space-y-6">
                             <Section title="Thể lệ cuộc thi" eyebrow="Quy định dành cho đội thi">
                                 <form onSubmit={saveEvent} className="space-y-4">
+                                    <fieldset disabled={readOnly} className="contents">
                                     <input className="input-custom" placeholder="Link tai lieu quy che PDF/Drive" value={form.ruleDocumentUrl} onChange={(e) => setForm({ ...form, ruleDocumentUrl: e.target.value })} />
                                     
                                     <div className="rounded-xl border border-blue-100 bg-slate-50 p-4 space-y-4">
@@ -1531,11 +1600,13 @@ export default function EventManagement() {
                                     </div>
 
                                     <textarea rows="8" className="input-custom" value={form.competitionRules} onChange={(e) => setForm({ ...form, competitionRules: e.target.value })} placeholder="Nhap quy che, dieu kien nop bai, cach xu ly vi pham..." />
-                                    <button type="submit" className="btn-primary" disabled={loading || !form.name}>Lưu thể lệ</button>
+                                    <button type="submit" className="btn-primary" disabled={loading || readOnly || !form.name}>Lưu thể lệ</button>
+                                    </fieldset>
                                 </form>
                             </Section>
                             <Section title="Cơ cấu giải thưởng" eyebrow="Giải thưởng và đội đạt giải">
                                 <form onSubmit={savePrize} className="grid gap-3 lg:grid-cols-[1fr_1fr_220px_auto]">
+                                    <fieldset disabled={readOnly} className="contents">
                                     <input required className="input-custom" value={prizeForm.name} onChange={(e) => setPrizeForm({ ...prizeForm, name: e.target.value })} placeholder="Tên giải thưởng" />
                                     <input className="input-custom" value={prizeForm.description} onChange={(e) => setPrizeForm({ ...prizeForm, description: e.target.value })} placeholder="Mô tả hoặc phần thưởng" />
                                     <select className="input-custom" value={prizeForm.teamId} onChange={(e) => setPrizeForm({ ...prizeForm, teamId: e.target.value })}>
@@ -1549,7 +1620,8 @@ export default function EventManagement() {
                                             );
                                         })}
                                     </select>
-                                    <button type="submit" className="btn-primary" disabled={!selectedEventId || loading}>{prizeForm.id ? 'Cập nhật' : 'Thêm giải'}</button>
+                                    <button type="submit" className="btn-primary" disabled={readOnly || !selectedEventId || loading}>{prizeForm.id ? 'Cập nhật' : 'Thêm giải'}</button>
+                                    </fieldset>
                                 </form>
                                 <div className="mt-5 divide-y divide-blue-50 rounded-lg border border-blue-100">
                                     {prizes.map((prize) => (
@@ -1560,7 +1632,7 @@ export default function EventManagement() {
                                             </div>
                                             <div className="flex gap-2">
                                                 <button type="button" className="btn-secondary" onClick={() => setPrizeForm({ id: prize.id, name: prize.name || '', description: prize.description || '', teamId: prize.teamId || '' })}>Sua</button>
-                                                <button type="button" className="btn-secondary" onClick={async () => { await axiosClient.delete(`/events/prizes/${prize.id}`); await fetchPrizes(selectedEventId); }}>Xoa</button>
+                                                <button type="button" className="btn-secondary" disabled={readOnly} onClick={async () => { await axiosClient.delete(`/events/prizes/${prize.id}`); await fetchPrizes(selectedEventId); }}>Xoa</button>
                                             </div>
                                         </div>
                                     ))}

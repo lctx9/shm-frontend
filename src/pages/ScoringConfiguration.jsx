@@ -36,6 +36,7 @@ function formFromMatrix(matrix) {
 export default function ScoringConfiguration() {
     const [searchParams] = useSearchParams();
     const queryEventId = searchParams.get('eventId');
+    const readOnly = localStorage.getItem('role') === 'ADMIN';
 
     const [events, setEvents] = useState([]);
     const [judges, setJudges] = useState([]);
@@ -122,6 +123,7 @@ export default function ScoringConfiguration() {
     });
 
     const validate = () => {
+        if (readOnly) return 'Admin chỉ được xem cấu hình chấm điểm. Coordinator mới có quyền thay đổi.';
         if (!selectedMatrix) return 'Hãy chọn một vòng đấu.';
         if (selectedMatrix.isPublished) return 'Vòng đấu đã được công bố nên cấu hình chấm điểm đã bị khóa.';
         if (!form.submissionDeadline) return 'Hãy đặt deadline cho vòng đấu.';
@@ -183,6 +185,10 @@ export default function ScoringConfiguration() {
     });
 
     const save = async (applyToRound) => {
+        if (readOnly) {
+            setMessage({ type: 'error', text: 'Admin chỉ được xem. Coordinator mới có quyền lưu cấu hình.' });
+            return;
+        }
         const error = validate();
         if (error) return setMessage({ type: 'error', text: error });
         const targets = applyToRound ? selectedEvent.matrices.filter((matrix) => matrix.roundOrder === selectedMatrix.roundOrder) : [selectedMatrix];
@@ -200,6 +206,10 @@ export default function ScoringConfiguration() {
     };
 
     const initializeStructure = async () => {
+        if (readOnly) {
+            setMessage({ type: 'error', text: 'Admin chỉ được xem. Coordinator mới có quyền khởi tạo vòng đấu.' });
+            return;
+        }
         if (!selectedEvent) return;
         setSaving(true);
         try {
@@ -235,10 +245,16 @@ export default function ScoringConfiguration() {
 
             <Toast message={message} onClose={() => setMessage(null)} />
 
+            {readOnly && (
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm font-bold text-blue-800">
+                    Chế độ chỉ xem dành cho Admin. Coordinator phụ trách cấu hình và vận hành chấm điểm.
+                </div>
+            )}
+
             {!selectedEvent ? (
                 <section className="rounded-2xl border border-blue-100 bg-white p-10 text-center text-slate-500">Chưa có sự kiện. Hãy tạo sự kiện trước khi cấu hình chấm điểm.</section>
             ) : !selectedEvent.structureInitialized ? (
-                <section className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center"><h3 className="text-xl font-black text-amber-900">Sự kiện chưa có cấu trúc vòng đấu</h3><p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-amber-800">Hệ thống sẽ tạo ma trận Track × Round từ số vòng và bảng đấu đã khai báo.</p><button type="button" className="btn-primary mt-5" disabled={saving} onClick={initializeStructure}>Khởi tạo vòng đấu</button></section>
+                <section className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center"><h3 className="text-xl font-black text-amber-900">Sự kiện chưa có cấu trúc vòng đấu</h3><p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-amber-800">Hệ thống sẽ tạo ma trận Track × Round từ số vòng và bảng đấu đã khai báo.</p><button type="button" className="btn-primary mt-5" disabled={saving || readOnly} onClick={initializeStructure}>Khởi tạo vòng đấu</button></section>
             ) : (
                 <div className="grid gap-6 xl:grid-cols-[310px_1fr]">
                     <aside className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
@@ -258,7 +274,7 @@ export default function ScoringConfiguration() {
                             </div>
                         )}
 
-                        <fieldset disabled={Boolean(selectedMatrix?.isPublished)} className="contents">
+                        <fieldset disabled={readOnly || Boolean(selectedMatrix?.isPublished)} className="contents">
                         {activeStep === 'setup' && <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
                             <div className="border-b border-blue-100 pb-4"><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Bước 1/3</p><h3 className="mt-1 text-lg font-black text-slate-900">Thiết lập vòng đấu</h3><p className="mt-1 text-sm text-slate-500">Đặt tài liệu, thời hạn nộp và số đội được đi tiếp.</p></div>
                             <div className="mt-5 grid gap-4 md:grid-cols-3"><label className="text-sm font-bold text-slate-700">Guideline / đề bài<input className="input-custom mt-2" placeholder="Link PDF, Drive hoặc tài liệu" value={form.guidelineUrl} onChange={(event) => setForm({ ...form, guidelineUrl: event.target.value })} /></label><label className="text-sm font-bold text-slate-700">Thời gian mở nộp bài<input type="datetime-local" className="input-custom mt-2" value={form.submissionStartDate} onChange={(event) => setForm({ ...form, submissionStartDate: event.target.value })} /></label><label className="text-sm font-bold text-slate-700">Deadline vòng đấu<input type="datetime-local" className="input-custom mt-2" value={form.submissionDeadline} onChange={(event) => setForm({ ...form, submissionDeadline: event.target.value })} /></label></div>
@@ -298,7 +314,7 @@ export default function ScoringConfiguration() {
 
                         <div className="flex flex-col gap-3 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                             <button type="button" className="btn-secondary" disabled={stepIndex === 0} onClick={() => setActiveStep(steps[stepIndex - 1].id)}>← Quay lại</button>
-                            {stepIndex < steps.length - 1 ? <button type="button" className="btn-primary" onClick={() => setActiveStep(steps[stepIndex + 1].id)}>Tiếp tục →</button> : <div className="flex flex-col gap-2 sm:flex-row"><button type="button" className="btn-secondary" disabled={saving || selectedMatrix?.isPublished} onClick={() => save(true)}>Áp dụng cho cả vòng</button><button type="button" className="btn-primary" disabled={saving || selectedMatrix?.isPublished} onClick={() => save(false)}>{saving ? 'Đang lưu...' : 'Lưu cấu hình'}</button></div>}
+                            {stepIndex < steps.length - 1 ? <button type="button" className="btn-primary" onClick={() => setActiveStep(steps[stepIndex + 1].id)}>Tiếp tục →</button> : <div className="flex flex-col gap-2 sm:flex-row"><button type="button" className="btn-secondary" disabled={saving || readOnly || selectedMatrix?.isPublished} onClick={() => save(true)}>Áp dụng cho cả vòng</button><button type="button" className="btn-primary" disabled={saving || readOnly || selectedMatrix?.isPublished} onClick={() => save(false)}>{saving ? 'Đang lưu...' : 'Lưu cấu hình'}</button></div>}
                         </div>
                     </main>
                 </div>
