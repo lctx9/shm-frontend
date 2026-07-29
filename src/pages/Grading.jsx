@@ -134,6 +134,16 @@ export default function Grading() {
             (judge) => String(judge.id) === String(resolvedUserId)
         )
     );
+    const canDisqualifySelected = Boolean(
+        canGrade
+        && selectedSub
+        && selectedSub.disqualificationStatus !== 'APPROVED'
+        && selectedSub.disqualificationStatus !== 'PENDING'
+        && resolvedUserId
+        && (selectedMatrixForPermission?.judges || []).some(
+            (judge) => String(judge.id) === String(resolvedUserId)
+        )
+    );
 
     const handleDisqualifyClick = (teamId, teamName) => {
         setDisqualifyingTeam({ id: teamId, name: teamName });
@@ -372,7 +382,7 @@ export default function Grading() {
                                 <div><p>{selectedMatrix?.eventName || 'SEAL Hackathon'} · {selectedSub.roundName}</p><h2>{selectedSub.teamName || `Đội #${selectedSub.teamId}`}</h2><span>{selectedSub.trackName || 'Bảng chung'}</span></div>
                                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                     <a href={selectedSub.fileUrl} target="_blank" rel="noreferrer">Mở bài nộp ↗</a>
-                                    {canGradeSelected && (
+                                    {canDisqualifySelected && (
                                         <button
                                             type="button"
                                             onClick={() => handleDisqualifyClick(selectedSub.teamId, selectedSub.teamName)}

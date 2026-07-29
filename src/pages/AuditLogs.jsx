@@ -2,6 +2,15 @@ import { useEffect, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 
+function actionLabel(log) {
+    if (log.oldScore != null || log.newScore != null) {
+        return log.oldScore == null ? 'Chấm lần đầu' : 'Sửa điểm';
+    }
+    if (log.reason?.startsWith('LOẠI ĐỘI:')) return 'Loại đội';
+    if (log.reason?.startsWith('CÔNG BỐ KẾT QUẢ')) return 'Công bố vòng';
+    return 'Vận hành';
+}
+
 export default function AuditLogs() {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -64,9 +73,7 @@ export default function AuditLogs() {
                             <td className="px-6 py-4 font-bold text-slate-800">{log.teamName || 'Không rõ đội'}</td>
                             <td className="px-6 py-4">
                                 <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
-                                    {log.oldScore == null && log.newScore == null
-                                        ? 'Loại đội'
-                                        : log.oldScore == null ? 'Chấm lần đầu' : 'Sửa điểm'}
+                                    {actionLabel(log)}
                                 </span>
                             </td>
                             <td className="px-6 py-4 text-amber-700">{log.oldScore ?? '—'}</td>
