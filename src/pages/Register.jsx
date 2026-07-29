@@ -18,6 +18,13 @@ function getFileName(file) {
     return file.name;
 }
 
+function isFptStudentEmail(email) {
+    const normalized = (email || '').trim().toLowerCase();
+    if (!normalized.endsWith('@fpt.edu.vn')) return false;
+    const username = normalized.substring(0, normalized.indexOf('@'));
+    return /^.*[a-z]{2}\d{6}$/.test(username);
+}
+
 export default function Register() {
     const navigate = useNavigate();
     const [step, setStep] = useState(1); // 1: Xác thực email, 2: Thông tin sinh viên, 3: Mật khẩu
@@ -187,24 +194,31 @@ export default function Register() {
         const errors = {};
         let hasErr = false;
 
-        // Mã số sinh viên: không rỗng, tối thiểu 4 ký tự
+        const emailVal = formData.email.trim().toLowerCase();
+        const isFptEmail = emailVal.endsWith('@fpt.edu.vn');
+        const isFptStudent = isFptEmail ? isFptStudentEmail(emailVal) : formData.isFptStudent;
+        const isFptLecturer = isFptEmail && !isFptStudent;
+
+        // Mã số sinh viên: bắt buộc với sinh viên (FPT hoặc ngoài), không bắt buộc với giảng viên
         const sid = formData.studentId.trim();
-        if (!sid) {
-            errors.studentId = 'Vui lòng nhập mã số sinh viên.';
-            hasErr = true;
-        } else if (sid.length < 4) {
-            errors.studentId = 'Mã số sinh viên phải có ít nhất 4 ký tự.';
-            hasErr = true;
+        if (!isFptLecturer) {
+            if (!sid) {
+                errors.studentId = 'Vui lòng nhập mã số sinh viên.';
+                hasErr = true;
+            } else if (sid.length < 4) {
+                errors.studentId = 'Mã số sinh viên phải có ít nhất 4 ký tự.';
+                hasErr = true;
+            }
         }
 
         // Tên trường (nếu không phải FPT)
-        if (!formData.isFptStudent && !formData.universityName.trim()) {
+        if (!isFptStudent && !formData.universityName.trim() && !isFptLecturer) {
             errors.universityName = 'Vui lòng nhập tên trường đại học.';
             hasErr = true;
         }
 
-        // Ảnh thẻ sinh viên bắt buộc
-        if (!studentCardFile) {
+        // Ảnh thẻ sinh viên bắt buộc (trừ khi dùng email @fpt.edu.vn)
+        if (!isFptEmail && !studentCardFile) {
             errors.studentCard = 'Vui lòng tải lên ảnh thẻ sinh viên.';
             hasErr = true;
         }
@@ -260,17 +274,30 @@ export default function Register() {
 
         setLoading(true);
         try {
-            setUploading(true);
-            const uploadedCardUrl = await uploadImageFile(studentCardFile);
-            setUploading(false);
+            let uploadedCardUrl = '';
+            if (studentCardFile) {
+                setUploading(true);
+                uploadedCardUrl = await uploadImageFile(studentCardFile);
+                setUploading(false);
+            }
+
+            const emailVal = formData.email.trim().toLowerCase();
+            const isFptEmail = emailVal.endsWith('@fpt.edu.vn');
+            
+            let finalIsFptStudent = formData.isFptStudent;
+            if (isFptEmail) {
+                finalIsFptStudent = isFptStudentEmail(emailVal);
+            }
 
             const response = await axiosClient.post('/auth/register', {
                 fullName: formData.fullName,
                 email: formData.email,
                 password: formData.password,
                 studentId: formData.studentId,
-                isFptStudent: formData.isFptStudent,
-                universityName: formData.isFptStudent ? 'Đại học FPT' : formData.universityName,
+                isFptStudent: finalIsFptStudent,
+                universityName: isFptEmail
+                    ? (finalIsFptStudent ? 'Đại học FPT' : 'Đại học FPT (Giảng viên)')
+                    : (formData.isFptStudent ? 'Đại học FPT' : formData.universityName),
                 studentCardUrl: uploadedCardUrl,
                 otp: formData.otp,
             });
@@ -449,7 +476,6 @@ export default function Register() {
                                 {fieldErrors.otp && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.otp}</p>}
                             </>
                         )}
-
                         {/* ================= STEP 2: THÔNG TIN SINH VIÊN ================= */}
                         {step === 2 && (
                             <>
