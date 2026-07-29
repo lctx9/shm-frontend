@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { getEventPhase } from '../utils/hackathon';
 import Toast from '../components/Toast';
@@ -31,7 +32,7 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                     <div>
                         <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Chi tiết đội thi</p>
                         <h3 className="mt-1 text-2xl font-black text-slate-900">{team.name}</h3>
-                        <p className="mt-1 text-sm text-slate-500">{team.eventName} · {team.trackName}</p>
+                        <p className="mt-1 text-sm text-[#5c6d83]">{team.eventName} · {team.trackName}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {canChat && <button type="button" onClick={onOpenChat} className="btn-primary">Trao đổi</button>}
@@ -63,8 +64,8 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
                                                 <p className="font-black text-slate-900">{member.fullName}</p>
-                                                <p className="mt-1 text-sm text-slate-500">{member.email}</p>
-                                                <p className="mt-1 text-sm text-slate-500">MSSV: {member.studentId || 'Chưa có'}</p>
+                                                <p className="mt-1 text-sm text-[#5c6d83]">{member.email}</p>
+                                                <p className="mt-1 text-sm text-[#5c6d83]">MSSV: {member.studentId || 'Chưa có'}</p>
                                             </div>
                                             <Pill tone={member.role === 'LEADER' ? 'red' : 'slate'}>{member.role}</Pill>
                                         </div>
@@ -86,7 +87,7 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                             <div>
                                                 <p className="font-black text-slate-900">{matrix.roundName}</p>
-                                                <p className="mt-1 text-sm text-slate-500">
+                                                <p className="mt-1 text-sm text-[#5c6d83]">
                                                     Deadline: {matrix.submissionDeadline ? new Date(matrix.submissionDeadline).toLocaleString('vi-VN') : 'Chưa đặt'}
                                                 </p>
                                             </div>
@@ -103,7 +104,7 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                                     </div>
                                 );
                             })}
-                            {requiredMatrices.length === 0 && <p className="p-5 text-sm text-slate-500">Chưa có vòng thi cho track này.</p>}
+                            {requiredMatrices.length === 0 && <p className="p-5 text-sm text-[#5c6d83]">Chưa có vòng thi cho track này.</p>}
                         </div>
                     </section>
                 </div>
@@ -113,6 +114,8 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
 }
 
 export default function TeamExplorer() {
+    const [searchParams] = useSearchParams();
+    const paramEventId = searchParams.get('eventId') || searchParams.get('registerEventId');
     const storedRole = localStorage.getItem('role');
     const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
     const email = localStorage.getItem('email');
@@ -120,7 +123,7 @@ export default function TeamExplorer() {
     const [teams, setTeams] = useState([]);
     const [events, setEvents] = useState([]);
     const [submissions, setSubmissions] = useState([]);
-    const [eventFilter, setEventFilter] = useState('ALL');
+    const [eventFilter, setEventFilter] = useState(paramEventId || 'ALL');
     const [selectedTeam, setSelectedTeam] = useState(null);
     const [chatTeam, setChatTeam] = useState(null);
     const [joinTeam, setJoinTeam] = useState(null);
@@ -141,9 +144,19 @@ export default function TeamExplorer() {
                 axiosClient.get('/events'),
                 staffRoles.has(role) ? axiosClient.get('/submissions').catch(() => ({ result: [] })) : Promise.resolve({ result: [] }),
             ]);
-            setTeams(teamRes.result || []);
-            setEvents(eventRes.result || []);
+            const fetchedTeams = teamRes.result || [];
+            const fetchedEvents = eventRes.result || [];
+            setTeams(fetchedTeams);
+            setEvents(fetchedEvents);
             setSubmissions(submissionRes.result || []);
+
+            // Nếu không truyền URL param, ưu tiên tự động chọn Sự kiện mà người dùng đang tham gia
+            if (!paramEventId && fetchedTeams.length > 0) {
+                const userTeam = fetchedTeams.find(t => (t.members || []).some(m => String(m.userId) === String(userId) || m.email === email));
+                if (userTeam && userTeam.eventId) {
+                    setEventFilter(String(userTeam.eventId));
+                }
+            }
             setError('');
         } catch (err) {
             setError(err.message || 'Không thể tải dữ liệu đội thi.');
@@ -156,15 +169,13 @@ export default function TeamExplorer() {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (paramEventId) {
+            setEventFilter(paramEventId);
+        }
+    }, [paramEventId]);
+
     const matrices = useMemo(() => events.flatMap((event) => event.matrices || []), [events]);
-
-    const registrationEvents = useMemo(() => {
-        return events.filter((event) => getEventPhase(event).key === 'registration');
-    }, [events]);
-
-    const registrationEventIds = useMemo(() => {
-        return new Set(registrationEvents.map((event) => String(event.id)));
-    }, [registrationEvents]);
 
     const assignedTrackIds = useMemo(() => {
         if (!isMentor) return new Set();
@@ -177,10 +188,9 @@ export default function TeamExplorer() {
 
     const filteredTeams = useMemo(() => {
         return teams.filter((team) => {
-            const isRegOpenEvent = registrationEventIds.has(String(team.eventId));
-            const eventMatched = eventFilter === 'ALL' ? isRegOpenEvent : String(team.eventId) === String(eventFilter);
+            const eventMatched = eventFilter === 'ALL' ? true : String(team.eventId) === String(eventFilter);
             const mentorMatched = !isMentor || assignedTrackIds.has(String(team.trackId));
-            const isMember = (team.members || []).some((member) => String(member.userId) === String(userId));
+            const isMember = (team.members || []).some((member) => String(member.userId) === String(userId) || member.email === email);
             const isOfficial = (team.memberCount || team.members?.length || 0) >= 3;
 
             // Ẩn các đội chưa đủ thành viên (< 3 TV) khỏi Sảnh chờ công khai trừ tài khoản Staff/Coordinator
@@ -194,7 +204,7 @@ export default function TeamExplorer() {
             
             return eventMatched && mentorMatched;
         });
-    }, [assignedTrackIds, eventFilter, isMentor, teams, userId, canJoin, registrationEventIds, staffRoles, role]);
+    }, [assignedTrackIds, eventFilter, isMentor, teams, userId, email, canJoin, staffRoles, role]);
 
     const stats = useMemo(() => {
         const teamIds = new Set(filteredTeams.map((team) => String(team.id)));
@@ -252,7 +262,7 @@ export default function TeamExplorer() {
                 <div>
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">{isMentor ? 'Mentor workspace' : 'Team explorer'}</p>
                     <h2 className="text-2xl font-black tracking-tight text-slate-900">{isMentor ? 'Đội đang hướng dẫn' : 'Danh sách đội thi'}</h2>
-                    <p className="mt-2 text-sm text-slate-600">
+                    <p className="mt-2 text-sm text-[#5c6d83]">
                         {isMentor
                             ? 'Theo dõi đội được phân công, xem bài nộp, tiến độ và trao đổi trực tiếp với từng đội.'
                             : 'Theo dõi các đội trong sự kiện, thành viên, track và trạng thái tham gia.'}
@@ -262,25 +272,56 @@ export default function TeamExplorer() {
             </div>
 
             <section className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-lg border border-blue-100 bg-white p-5">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Đội</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{stats.teams}</p>
+                <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50/70 via-indigo-50/20 to-white p-5 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#5c6d83]">Đội thi</p>
+                        <p className="mt-1 text-3xl font-black text-[#071936]">{stats.teams}</p>
+                    </div>
+                    <span className="p-3 rounded-2xl bg-[#0f63c9] text-white shadow-md shadow-blue-500/20 shrink-0">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </span>
                 </div>
-                <div className="rounded-lg border border-blue-100 bg-white p-5">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Bài nộp</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{stats.submissions}</p>
+                <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/70 via-teal-50/20 to-white p-5 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-800/80">Bài nộp</p>
+                        <p className="mt-1 text-3xl font-black text-emerald-950">{stats.submissions}</p>
+                    </div>
+                    <span className="p-3 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-500/20 shrink-0">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </span>
                 </div>
-                <div className="rounded-lg border border-blue-100 bg-white p-5">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Chờ chấm</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{stats.pending}</p>
+                <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/70 via-orange-50/20 to-white p-5 shadow-xs flex items-center justify-between">
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-800/80">Chờ chấm</p>
+                        <p className="mt-1 text-3xl font-black text-amber-950">{stats.pending}</p>
+                    </div>
+                    <span className="p-3 rounded-2xl bg-amber-500 text-white shadow-md shadow-amber-500/20 shrink-0">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
                 </div>
             </section>
 
-            <div className="rounded-lg border border-blue-100 bg-white p-4">
-                <label className="mb-1 block text-sm font-bold text-slate-700">Lọc theo giải đấu (đang mở đăng ký)</label>
-                <select className="input-custom max-w-md" value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
-                    <option value="ALL">Tất cả giải đấu</option>
-                    {registrationEvents.map((event) => (
+            <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-r from-blue-50/60 via-indigo-50/20 to-white p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                    <span className="p-2 rounded-xl bg-[#0f63c9] text-white shadow-xs shrink-0">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+                        </svg>
+                    </span>
+                    <div>
+                        <label className="block text-xs font-black uppercase tracking-wider text-[#071936]">Lọc theo Sự kiện / Giải đấu</label>
+                        <p className="text-xs text-[#5c6d83] font-medium">Chọn sự kiện để xem các đội thi tham gia</p>
+                    </div>
+                </div>
+                <select className="input-custom max-w-md font-bold text-sm bg-white" value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
+                    <option value="ALL">Tất cả sự kiện</option>
+                    {events.map((event) => (
                         <option key={event.id} value={event.id}>{event.name}</option>
                     ))}
                 </select>
@@ -289,10 +330,10 @@ export default function TeamExplorer() {
             <Toast error={error} onClose={() => setError('')} />
 
             {loading ? (
-                <div className="rounded-lg bg-white p-8 text-center text-gray-500">Đang tải đội thi...</div>
+                <div className="rounded-2xl border border-blue-100 bg-white p-12 text-center text-[#5c6d83] font-semibold">Đang tải danh sách đội thi...</div>
             ) : filteredTeams.length === 0 ? (
-                <div className="rounded-lg border border-blue-100 bg-white p-8 text-center text-gray-500">
-                    {isMentor ? 'Mentor chưa được phân công đội nào.' : 'Chưa có đội thi phù hợp.'}
+                <div className="rounded-2xl border border-blue-100 bg-white p-12 text-center text-[#5c6d83] font-semibold">
+                    {isMentor ? 'Mentor chưa được phân công đội nào.' : 'Chưa có đội thi phù hợp trong sảnh chờ.'}
                 </div>
             ) : (
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -300,25 +341,25 @@ export default function TeamExplorer() {
                         const teamSubmissions = submissions.filter((item) => String(item.teamId) === String(team.id));
                         const gradedCount = teamSubmissions.filter((item) => item.graded).length;
                         return (
-                            <article key={team.id} className="flex flex-col h-full rounded-lg border border-blue-100 bg-white p-5 shadow-sm">
-                                <div className="flex items-start justify-between gap-4">
+                            <article key={team.id} className="flex flex-col h-full rounded-2xl border border-blue-100/90 bg-white p-6 shadow-sm hover:border-[#0f63c9] hover:shadow-[0_10px_25px_rgba(15,99,201,0.12)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden">
+                                <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <h3 className="text-lg font-black text-slate-900 line-clamp-2" title={team.name}>{team.name}</h3>
-                                        <p className="mt-1 text-sm text-slate-500 line-clamp-1" title={team.eventName}>{team.eventName || 'Chưa gắn giải đấu'}</p>
+                                        <h3 className="text-lg font-black text-[#0b1f3f] line-clamp-1 group-hover:text-[#0f63c9] transition-colors" title={team.name}>{team.name}</h3>
+                                        <p className="mt-1 text-xs font-bold text-[#0f63c9] line-clamp-1" title={team.eventName}>{team.eventName || 'Chưa gắn giải đấu'}</p>
                                     </div>
-                                    <Pill>{team.type}</Pill>
+                                    <Pill tone={team.type === 'PUBLIC' ? 'blue' : 'amber'}>{team.type}</Pill>
                                 </div>
 
-                                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600 line-clamp-3" title={team.description}>{team.description || 'Đội chưa cập nhật mô tả.'}</p>
+                                <p className="mt-3.5 min-h-12 text-xs leading-relaxed text-[#5c6d83] font-medium line-clamp-3" title={team.description}>{team.description || 'Đội chưa cập nhật mô tả.'}</p>
 
-                                <dl className="mt-5 space-y-2 text-sm text-slate-600">
+                                <dl className="mt-5 space-y-2 text-xs text-[#5c6d83] pt-4 border-t border-blue-50">
                                     <div className="flex justify-between gap-4">
-                                        <dt className="font-bold text-slate-800">Track</dt>
-                                        <dd className="text-right">{team.trackName || 'Chưa cập nhật'}</dd>
+                                        <dt className="font-bold text-[#071936]">Hạng mục</dt>
+                                        <dd className="font-extrabold text-[#0f63c9] text-right">{team.trackName || 'Chưa cập nhật'}</dd>
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                        <dt className="font-bold text-slate-800">Thành viên</dt>
-                                        <dd className="flex items-center gap-1.5 font-semibold">
+                                        <dt className="font-bold text-[#071936]">Thành viên</dt>
+                                        <dd className="flex items-center gap-1.5 font-bold">
                                             <span>{team.memberCount || 0}/5</span>
                                             {(team.memberCount || 0) >= 3 ? (
                                                 <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -334,21 +375,21 @@ export default function TeamExplorer() {
                                         </dd>
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                        <dt className="font-bold text-slate-800">Bài nộp</dt>
-                                        <dd>{teamSubmissions.length} ({gradedCount} đã chấm)</dd>
+                                        <dt className="font-bold text-[#071936]">Bài nộp</dt>
+                                        <dd className="font-bold text-slate-700">{teamSubmissions.length} ({gradedCount} đã chấm)</dd>
                                     </div>
                                 </dl>
 
                                 <div className="mt-auto pt-6">
-                                    <div className="grid gap-2 sm:grid-cols-2">
-                                        <button type="button" onClick={() => setSelectedTeam(team)} className="btn-secondary">Chi tiết</button>
+                                    <div className="grid gap-2.5 sm:grid-cols-2">
+                                        <button type="button" onClick={() => setSelectedTeam(team)} className="btn-secondary text-xs font-black py-2 rounded-xl">Chi tiết</button>
                                         {isMentor || staffRoles.has(role) ? (
-                                            <button type="button" onClick={() => openChatForTeam(team)} className="btn-primary">Trao đổi</button>
+                                            <button type="button" onClick={() => openChatForTeam(team)} className="btn-primary text-xs font-black py-2 rounded-xl">Trao đổi</button>
                                         ) : canJoin && (
                                             <button
                                                 type="button"
                                                 onClick={() => team.type === 'PUBLIC' ? handleJoinPublic(team.id) : setJoinTeam(team)}
-                                                className="btn-primary"
+                                                className="btn-primary text-xs font-black py-2 rounded-xl bg-[#0f63c9] hover:bg-[#0b4793] text-white shadow-md shadow-blue-500/20"
                                             >
                                                 {team.type === 'PUBLIC' ? 'Xin gia nhập' : 'Nhập mật khẩu'}
                                             </button>
