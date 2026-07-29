@@ -75,7 +75,6 @@ export default function Grading() {
 
     const storedRole = localStorage.getItem('role');
     const role = ['MENTOR', 'JUDGE'].includes(storedRole) ? 'STAFF' : storedRole;
-    const email = localStorage.getItem('email');
     const [resolvedUserId, setResolvedUserId] = useState(localStorage.getItem('userId') || null);
     const canGrade = ['STAFF', 'JUDGE'].includes(role);
 
@@ -97,17 +96,24 @@ export default function Grading() {
         });
     }, [resolvedUserId, matrixById, role, submissions]);
 
-    const summary = useMemo(() => ({
-        total: visibleSubmissions.length,
-        graded: visibleSubmissions.filter((submission) => submission.graded).length,
-        pending: visibleSubmissions.filter((submission) => !submission.graded).length,
-    }), [visibleSubmissions]);
+    const summary = useMemo(() => {
+        const activeSubmissions = visibleSubmissions.filter(
+            (submission) => submission.disqualificationStatus !== 'APPROVED'
+        );
+        return {
+            total: activeSubmissions.length,
+            graded: activeSubmissions.filter((submission) => submission.graded).length,
+            pending: activeSubmissions.filter((submission) => !submission.graded).length,
+        };
+    }, [visibleSubmissions]);
 
     const filteredSubmissions = useMemo(() => {
         const keyword = query.trim().toLowerCase();
         return visibleSubmissions.filter((submission) => {
             const matrix = matrixById.get(String(submission.matrixId));
-            const matchesStatus = queueFilter === 'all' || (queueFilter === 'graded' ? submission.graded : !submission.graded);
+            const isDisqualified = submission.disqualificationStatus === 'APPROVED';
+            const matchesStatus = queueFilter === 'all'
+                || (!isDisqualified && (queueFilter === 'graded' ? submission.graded : !submission.graded));
             const matchesSearch = !keyword || `${submission.teamName} ${submission.roundName} ${submission.trackName} ${matrix?.eventName || ''}`.toLowerCase().includes(keyword);
             return matchesStatus && matchesSearch;
         });
@@ -121,6 +127,8 @@ export default function Grading() {
         canGrade
         && selectedSub
         && !selectedSub.isPublished
+        && selectedSub.disqualificationStatus !== 'APPROVED'
+        && selectedSub.disqualificationStatus !== 'PENDING'
         && resolvedUserId
         && (selectedMatrixForPermission?.judges || []).some(
             (judge) => String(judge.id) === String(resolvedUserId)
@@ -155,7 +163,7 @@ export default function Grading() {
             }
             await fetchDataQuiet();
         } catch (err) {
-            setError(err.message || 'Không thể gửi đề xuất loại đội thi.');
+            setError(err.message || 'Không thể loại đội thi.');
         } finally {
             setSaving(false);
         }
@@ -202,11 +210,17 @@ export default function Grading() {
             setEvents(eventRes.result || []);
 
             setSelectedSub((prevSub) => {
-                if (prevSub && !newSubs.some((s) => String(s.id) === String(prevSub.id))) {
+                if (!prevSub) return null;
+                const updatedSubmission = newSubs.find((submission) => String(submission.id) === String(prevSub.id));
+                if (!updatedSubmission) {
                     setError('Đội thi này vừa bị loại khỏi giải đấu.');
                     return null;
                 }
-                return prevSub;
+                if (prevSub.disqualificationStatus !== 'APPROVED'
+                    && updatedSubmission.disqualificationStatus === 'APPROVED') {
+                    setError(`Đội "${updatedSubmission.teamName}" vừa bị loại khỏi cuộc thi.`);
+                }
+                return updatedSubmission;
             });
         } catch {
             // Silently ignore background poll failures
@@ -314,6 +328,7 @@ export default function Grading() {
                         {filteredSubmissions.length ? filteredSubmissions.map((submission) => {
                             const matrix = matrixById.get(String(submission.matrixId));
                             const isPendingDisqualify = submission.disqualificationStatus === 'PENDING';
+                            const isDisqualified = submission.disqualificationStatus === 'APPROVED';
                             const handleClick = () => {
                                 if (isPendingDisqualify) {
                                     alert(`Đội "${submission.teamName || `Đội #${submission.teamId}`}" đang trong quá trình xử lý kỷ luật/chờ duyệt loại.`);
@@ -327,12 +342,13 @@ export default function Grading() {
                                     key={submission.id} 
                                     onClick={handleClick} 
                                     className={selectedSub?.id === submission.id ? 'is-selected' : ''}
-                                    style={isPendingDisqualify ? { opacity: 0.45, filter: 'grayscale(80%)', cursor: 'not-allowed' } : {}}
+                                    style={isPendingDisqualify || isDisqualified ? { opacity: 0.55, filter: 'grayscale(70%)' } : {}}
                                 >
                                     <div>
                                         <strong>{submission.teamName || `Đội #${submission.teamId}`}</strong>
                                         <span>{matrix?.eventName || 'Sự kiện'} · {submission.trackName || 'Bảng chung'}</span>
                                         {isPendingDisqualify && <span style={{ color: '#b91c1c', fontSize: '10px', fontWeight: 'bold', marginLeft: '6px', backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: '4px' }}>Chờ duyệt loại</span>}
+                                        {isDisqualified && <span style={{ color: '#991b1b', fontSize: '10px', fontWeight: 'bold', marginLeft: '6px', backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: '4px' }}>Đã bị loại</span>}
                                     </div>
                                     <p>{submission.roundName || 'Vòng thi'}<span className={submission.graded ? 'is-graded' : 'is-pending'}>{submission.graded ? `${submission.score ?? 0}/100` : 'Chờ chấm'}</span></p>
                                 </button>
@@ -356,7 +372,7 @@ export default function Grading() {
                                 <div><p>{selectedMatrix?.eventName || 'SEAL Hackathon'} · {selectedSub.roundName}</p><h2>{selectedSub.teamName || `Đội #${selectedSub.teamId}`}</h2><span>{selectedSub.trackName || 'Bảng chung'}</span></div>
                                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                     <a href={selectedSub.fileUrl} target="_blank" rel="noreferrer">Mở bài nộp ↗</a>
-                                    {canGrade && selectedSub.disqualificationStatus !== 'PENDING' && (
+                                    {canGradeSelected && (
                                         <button
                                             type="button"
                                             onClick={() => handleDisqualifyClick(selectedSub.teamId, selectedSub.teamName)}
@@ -422,6 +438,14 @@ export default function Grading() {
                                     <span><kbd>Tab</kbd> hoặc <kbd>Enter</kbd> sang ô điểm kế tiếp · <kbd>Shift</kbd> + <kbd>Tab</kbd> quay lại · <kbd>Ctrl</kbd> + <kbd>Enter</kbd> lưu kết quả</span>
                                 </div>
                             )}
+                            {selectedSub.disqualificationStatus === 'APPROVED' && (
+                                <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '12px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', marginBottom: '16px' }}>
+                                    Đội thi này đã bị loại và không thể tiếp tục chấm điểm.
+                                    <span style={{ display: 'block', fontSize: '12px', fontWeight: '500', marginTop: '4px', opacity: 0.85 }}>
+                                        Lý do: "{selectedSub.disqualificationReason}" (bởi {selectedSub.disqualifierEmail || 'Judge'})
+                                    </span>
+                                </div>
+                            )}
 
                             <div className="judge-rubric__criteria">
                                 {criteriaScores.map((criterion, index) => (
@@ -460,6 +484,7 @@ export default function Grading() {
                         <div>
                             <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>Xác nhận loại đội thi</h3>
                             <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Bạn đang thực hiện loại đội <strong>"{disqualifyingTeam.name}"</strong> khỏi giải đấu.</p>
+                            <p style={{ fontSize: '12px', color: '#b91c1c', fontWeight: '700', marginTop: '8px' }}>Đội sẽ bị loại ngay, không cần Coordinator xác nhận. Thành viên đội và các Judge cùng được phân công sẽ nhận thông báo.</p>
                         </div>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
