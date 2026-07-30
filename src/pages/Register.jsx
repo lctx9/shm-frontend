@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
+import logoFpt from '../assets/fpt.jpg';
 
-// Upload file ảnh riêng — không set Content-Type thủ công, để axios tự thêm boundary
 async function uploadImageFile(file) {
     const form = new FormData();
     form.append('file', file);
     const res = await axiosClient.post('/upload/student-card', form, {
         headers: { 'Content-Type': undefined },
     });
-    return res.result; // URL thật dạng http://localhost:8080/uploads/student-cards/xxx.jpg
+    return res.result;
 }
 
 function getFileName(file) {
@@ -27,7 +27,7 @@ function isFptStudentEmail(email) {
 
 export default function Register() {
     const navigate = useNavigate();
-    const [step, setStep] = useState(1); // 1: Xác thực email, 2: Thông tin sinh viên, 3: Mật khẩu
+    const [step, setStep] = useState(1); // 1: Verify Email, 2: Student Info, 3: Password Setup
     const [loading, setLoading] = useState(false);
     const [sendingOtp, setSendingOtp] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
@@ -36,9 +36,7 @@ export default function Register() {
     const [otpSuccess, setOtpSuccess] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    // File ảnh thực tế để upload
     const [studentCardFile, setStudentCardFile] = useState(null);
-    // Object URL tạm để preview
     const [studentCardPreview, setStudentCardPreview] = useState('');
     const [uploading, setUploading] = useState(false);
 
@@ -49,7 +47,7 @@ export default function Register() {
         confirmPassword: '',
         studentId: '',
         isFptStudent: true,
-        universityName: 'Đại học FPT',
+        universityName: 'FPT University',
         otp: '',
     });
 
@@ -64,7 +62,7 @@ export default function Register() {
         if (!file.type.startsWith('image/')) {
             setFieldErrors((curr) => ({
                 ...curr,
-                studentCard: 'Chỉ chấp nhận file ảnh (.jpg, .png, .webp, .gif).',
+                studentCard: 'Only image files (.jpg, .png, .webp) are accepted.',
             }));
             event.target.value = '';
             return;
@@ -75,7 +73,7 @@ export default function Register() {
         if (!allowedExtensions.includes(ext)) {
             setFieldErrors((curr) => ({
                 ...curr,
-                studentCard: `Đuôi file không hợp lệ. Chỉ nhận: ${allowedExtensions.join(', ')}`,
+                studentCard: `Invalid file extension. Allowed extensions: ${allowedExtensions.join(', ')}`,
             }));
             event.target.value = '';
             return;
@@ -84,7 +82,7 @@ export default function Register() {
         if (file.size > 5 * 1024 * 1024) {
             setFieldErrors((curr) => ({
                 ...curr,
-                studentCard: 'Ảnh thẻ sinh viên không được vượt quá 5MB.',
+                studentCard: 'Student card image cannot exceed 5MB.',
             }));
             event.target.value = '';
             return;
@@ -104,7 +102,7 @@ export default function Register() {
         setOtpSuccess('');
         setError('');
         if (!formData.email) {
-            setFieldErrors((curr) => ({ ...curr, email: 'Vui lòng nhập email trước.' }));
+            setFieldErrors((curr) => ({ ...curr, email: 'Please enter your email first.' }));
             return;
         }
 
@@ -112,57 +110,51 @@ export default function Register() {
         try {
             const response = await axiosClient.post('/auth/send-otp', { email: formData.email });
             setOtpSent(true);
-            setOtpSuccess(response.result || 'Đã gửi mã OTP.');
+            setOtpSuccess(response.result || 'Verification code sent to your email.');
         } catch (err) {
-            setFieldErrors((curr) => ({ ...curr, email: err.message || 'Không thể gửi mã OTP.' }));
+            setFieldErrors((curr) => ({ ...curr, email: err.message || 'Could not send verification code.' }));
         } finally {
             setSendingOtp(false);
         }
     };
 
-    // ===================== VALIDATION NGHIỆP VỤ =====================
-
-    /** Bước 1: kiểm tra client + gọi server verify OTP (async) */
     const handleNextStep1 = async () => {
         setFieldErrors({});
         setError('');
         const errors = {};
         let hasErr = false;
 
-        // 1. Họ và tên: không rỗng, ít nhất 2 từ, không chứa số
         const nameTrimmed = formData.fullName.trim();
         if (!nameTrimmed) {
-            errors.fullName = 'Vui lòng nhập họ và tên.';
+            errors.fullName = 'Please enter your full name.';
             hasErr = true;
         } else if (nameTrimmed.split(/\s+/).length < 2) {
-            errors.fullName = 'Họ và tên phải có ít nhất 2 từ (VD: Nguyễn Văn A).';
+            errors.fullName = 'Full name must contain at least 2 words (e.g. Nguyen Van A).';
             hasErr = true;
         } else if (/\d/.test(nameTrimmed)) {
-            errors.fullName = 'Họ và tên không được chứa chữ số.';
+            errors.fullName = 'Full name cannot contain numbers.';
             hasErr = true;
         }
 
-        // 2. Email: không rỗng, đúng định dạng
         const emailTrimmed = formData.email.trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailTrimmed) {
-            errors.email = 'Vui lòng nhập địa chỉ email.';
+            errors.email = 'Please enter your email address.';
             hasErr = true;
         } else if (!emailRegex.test(emailTrimmed)) {
-            errors.email = 'Địa chỉ email không đúng định dạng.';
+            errors.email = 'Invalid email address format.';
             hasErr = true;
         } else if (!otpSent) {
-            errors.email = 'Vui lòng nhấn "Gửi mã" để nhận OTP trước.';
+            errors.email = 'Please click "Send Code" to request an OTP code first.';
             hasErr = true;
         }
 
-        // 3. OTP: không rỗng, đúng 6 chữ số
         const otpVal = formData.otp.trim();
         if (!otpVal) {
-            errors.otp = 'Vui lòng nhập mã OTP từ email.';
+            errors.otp = 'Please enter the verification code sent to your email.';
             hasErr = true;
         } else if (!/^\d{6}$/.test(otpVal)) {
-            errors.otp = 'Mã OTP phải gồm đúng 6 chữ số.';
+            errors.otp = 'OTP code must be exactly 6 digits.';
             hasErr = true;
         }
 
@@ -171,23 +163,20 @@ export default function Register() {
             return;
         }
 
-        // 4. Xác minh OTP với server (peek — không xóa OTP)
         setLoading(true);
         try {
             await axiosClient.post('/auth/verify-otp', {
                 email: emailTrimmed,
                 otp: otpVal,
             });
-            // OTP hợp lệ → tiếp tục
             setStep(2);
         } catch (err) {
-            setFieldErrors({ otp: err.message || 'Mã OTP không đúng hoặc đã hết hạn. Vui lòng gửi lại.' });
+            setFieldErrors({ otp: err.message || 'Invalid or expired OTP. Please try again.' });
         } finally {
             setLoading(false);
         }
     };
 
-    /** Bước 2: kiểm tra thông tin sinh viên */
     const handleNextStep2 = () => {
         setFieldErrors({});
         setError('');
@@ -199,27 +188,24 @@ export default function Register() {
         const isFptStudent = isFptEmail ? isFptStudentEmail(emailVal) : formData.isFptStudent;
         const isFptLecturer = isFptEmail && !isFptStudent;
 
-        // Mã số sinh viên: bắt buộc với sinh viên (FPT hoặc ngoài), không bắt buộc với giảng viên
         const sid = formData.studentId.trim();
         if (!isFptLecturer) {
             if (!sid) {
-                errors.studentId = 'Vui lòng nhập mã số sinh viên.';
+                errors.studentId = 'Please enter your student ID.';
                 hasErr = true;
             } else if (sid.length < 4) {
-                errors.studentId = 'Mã số sinh viên phải có ít nhất 4 ký tự.';
+                errors.studentId = 'Student ID must be at least 4 characters long.';
                 hasErr = true;
             }
         }
 
-        // Tên trường (nếu không phải FPT)
         if (!isFptStudent && !formData.universityName.trim() && !isFptLecturer) {
-            errors.universityName = 'Vui lòng nhập tên trường đại học.';
+            errors.universityName = 'Please enter your university name.';
             hasErr = true;
         }
 
-        // Ảnh thẻ sinh viên bắt buộc (trừ khi dùng email @fpt.edu.vn)
         if (!isFptEmail && !studentCardFile) {
-            errors.studentCard = 'Vui lòng tải lên ảnh thẻ sinh viên.';
+            errors.studentCard = 'Please upload your student ID card image.';
             hasErr = true;
         }
 
@@ -247,23 +233,22 @@ export default function Register() {
         setFieldErrors({});
         setSuccessMessage('');
 
-        // Validate mật khẩu ngay lập tức trước khi gọi API
         const pwErrors = {};
         let pwHasErr = false;
 
         if (!formData.password) {
-            pwErrors.password = 'Vui lòng nhập mật khẩu.';
+            pwErrors.password = 'Please enter your password.';
             pwHasErr = true;
         } else if (formData.password.length < 6) {
-            pwErrors.password = 'Mật khẩu phải chứa ít nhất 6 ký tự.';
+            pwErrors.password = 'Password must be at least 6 characters long.';
             pwHasErr = true;
         }
 
         if (!formData.confirmPassword) {
-            pwErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu.';
+            pwErrors.confirmPassword = 'Please confirm your password.';
             pwHasErr = true;
         } else if (formData.password !== formData.confirmPassword) {
-            pwErrors.confirmPassword = 'Mật khẩu xác nhận không khớp.';
+            pwErrors.confirmPassword = 'Passwords do not match.';
             pwHasErr = true;
         }
 
@@ -296,46 +281,50 @@ export default function Register() {
                 studentId: formData.studentId,
                 isFptStudent: finalIsFptStudent,
                 universityName: isFptEmail
-                    ? (finalIsFptStudent ? 'Đại học FPT' : 'Đại học FPT (Giảng viên)')
-                    : (formData.isFptStudent ? 'Đại học FPT' : formData.universityName),
+                    ? (finalIsFptStudent ? 'FPT University' : 'FPT University (Lecturer)')
+                    : (formData.isFptStudent ? 'FPT University' : formData.universityName),
                 studentCardUrl: uploadedCardUrl,
                 otp: formData.otp,
             });
 
-            setSuccessMessage(response.result || 'Đăng ký thành công.');
+            setSuccessMessage(response.result || 'Registration successful.');
             if (studentCardPreview) URL.revokeObjectURL(studentCardPreview);
             setTimeout(() => {
                 navigate('/login');
             }, 2500);
         } catch (err) {
             setUploading(false);
-            setError(err.message || 'Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.');
+            setError(err.message || 'An error occurred during registration. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    // Các biến style phụ trợ đã được chuyển thành class CSS trong index.css để tăng tính đồng bộ.
-
     return (
-        /* Thay đổi devpost-auth--register sang devpost-auth--login để căn giữa form theo chiều dọc giống hệt trang Đăng nhập */
         <main className="devpost-auth devpost-auth--login">
             <section className="devpost-auth__story">
-                <Link to="/" className="devpost-auth__wordmark"><span>SEAL</span><strong>SEAL Hackathon</strong></Link>
+                <Link to="/" className="flex items-center gap-3 relative z-10 mb-8 lg:mb-0">
+                    <img src={logoFpt} alt="FPT Logo" style={{ width: '60px', height: '45px' }} className="object-contain" />
+                    <div className="h-10 border-l border-slate-300"></div>
+                    <div className="flex flex-col relative -top-[1px]">
+                        <span className="text-[32px] font-black leading-none text-slate-900 brand-mark-text">seal.</span>
+                        <span className="text-[16px] font-black uppercase leading-none tracking-widest text-[#2c4e66] mt-1">Hackathon</span>
+                    </div>
+                </Link>
                 <div>
-                    <p>Nền tảng hackathon dành cho sinh viên</p>
-                    <h1>Tạo hồ sơ.<br />Tìm đồng đội.<br />Bắt đầu xây dựng.</h1>
-                    <span>Tài khoản sinh viên giúp thành tích, giải thưởng và chứng nhận của bạn được lưu lại xuyên suốt các mùa giải.</span>
+                    <p>The student hackathon platform</p>
+                    <h1>Create Profile.<br />Find Teammates.<br />Start Building.</h1>
+                    <span>A student profile ensures your credentials, team records, and awards are archived across all seasons.</span>
                 </div>
                 <ul>
-                    <li style={{ opacity: step === 1 ? 1 : 0.5, fontWeight: step === 1 ? 'bold' : 'normal' }}>
-                        <strong>01</strong>Xác thực tài khoản
+                    <li style={{ opacity: step === 1 ? 1 : 0.5, fontWeight: step === 1 ? '500' : '300' }}>
+                        <strong>01</strong>Verify Account
                     </li>
-                    <li style={{ opacity: step === 2 ? 1 : 0.5, fontWeight: step === 2 ? 'bold' : 'normal' }}>
-                        <strong>02</strong>Thông tin sinh viên
+                    <li style={{ opacity: step === 2 ? 1 : 0.5, fontWeight: step === 2 ? '500' : '300' }}>
+                        <strong>02</strong>Student Details
                     </li>
-                    <li style={{ opacity: step === 3 ? 1 : 0.5, fontWeight: step === 3 ? 'bold' : 'normal' }}>
-                        <strong>03</strong>Thiết lập mật khẩu
+                    <li style={{ opacity: step === 3 ? 1 : 0.5, fontWeight: step === 3 ? '500' : '300' }}>
+                        <strong>03</strong>Set Password
                     </li>
                 </ul>
             </section>
@@ -343,49 +332,49 @@ export default function Register() {
             <section className="devpost-auth__form-panel" aria-labelledby="register-title">
                 <div className="devpost-auth__form-wrap">
                     
-                    {/* Tiến trình Step bar */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'between', marginBottom: '16px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--seal-700)' }}>
-                            Bước {step}/3
+                    {/* Step progress bar */}
+                    <div className="flex justify-between items-center mb-6">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[#2c4e66]">
+                            Step {step}/3
                         </span>
-                        <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto' }}>
-                            <span style={{ height: '6px', width: '32px', borderRadius: '999px', transition: 'background-color 0.2s', backgroundColor: step >= 1 ? 'var(--seal-600)' : '#e2e8f0' }} />
-                            <span style={{ height: '6px', width: '32px', borderRadius: '999px', transition: 'background-color 0.2s', backgroundColor: step >= 2 ? 'var(--seal-600)' : '#e2e8f0' }} />
-                            <span style={{ height: '6px', width: '32px', borderRadius: '999px', transition: 'background-color 0.2s', backgroundColor: step >= 3 ? 'var(--seal-600)' : '#e2e8f0' }} />
+                        <div className="flex gap-1.5 ml-auto">
+                            <span className={`h-1.5 w-8 rounded-full transition-colors duration-200 ${step >= 1 ? 'bg-[#2c4e66]' : 'bg-slate-200'}`} />
+                            <span className={`h-1.5 w-8 rounded-full transition-colors duration-200 ${step >= 2 ? 'bg-[#2c4e66]' : 'bg-slate-200'}`} />
+                            <span className={`h-1.5 w-8 rounded-full transition-colors duration-200 ${step >= 3 ? 'bg-[#2c4e66]' : 'bg-slate-200'}`} />
                         </div>
                     </div>
 
-                    <p className="devpost-auth__eyebrow">Đăng ký</p>
+                    <p className="devpost-auth__eyebrow">Sign Up</p>
                     <h1 id="register-title">
-                        {step === 1 && 'Tạo tài khoản'}
-                        {step === 2 && 'Thông tin sinh viên'}
-                        {step === 3 && 'Thiết lập mật khẩu'}
+                        {step === 1 && 'Create Account'}
+                        {step === 2 && 'Student Information'}
+                        {step === 3 && 'Set Password'}
                     </h1>
                     <span className="devpost-auth__copy">
-                        {step === 1 && 'Nhập tên, email và xác thực mã OTP.'}
-                        {step === 2 && 'Cung cấp mã sinh viên và ảnh thẻ sinh viên.'}
-                        {step === 3 && 'Tạo mật khẩu an toàn cho tài khoản.'}
+                        {step === 1 && 'Enter your name, email, and verify with OTP.'}
+                        {step === 2 && 'Provide your student ID and credentials.'}
+                        {step === 3 && 'Secure your account with a strong password.'}
                     </span>
 
                     <Toast error={error} success={successMessage} onClose={() => { setError(''); setSuccessMessage(''); }} />
 
                     <form onSubmit={step === 3 ? handleSubmit : (e) => e.preventDefault()}>
                         
-                        {/* ================= STEP 1: XÁC THỰC EMAIL ================= */}
+                        {/* ================= STEP 1: VERIFY EMAIL ================= */}
                         {step === 1 && (
                             <>
-                                <label htmlFor="register-name">Họ và tên</label>
+                                <label htmlFor="register-name">Full Name</label>
                                 <input
                                     id="register-name"
                                     required
                                     type="text"
-                                    placeholder="Nguyễn Văn A"
+                                    placeholder="Nguyen Van A"
                                     value={formData.fullName}
                                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                                 />
-                                {fieldErrors.fullName && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.fullName}</p>}
+                                {fieldErrors.fullName && <p className="text-red-500 text-xs font-bold mt-1">{fieldErrors.fullName}</p>}
 
-                                <label htmlFor="register-email">Email</label>
+                                <label htmlFor="register-email">Email Address</label>
                                 <div className="flex gap-3 items-center mb-4">
                                     <input
                                         required
@@ -404,27 +393,28 @@ export default function Register() {
                                         disabled={sendingOtp}
                                         className="btn-secondary h-[42px] px-4 whitespace-nowrap text-xs font-bold w-auto"
                                     >
-                                        {sendingOtp ? 'Đang gửi...' : otpSent ? 'Gửi lại' : 'Gửi mã'}
+                                        {sendingOtp ? 'Sending...' : otpSent ? 'Resend' : 'Send Code'}
                                     </button>
                                 </div>
-                                {fieldErrors.email && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '-12px', marginBottom: '8px' }}>{fieldErrors.email}</p>}
-                                {otpSuccess && <p style={{ color: '#16a34a', fontSize: '12px', fontWeight: 'bold', marginTop: '-12px', marginBottom: '8px' }}>{otpSuccess}</p>}
+                                {fieldErrors.email && <p className="text-red-500 text-xs font-bold -mt-3 mb-2">{fieldErrors.email}</p>}
+                                {otpSuccess && <p className="text-emerald-600 text-xs font-bold -mt-3 mb-2">{otpSuccess}</p>}
 
-                                <label htmlFor="register-otp">Mã OTP email</label>
+                                <label htmlFor="register-otp">Verification Code (OTP)</label>
                                 <input
                                     id="register-otp"
                                     required
                                     type="text"
                                     inputMode="numeric"
                                     maxLength="6"
-                                    placeholder="Nhập 6 số"
+                                    placeholder="Enter 6-digit code"
                                     value={formData.otp}
                                     onChange={(e) => setFormData({ ...formData, otp: e.target.value.replace(/\D/g, '') })}
                                 />
-                                {fieldErrors.otp && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.otp}</p>}
+                                {fieldErrors.otp && <p className="text-red-500 text-xs font-bold mt-1">{fieldErrors.otp}</p>}
                             </>
                         )}
-                        {/* ================= STEP 2: THÔNG TIN SINH VIÊN ================= */}
+
+                        {/* ================= STEP 2: STUDENT DETAILS ================= */}
                         {step === 2 && (() => {
                             const emailVal = formData.email.trim().toLowerCase();
                             const isFptEmail = emailVal.endsWith('@fpt.edu.vn');
@@ -435,7 +425,7 @@ export default function Register() {
                                 <>
                                     {!isFptLecturer ? (
                                         <>
-                                            <label htmlFor="register-student-id">Mã số sinh viên</label>
+                                            <label htmlFor="register-student-id">Student ID</label>
                                             <input
                                                 id="register-student-id"
                                                 required
@@ -444,58 +434,58 @@ export default function Register() {
                                                 value={formData.studentId}
                                                 onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
                                             />
-                                            {fieldErrors.studentId && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.studentId}</p>}
+                                            {fieldErrors.studentId && <p className="text-red-500 text-xs font-bold mt-1">{fieldErrors.studentId}</p>}
                                         </>
                                     ) : (
                                         <>
-                                            <label htmlFor="register-student-id">Mã cán bộ (không bắt buộc)</label>
+                                            <label htmlFor="register-student-id">Staff ID (Optional)</label>
                                             <input
                                                 id="register-student-id"
                                                 type="text"
-                                                placeholder="Mã cán bộ FPT của bạn"
+                                                placeholder="Your FPT staff ID"
                                                 value={formData.studentId}
                                                 onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
                                             />
-                                            {fieldErrors.studentId && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.studentId}</p>}
+                                            {fieldErrors.studentId && <p className="text-red-500 text-xs font-bold mt-1">{fieldErrors.studentId}</p>}
                                         </>
                                     )}
 
                                     {!isFptEmail && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0 16px 0' }}>
+                                        <div className="flex items-center gap-2 my-4">
                                             <input
                                                 type="checkbox"
                                                 id="isFpt"
-                                                style={{ width: '18px', height: '18px', margin: 0, accentColor: 'var(--seal-600)', cursor: 'pointer' }}
+                                                className="h-4.5 w-4.5 m-0 accent-[#2c4e66] cursor-pointer"
                                                 checked={formData.isFptStudent}
                                                 onChange={(e) => setFormData({ ...formData, isFptStudent: e.target.checked })}
                                             />
-                                            <label htmlFor="isFpt" style={{ margin: 0, cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: 'var(--seal-700)' }}>
-                                                Tôi là sinh viên Đại học FPT
+                                            <label htmlFor="isFpt" className="m-0 cursor-pointer font-bold text-sm text-[#2c4e66]">
+                                                I am an FPT University student
                                             </label>
                                         </div>
                                     )}
 
                                     {!isFptEmail && !formData.isFptStudent && (
                                         <>
-                                            <label htmlFor="register-university">Tên trường đại học</label>
+                                            <label htmlFor="register-university">University Name</label>
                                             <input
                                                 id="register-university"
                                                 required
                                                 type="text"
-                                                placeholder="Trường đại học của bạn"
+                                                placeholder="Enter university name"
                                                 value={formData.universityName}
                                                 onChange={(e) => setFormData({ ...formData, universityName: e.target.value })}
                                             />
-                                            {fieldErrors.universityName && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.universityName}</p>}
+                                            {fieldErrors.universityName && <p className="text-red-500 text-xs font-bold mt-1">{fieldErrors.universityName}</p>}
                                         </>
                                     )}
 
                                     {!isFptEmail && (
                                         <>
-                                            <label htmlFor="register-card">Ảnh thẻ sinh viên (bắt buộc)</label>
+                                            <label htmlFor="register-card">Student ID Card Photo (Required)</label>
                                             <label
                                                 htmlFor="register-card"
-                                                className="student-card-upload-label mb-4"
+                                                className="student-card-upload-label mb-4 cursor-pointer"
                                             >
                                                 {studentCardFile ? (
                                                     <div className="flex items-center gap-3">
@@ -507,17 +497,17 @@ export default function Register() {
                                                                 {getFileName(studentCardFile)}
                                                             </p>
                                                             <p className="text-xs text-emerald-600 m-0">
-                                                                {(studentCardFile.size / 1024).toFixed(0)} KB (Nhấn đổi ảnh)
+                                                                {(studentCardFile.size / 1024).toFixed(0)} KB (Click to change)
                                                             </p>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <svg className="h-7 w-7 text-[var(--seal-600)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <svg className="h-7 w-7 text-[#2c4e66]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                                         </svg>
-                                                        <p className="text-sm font-bold text-[var(--seal-600)] m-0">Tải ảnh thẻ lên</p>
-                                                        <p className="text-xs text-gray-500 m-0">Chỉ nhận file .jpg, .png, .webp (Max 5MB)</p>
+                                                        <p className="text-sm font-bold text-[#2c4e66] m-0">Upload student ID card photo</p>
+                                                        <p className="text-xs text-gray-500 m-0">Supports JPG, PNG, WEBP (Max 5MB)</p>
                                                     </>
                                                 )}
                                             </label>
@@ -528,17 +518,17 @@ export default function Register() {
                                                 className="sr-only"
                                                 onChange={handleStudentCardUpload}
                                             />
-                                            {fieldErrors.studentCard && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '-8px', marginBottom: '8px' }}>{fieldErrors.studentCard}</p>}
+                                            {fieldErrors.studentCard && <p className="text-red-500 text-xs font-bold -mt-2 mb-2">{fieldErrors.studentCard}</p>}
                                         </>
                                     )}
                                 </>
                             );
                         })()}
 
-                        {/* ================= STEP 3: THIẾT LẬP MẬT KHẨU ================= */}
+                        {/* ================= STEP 3: SET PASSWORD ================= */}
                         {step === 3 && (
                             <>
-                                <label htmlFor="register-password">Mật khẩu</label>
+                                <label htmlFor="register-password">Password</label>
                                 <input
                                     id="register-password"
                                     required
@@ -547,9 +537,9 @@ export default function Register() {
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 />
-                                {fieldErrors.password && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.password}</p>}
+                                {fieldErrors.password && <p className="text-red-500 text-xs font-bold mt-1">{fieldErrors.password}</p>}
 
-                                <label htmlFor="register-confirm-password">Xác nhận mật khẩu</label>
+                                <label htmlFor="register-confirm-password">Confirm Password</label>
                                 <input
                                     id="register-confirm-password"
                                     required
@@ -558,11 +548,11 @@ export default function Register() {
                                     value={formData.confirmPassword}
                                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                                 />
-                                {fieldErrors.confirmPassword && <p style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{fieldErrors.confirmPassword}</p>}
+                                {fieldErrors.confirmPassword && <p className="text-red-500 text-xs font-bold mt-1">{fieldErrors.confirmPassword}</p>}
                             </>
                         )}
 
-                        {/* ================= NÚT THAO TÁC DI CHUYỂN BƯỚC ================= */}
+                        {/* ================= NAVIGATION CONTROLS ================= */}
                         <div className="flex gap-3 mt-5">
                             {step > 1 && (
                                 <button
@@ -571,7 +561,7 @@ export default function Register() {
                                     disabled={loading || uploading}
                                     className="btn-secondary flex-1 w-full"
                                 >
-                                    Quay lại
+                                    Back
                                 </button>
                             )}
                             
@@ -582,26 +572,26 @@ export default function Register() {
                                 className="btn-primary flex-1 w-full"
                             >
                                 {step < 3 ? (
-                                    'Tiếp tục'
+                                    'Continue'
                                 ) : uploading ? (
                                     <span className="flex items-center gap-2">
                                         <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                                         </svg>
-                                        Đang đăng ký...
+                                        Registering...
                                     </span>
                                 ) : loading ? (
-                                    'Đang xử lý...'
+                                    'Processing...'
                                 ) : (
-                                    'Đăng ký'
+                                    'Sign Up'
                                 )}
                             </button>
                         </div>
                     </form>
 
                     <p className="devpost-auth__switch">
-                        Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+                        Already have an account? <Link to="/login">Sign In</Link>
                     </p>
                 </div>
             </section>

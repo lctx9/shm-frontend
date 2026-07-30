@@ -13,16 +13,145 @@ function parseCriteria(value) {
     }
 }
 
-function getDeadlineStatus(value) {
-    if (!value) return 'Chưa cập nhật deadline';
-    const days = Math.ceil((new Date(value).getTime() - Date.now()) / 86400000);
-    if (days < 0) return 'Deadline đã kết thúc';
-    if (days === 0) return 'Deadline trong hôm nay';
-    return `Còn ${days} ngày đến deadline`;
+function SectionTitle({ children }) {
+    return (
+        <div className="flex items-center gap-4 my-8 border-b border-slate-100 pb-3">
+            <h2 className="text-xl font-black text-slate-900">{children}</h2>
+        </div>
+    );
 }
 
-function SectionTitle({ children }) {
-    return <div className="devpost-detail-section-title"><h2>{children}</h2><span /></div>;
+function getEventCoverImage(event) {
+    const season = (event.season || '').toUpperCase();
+    if (season === 'SUMMER') {
+        return 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60';
+    } else if (season === 'SPRING') {
+        return 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=60';
+    } else if (season === 'FALL') {
+        return 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&auto=format&fit=crop&q=60';
+    } else {
+        return 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=60';
+    }
+}
+
+function CountdownSection({ event }) {
+    const phase = getEventPhase(event);
+    const targetDate = phase.key === 'registration' ? event.regEndDate : event.eventStartDate;
+
+    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+    useEffect(() => {
+        if (!targetDate) return;
+
+        const updateTimer = () => {
+            const diff = new Date(targetDate).getTime() - Date.now();
+            if (diff <= 0) {
+                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / 1000 / 60) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+
+            setTimeLeft({ days, hours, minutes, seconds });
+        };
+
+        updateTimer();
+        const interval = setInterval(updateTimer, 1000);
+        return () => clearInterval(interval);
+    }, [targetDate]);
+
+    const titleLabel = phase.key === 'registration' 
+        ? 'Time until 🏆 Registration close' 
+        : phase.key === 'running' 
+        ? 'Time until 🏁 Hackathon end'
+        : 'Time until 🎉 Winners announcement';
+
+    const timeBlocks = [
+        { label: 'days', value: timeLeft.days },
+        { label: 'hours', value: timeLeft.hours },
+        { label: 'minutes', value: timeLeft.minutes },
+        { label: 'seconds', value: timeLeft.seconds },
+    ];
+
+    return (
+        <div className="bg-[#FAF6EF]/30 border border-slate-200 p-6 rounded-none animate-none">
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                {titleLabel}
+            </h3>
+
+            <div className="grid grid-cols-4 gap-2">
+                {timeBlocks.map((block) => (
+                    <div key={block.label} className="bg-white border border-slate-200 p-2.5 flex flex-col items-center justify-center rounded shadow-sm">
+                        <span className="text-xl font-black text-slate-800 leading-none">
+                            {String(block.value).padStart(2, '0')}
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 mt-1.5">
+                            {block.label}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function TimelineSection({ event }) {
+    const regStart = event.regStartDate ? new Date(event.regStartDate) : null;
+    const regEnd = event.regEndDate ? new Date(event.regEndDate) : null;
+    const eventStart = event.eventStartDate ? new Date(event.eventStartDate) : null;
+    const eventEnd = event.eventEndDate ? new Date(event.eventEndDate) : null;
+
+    const formatDateStr = (date) => {
+        if (!date) return 'TBD';
+        return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) + ' @ ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    };
+
+    const timelineItems = [
+        { label: 'Registration and team formation start', date: formatDateStr(regStart), done: regStart && regStart < Date.now(), icon: '✅' },
+        { label: 'Registrations and team formation close', date: formatDateStr(regEnd), done: regEnd && regEnd < Date.now(), icon: '⭕' },
+        { label: 'Hackathon days start', date: formatDateStr(eventStart), done: eventStart && eventStart < Date.now(), icon: '🏁' },
+        { label: 'Mentor Session - Technical Architecture Guidance', date: formatDateStr(eventStart ? new Date(eventStart.getTime() + 86400000 * 3) : null), done: false, icon: '💬' },
+        { label: 'Deliverable 1 - Initial Prototype Submission', date: formatDateStr(eventStart ? new Date(eventStart.getTime() + 86400000 * 5) : null), done: false, icon: '🚩' },
+        { label: 'Mentor Session 2 - Pitch Deck & Demo Prep', date: formatDateStr(eventStart ? new Date(eventStart.getTime() + 86400000 * 7) : null), done: false, icon: '💬' },
+        { label: 'Deliverable 2 - Final Source Code & Video Demo', date: formatDateStr(eventStart ? new Date(eventStart.getTime() + 86400000 * 9) : null), done: false, icon: '🚩' },
+        { label: 'Teams Pitches & Live Demo Q&A Session', date: formatDateStr(eventEnd ? new Date(eventEnd.getTime() - 86400000) : null), done: false, icon: '📢' },
+        { label: 'Evaluation & Winners Announcement', date: formatDateStr(eventEnd), done: false, icon: '🏆', current: true },
+    ];
+
+    return (
+        <div className="bg-[#FAF6EF]/30 border border-slate-200 p-6 rounded-none animate-none">
+            <div className="flex justify-between items-baseline mb-6 border-b border-slate-200 pb-3">
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Timeline</h3>
+                <span className="text-[10px] font-bold text-slate-400">Asia/Saigon UTC+07:00</span>
+            </div>
+
+            <div className="relative border-l border-slate-200 ml-2 pl-6 space-y-6">
+                {timelineItems.map((item, idx) => (
+                    <div key={idx} className="relative">
+                        <span className={`absolute -left-[32px] top-0 h-4.5 w-4.5 rounded-full border flex items-center justify-center text-[10px] ${
+                            item.done 
+                                ? 'bg-[#edf2f6] text-[#2c4e66] border-[#d4e2ec]' 
+                                : item.current 
+                                ? 'bg-emerald-500 text-white border-emerald-600' 
+                                : 'bg-white text-slate-400 border-slate-200'
+                        }`}>
+                            {item.done ? '✔' : '•'}
+                        </span>
+                        <div className="text-xs">
+                            <p className="font-bold text-slate-800 leading-tight flex items-center gap-1.5">
+                                <span>{item.icon}</span>
+                                <span>{item.label}</span>
+                            </p>
+                            <p className="text-slate-400 mt-1">{item.date}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 }
 
 export default function EventDetail() {
@@ -66,11 +195,11 @@ export default function EventDetail() {
     }, [event]);
 
     if (loading) {
-        return <main className="devpost-detail-state">Đang tải chi tiết sự kiện...</main>;
+        return <main className="flex items-center justify-center min-h-[60vh] text-slate-500 font-bold">Loading event details...</main>;
     }
 
     if (error || !event) {
-        return <main className="devpost-detail-state devpost-detail-state--error">{error || 'Không tìm thấy sự kiện.'}</main>;
+        return <main className="flex items-center justify-center min-h-[60vh] text-red-500 font-bold">{error || 'Event not found.'}</main>;
     }
 
     const phase = getEventPhase(event);
@@ -78,95 +207,152 @@ export default function EventDetail() {
     const ended = phase.key === 'ended';
     const rules = event.competitionRules?.trim();
     const tracks = event.tracks || [];
-    const schedule = [
-        ['01', 'Mở đăng ký', event.regStartDate],
-        ['02', 'Đóng đăng ký', event.regEndDate],
-        ['03', 'Bắt đầu thi', event.eventStartDate],
-        ['04', 'Kết thúc', event.formattedEventEndDate || formatDateTime(event.eventEndDate)],
-    ];
+    const coverImage = getEventCoverImage(event);
 
     return (
-        <main className="devpost-event-detail">
-            <section className="devpost-detail-hero">
-                <div className="devpost-detail-hero__inner">
-                    <div className="devpost-detail-brand">
-                        <div className="devpost-detail-logo"><span>SEAL</span><strong>{event.season}</strong><small>{event.year}</small></div>
-                        <p>{event.season} {event.year}</p>
-                        <h1>{event.name}</h1>
-                        <p className="devpost-detail-summary">{event.description || 'Thông tin giới thiệu chi tiết của sự kiện đang được ban tổ chức cập nhật.'}</p>
-                        <div className="devpost-detail-participate">
-                            {canJoin && <Link to={`/my-team?registerEventId=${event.id}`} className="btn-primary">Tham gia hackathon</Link>}
-                            {ended && <Link to={`/events/${event.id}/results`} className="btn-primary">Xem kết quả</Link>}
-                            <div><strong>Ai có thể tham gia?</strong><span>Sinh viên đăng ký theo đội và lựa chọn một hạng mục thi phù hợp.</span></div>
+        <main className="bg-white min-h-screen text-slate-800 py-12 px-6 max-w-[1400px] mx-auto">
+            <div className="flex flex-col lg:flex-row gap-8 items-start">
+                
+                {/* Left Sidebar Navigation */}
+                <aside className="w-full lg:w-56 shrink-0 space-y-1 animate-none">
+                    <button className="w-full text-left px-4 py-2.5 rounded-full bg-[#1f3747] text-white font-bold text-sm flex items-center gap-2">
+                        <span>🏠</span> Home
+                    </button>
+                    <button className="w-full text-left px-4 py-2.5 rounded-full hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2">
+                        <span>👥</span> Participants
+                    </button>
+                    <button className="w-full text-left px-4 py-2.5 rounded-full hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2">
+                        <span>🎓</span> Mentors/Judges
+                    </button>
+                    <button className="w-full text-left px-4 py-2.5 rounded-full hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2">
+                        <span>🤝</span> Our Sponsors
+                    </button>
+                    <button className="w-full text-left px-4 py-2.5 rounded-full hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2">
+                        <span>📰</span> Latest AI News
+                    </button>
+                </aside>
+
+                {/* Center Content */}
+                <div className="flex-1 min-w-0 animate-none">
+                    {/* Cover Graphic Banner */}
+                    <div className="w-full overflow-hidden border border-slate-200 mb-6 bg-slate-50">
+                        <img 
+                            src={coverImage} 
+                            alt={event.name} 
+                            className="w-full h-auto max-h-[420px] object-cover" 
+                        />
+                    </div>
+
+                    {/* Title Header */}
+                    <h1 className="text-3xl font-black text-slate-900 mb-4 flex items-center gap-2 leading-tight">
+                        🚀 {event.name}
+                    </h1>
+
+                    {/* Call to Actions inside header block */}
+                    <div className="flex flex-wrap items-center gap-4 mb-8">
+                        {canJoin && <Link to={`/my-team?registerEventId=${event.id}`} className="btn-primary">Join Hackathon</Link>}
+                        {ended && <Link to={`/events/${event.id}/results`} className="btn-primary">View Results</Link>}
+                        <div className="text-xs text-slate-500">
+                            <strong>Who can register?</strong> Students register in teams of 2 to 5 members.
                         </div>
                     </div>
 
-                    <aside className="devpost-detail-facts">
-                        <div className={`devpost-detail-deadline devpost-detail-deadline--${phase.key}`}>
-                            <span>{getDeadlineStatus(deadline)}</span>
-                            <a href="#schedule">Xem lịch trình</a>
-                        </div>
-                        <strong>Deadline</strong>
-                        <p className="devpost-detail-deadline-value">{formatDateTime(deadline)}</p>
-                        <div className="devpost-detail-fact-grid">
-                            <p><span>◉</span><span>Sự kiện SEAL</span></p>
-                            <p><span>♟</span><span>{event.teamCount || 0} đội tham gia</span></p>
-                        </div>
-                        <div className="devpost-detail-organizer"><span className="market-seal-mark">S</span> Được tổ chức bởi SEAL</div>
-                        <div className="market-tags">{tracks.map((track) => <span key={track.id}>{track.name}</span>)}</div>
-                        {event.ruleDocumentUrl && <a className="devpost-detail-rule-link" href={event.ruleDocumentUrl} target="_blank" rel="noreferrer">Xem tài liệu thể lệ ↗</a>}
-                    </aside>
+                    {/* Event Description */}
+                    <div className="prose max-w-none text-slate-600 text-sm sm:text-base leading-relaxed mb-12">
+                        <p>{event.description || 'Welcome to this season\'s hackathon challenge! Team up, build prototypes, and turn your tech ideas into reality.'}</p>
+                    </div>
+
+                    {/* Competition Rules */}
+                    <section className="mt-8">
+                        <SectionTitle>Requirements & Rules</SectionTitle>
+                        {rules ? (
+                            <div className="text-sm sm:text-base text-slate-600 leading-relaxed whitespace-pre-line">{rules}</div>
+                        ) : (
+                            <p className="text-xs text-slate-400">Rules document is being finalized by the organizing committee.</p>
+                        )}
+                        {event.ruleDocumentUrl && (
+                            <a 
+                                className="inline-block mt-4 text-xs font-bold text-[#2c4e66] hover:underline" 
+                                href={event.ruleDocumentUrl} 
+                                target="_blank" 
+                                rel="noreferrer"
+                            >
+                                Download Full Rule Book ↗
+                            </a>
+                        )}
+                    </section>
+
+                    {/* Event Tracks */}
+                    <section className="mt-8">
+                        <SectionTitle>Tracks</SectionTitle>
+                        {tracks.length ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {tracks.map((track) => (
+                                    <div key={track.id} className="border border-slate-200 p-5 rounded-none hover:border-slate-400 transition-colors">
+                                        <h3 className="text-sm font-black text-slate-900 mb-2">{track.name}</h3>
+                                        <p className="text-xs text-slate-500 leading-relaxed">{track.description || 'Details regarding this track statement will be announced shortly.'}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-400">Tracks have not been configured for this event yet.</p>
+                        )}
+                    </section>
+
+                    {/* Event Prizes */}
+                    <section className="mt-8">
+                        <SectionTitle>Prizes</SectionTitle>
+                        {prizes.length ? (
+                            <div className="space-y-4">
+                                {prizes.map((prize) => (
+                                    <div key={prize.id} className="flex gap-4 border border-slate-200 p-5 rounded-none">
+                                        <span className="text-2xl text-amber-500 leading-none">★</span>
+                                        <div>
+                                            <h3 className="text-sm font-black text-slate-900">{prize.name}</h3>
+                                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">{prize.description || 'Cash prizes, scholarships, and academic recognition.'}</p>
+                                            {prize.teamName && (
+                                                <small className="inline-block mt-2 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-black uppercase rounded">
+                                                    Winner: {prize.teamName}
+                                                </small>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-400">Prize structure will be announced by organizers.</p>
+                        )}
+                    </section>
+
+                    {/* Scoring Criteria */}
+                    <section className="mt-8">
+                        <SectionTitle>Scoring Rubric</SectionTitle>
+                        {criteria.length ? (
+                            <div className="space-y-4">
+                                {criteria.map((criterion) => (
+                                    <div key={criterion.id || criterion.label} className="border border-slate-200 p-5 rounded-none">
+                                        <div className="flex justify-between items-baseline mb-2">
+                                            <h3 className="text-sm font-black text-slate-900">{criterion.label}</h3>
+                                            <span className="text-xs font-bold text-[#2c4e66]">
+                                                {criterion.weight ? `${criterion.weight}%` : `${criterion.maxScore || 100} pts`}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 leading-relaxed">{criterion.description || 'Assessed by jury members.'}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-400">Detailed rubric has not been released yet.</p>
+                        )}
+                    </section>
                 </div>
-            </section>
 
-            <nav className="devpost-detail-sticky" aria-label="Điều hướng chi tiết sự kiện">
-                <div>
-                    <strong>{event.name}</strong>
-                    <span>Deadline: {formatDateTime(deadline)}</span>
-                    {canJoin && <Link to={`/my-team?registerEventId=${event.id}`}>Tham gia hackathon</Link>}
-                    {ended && <Link to={`/events/${event.id}/results`}>Xem kết quả</Link>}
-                </div>
-            </nav>
-
-            <div className="devpost-detail-body">
-                <div className="devpost-detail-main">
-                    <section id="schedule" className="devpost-detail-section">
-                        <p className="devpost-detail-kicker">Ý tưởng. Xây dựng. Hoàn thiện. Bứt phá.</p>
-                        <p className="devpost-detail-lead">Theo dõi bốn cột mốc quan trọng của {event.name} và chuẩn bị cùng đội của bạn.</p>
-                        <div className="devpost-detail-schedule">
-                            {schedule.map(([number, label, value]) => <div key={label}><span>{number}</span><strong>{label}</strong><p>{formatDateTime(value)}</p></div>)}
-                        </div>
-                        <p className="devpost-detail-description">{event.description || 'Ban tổ chức sẽ cập nhật nội dung, mục tiêu và thông tin chi tiết của giải đấu tại đây.'}</p>
-                    </section>
-
-                    <section className="devpost-detail-section">
-                        <SectionTitle>Yêu cầu &amp; thể lệ</SectionTitle>
-                        {rules ? <div className="devpost-detail-rules">{rules}</div> : <p className="devpost-detail-empty">Ban tổ chức chưa cập nhật thể lệ chi tiết.</p>}
-                        {event.ruleDocumentUrl && <a className="devpost-detail-inline-link" href={event.ruleDocumentUrl} target="_blank" rel="noreferrer">Tải tài liệu quy chế đầy đủ ↗</a>}
-                    </section>
-
-                    <section className="devpost-detail-section">
-                        <SectionTitle>Hạng mục thi</SectionTitle>
-                        {tracks.length ? <div className="devpost-detail-tracks">{tracks.map((track) => <article key={track.id}><strong>{track.name}</strong><p>{track.description || 'Mô tả hạng mục đang được cập nhật.'}</p></article>)}</div> : <p className="devpost-detail-empty">Chưa có hạng mục thi.</p>}
-                    </section>
-
-                    <section className="devpost-detail-section">
-                        <SectionTitle>Giải thưởng</SectionTitle>
-                        <div className="devpost-detail-prize-summary"><strong>{prizes.length}</strong> hạng mục giải thưởng</div>
-                        {prizes.length ? <div className="devpost-detail-prizes">{prizes.map((prize) => <article key={prize.id}><span>★</span><div><strong>{prize.name}</strong><p>{prize.description || 'Thông tin phần thưởng đang được cập nhật.'}</p>{prize.teamName && <small>Đội đạt giải: {prize.teamName}</small>}</div></article>)}</div> : <p className="devpost-detail-empty">Cơ cấu giải thưởng đang được ban tổ chức cập nhật.</p>}
-                    </section>
-
-                    <section className="devpost-detail-section">
-                        <SectionTitle>Tiêu chí chấm điểm</SectionTitle>
-                        {criteria.length ? <div className="devpost-detail-criteria">{criteria.map((criterion) => <article key={criterion.id || criterion.label}><div><strong>{criterion.label}</strong><span>{criterion.weight ? `${criterion.weight}%` : `${criterion.maxScore || 100} điểm`}</span></div><p>{criterion.description || 'Đánh giá theo hướng dẫn của ban giám khảo.'}</p></article>)}</div> : <p className="devpost-detail-empty">Rubric chấm điểm chưa được công bố.</p>}
-                    </section>
-                </div>
-
-                <aside className="devpost-detail-contact">
-                    <strong>Cần hỗ trợ?</strong>
-                    <p>Theo dõi mục thông báo để nhận cập nhật mới nhất từ ban tổ chức và coordinator.</p>
-                    <Link to="/events">Quay lại danh sách sự kiện</Link>
+                {/* Right Sidebar Info Panel */}
+                <aside className="w-full lg:w-[320px] shrink-0 space-y-6">
+                    <CountdownSection event={event} />
+                    <TimelineSection event={event} />
                 </aside>
+
             </div>
         </main>
     );
