@@ -10,7 +10,7 @@ const defaultCriteria = [
     { id: 'business', label: 'Tính ứng dụng', description: 'Độ phù hợp và khả năng mở rộng', maxScore: 100, weight: 20 },
 ];
 
-const emptyForm = () => ({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
+const emptyForm = () => ({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', durationMinutes: 60, topN: 10, judgeIds: [], criteria: defaultCriteria });
 
 function parseCriteria(value) {
     if (!value) return defaultCriteria;
@@ -23,10 +23,16 @@ function parseCriteria(value) {
 }
 
 function formFromMatrix(matrix) {
+    let duration = matrix?.durationMinutes || 60;
+    if (matrix?.submissionStartDate && matrix?.submissionDeadline) {
+        const diff = Math.round((new Date(matrix.submissionDeadline) - new Date(matrix.submissionStartDate)) / 60000);
+        if (diff > 0) duration = diff;
+    }
     return matrix ? {
         guidelineUrl: matrix.guidelineUrl || '',
         submissionStartDate: matrix.submissionStartDate?.slice(0, 16) || '',
         submissionDeadline: matrix.submissionDeadline?.slice(0, 16) || '',
+        durationMinutes: duration,
         topN: matrix.topN ?? '',
         judgeIds: matrix.judges?.map((judge) => judge.id) || [],
         criteria: parseCriteria(matrix.scoringCriteriaJson),
@@ -126,48 +132,7 @@ export default function ScoringConfiguration() {
         if (readOnly) return 'Admin chỉ được xem cấu hình chấm điểm. Coordinator mới có quyền thay đổi.';
         if (!selectedMatrix) return 'Hãy chọn một vòng đấu.';
         if (selectedMatrix.isPublished) return 'Vòng đấu đã được công bố nên cấu hình chấm điểm đã bị khóa.';
-        if (!form.submissionDeadline) return 'Hãy đặt deadline cho vòng đấu.';
-        if (form.submissionStartDate && form.submissionDeadline && new Date(form.submissionStartDate) > new Date(form.submissionDeadline)) {
-            return 'Thời gian mở nộp bài không được sau hạn nộp bài.';
-        }
-
-        const currentOrder = selectedMatrix.roundOrder;
-        const reqStart = form.submissionStartDate ? new Date(form.submissionStartDate) : null;
-        const reqEnd = form.submissionDeadline ? new Date(form.submissionDeadline) : null;
-
-        for (const other of selectedEvent.matrices || []) {
-            if (String(other.id) === String(selectedMatrixId)) continue;
-
-            if (other.roundOrder === currentOrder - 1) {
-                let isPreceding = false;
-                if (selectedMatrix.finalRound) {
-                    isPreceding = true;
-                } else if (!other.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
-                    isPreceding = true;
-                }
-
-                if (isPreceding && other.submissionDeadline && reqStart) {
-                    if (reqStart < new Date(other.submissionDeadline)) {
-                        return `Thời gian mở nộp không được trước deadline của vòng trước (${other.roundName}).`;
-                    }
-                }
-            }
-
-            if (other.roundOrder === currentOrder + 1) {
-                let isSucceeding = false;
-                if (other.finalRound) {
-                    isSucceeding = true;
-                } else if (!selectedMatrix.finalRound && String(other.trackId) === String(selectedMatrix.trackId)) {
-                    isSucceeding = true;
-                }
-
-                if (isSucceeding && other.submissionStartDate && reqEnd) {
-                    if (reqEnd > new Date(other.submissionStartDate)) {
-                        return `Deadline không được sau thời gian mở nộp của vòng sau (${other.roundName}).`;
-                    }
-                }
-            }
-        }
+        if (!form.durationMinutes || Number(form.durationMinutes) <= 0) return 'Hãy nhập thời lượng làm bài cho vòng thi (số phút lớn hơn 0).';
 
         if (form.judgeIds.length < 2 || form.judgeIds.length > 4) return 'Mỗi vòng đấu cần từ 2 đến 4 Judge.';
         if (!form.criteria.length || form.criteria.some((criterion) => !criterion.label.trim() || Number(criterion.maxScore) <= 0 || Number(criterion.weight) <= 0)) return 'Mỗi tiêu chí cần tên, điểm tối đa và trọng số hợp lệ.';
@@ -178,7 +143,8 @@ export default function ScoringConfiguration() {
     const payloadFor = (matrix) => ({
         guidelineUrl: form.guidelineUrl,
         submissionStartDate: form.submissionStartDate || null,
-        submissionDeadline: form.submissionDeadline,
+        submissionDeadline: form.submissionDeadline || null,
+        durationMinutes: Number(form.durationMinutes) || 60,
         judgeIds: form.judgeIds.map(Number),
         topN: matrix.finalRound ? null : Math.max(1, Number(form.topN)),
         scoringCriteriaJson: JSON.stringify(form.criteria),
@@ -196,7 +162,7 @@ export default function ScoringConfiguration() {
         setMessage(null);
         try {
             await Promise.all(targets.map((matrix) => axiosClient.put(`/events/matrices/${matrix.id}`, payloadFor(matrix))));
-            setMessage({ type: 'success', text: applyToRound ? `Đã áp dụng cho ${targets.length} bảng trong ${selectedMatrix.roundName}.` : 'Đã lưu cấu hình vòng đấu.' });
+            setMessage({ type: 'success', text: applyToRound ? `Đã áp dụng thời lượng & cấu hình cho ${targets.length} bảng trong ${selectedMatrix.roundName}.` : 'Đã lưu cấu hình vòng đấu.' });
             await loadData(selectedEventId, selectedMatrixId);
         } catch (error) {
             setMessage({ type: 'error', text: error.message || 'Không lưu được cấu hình chấm điểm.' });
@@ -232,7 +198,7 @@ export default function ScoringConfiguration() {
                     <div>
                         <p className="text-xs font-black uppercase tracking-[0.2em] text-teal-200">Scoring workspace</p>
                         <h2 className="mt-2 text-2xl font-black text-white">Cấu hình chấm điểm</h2>
-                        <p className="mt-2 max-w-2xl text-sm leading-6 text-teal-100/90">Quản lý rubric, deadline, Top N và phân công Judge riêng cho từng vòng đấu.</p>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-teal-100/90">Quản lý thời lượng làm bài (phút), rubric và phân công Judge riêng cho từng vòng đấu.</p>
                     </div>
                     <label className="min-w-72 text-xs font-black uppercase tracking-wide text-teal-200">
                         Sự kiện
@@ -259,7 +225,7 @@ export default function ScoringConfiguration() {
                 <div className="grid gap-6 xl:grid-cols-[310px_1fr]">
                     <aside className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
                         <div className="border-b border-blue-100 bg-blue-50 p-5"><div className="flex items-center justify-between gap-3"><h3 className="font-black text-slate-900">Vòng đấu</h3><span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-[#0f63c9]">{configuredCount}/{matrixCount}</span></div><p className="mt-1 text-xs text-slate-500">Đã cấu hình đầy đủ</p></div>
-                        <div className="max-h-[720px] overflow-y-auto">{matrixGroups.map((group) => <section key={group.roundName} className="border-b border-blue-100"><p className="bg-slate-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{group.roundName}</p><div className="divide-y divide-blue-50">{group.matrices.map((matrix) => { const ready = matrix.scoringCriteriaJson && matrix.submissionDeadline && matrix.judges?.length >= 2; return <button key={matrix.id} type="button" onClick={() => { selectMatrix(matrix); setActiveStep('setup'); setMessage(null); }} className={`block w-full p-4 text-left transition ${String(matrix.id) === String(selectedMatrixId) ? 'bg-blue-50' : 'hover:bg-slate-50'}`}><div className="flex items-start justify-between gap-3"><div><p className="font-black text-slate-900">{matrix.finalRound ? 'Tất cả bảng' : matrix.trackName}</p><p className="mt-1 text-xs font-bold text-[#0f63c9]">{matrix.finalRound ? 'Vòng cuối' : `Top ${matrix.topN || '—'}`} · {matrix.judges?.length || 0} Judge</p></div><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${ready ? 'bg-emerald-500' : 'bg-amber-400'}`} /></div></button>; })}</div></section>)}</div>
+                        <div className="max-h-[720px] overflow-y-auto">{matrixGroups.map((group) => <section key={group.roundName} className="border-b border-blue-100"><p className="bg-slate-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{group.roundName}</p><div className="divide-y divide-blue-50">{group.matrices.map((matrix) => { const ready = matrix.scoringCriteriaJson && (matrix.durationMinutes || matrix.submissionDeadline) && matrix.judges?.length >= 2; return <button key={matrix.id} type="button" onClick={() => { selectMatrix(matrix); setActiveStep('setup'); setMessage(null); }} className={`block w-full p-4 text-left transition ${String(matrix.id) === String(selectedMatrixId) ? 'bg-blue-50' : 'hover:bg-slate-50'}`}><div className="flex items-start justify-between gap-3"><div><p className="font-black text-slate-900">{matrix.finalRound ? 'Tất cả bảng' : matrix.trackName}</p><p className="mt-1 text-xs font-bold text-[#0f63c9]">{matrix.durationMinutes || 60}p · {matrix.finalRound ? 'Vòng cuối' : `Top ${matrix.topN || '—'}`} · {matrix.judges?.length || 0} Judge</p></div><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${ready ? 'bg-emerald-500' : 'bg-amber-400'}`} /></div></button>; })}</div></section>)}</div>
                     </aside>
 
                     <main className="min-w-0 space-y-5">
@@ -276,8 +242,19 @@ export default function ScoringConfiguration() {
 
                         <fieldset disabled={readOnly || Boolean(selectedMatrix?.isPublished)} className="contents">
                         {activeStep === 'setup' && <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
-                            <div className="border-b border-blue-100 pb-4"><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Bước 1/3</p><h3 className="mt-1 text-lg font-black text-slate-900">Thiết lập vòng đấu</h3><p className="mt-1 text-sm text-slate-500">Đặt tài liệu, thời hạn nộp và số đội được đi tiếp.</p></div>
-                            <div className="mt-5 grid gap-4 md:grid-cols-3"><label className="text-sm font-bold text-slate-700">Guideline / đề bài<input className="input-custom mt-2" placeholder="Link PDF, Drive hoặc tài liệu" value={form.guidelineUrl} onChange={(event) => setForm({ ...form, guidelineUrl: event.target.value })} /></label><label className="text-sm font-bold text-slate-700">Thời gian mở nộp bài<input type="datetime-local" className="input-custom mt-2" value={form.submissionStartDate} onChange={(event) => setForm({ ...form, submissionStartDate: event.target.value })} /></label><label className="text-sm font-bold text-slate-700">Deadline vòng đấu<input type="datetime-local" className="input-custom mt-2" value={form.submissionDeadline} onChange={(event) => setForm({ ...form, submissionDeadline: event.target.value })} /></label></div>
+                            <div className="border-b border-blue-100 pb-4"><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Bước 1/3</p><h3 className="mt-1 text-lg font-black text-slate-900">Thiết lập vòng đấu</h3><p className="mt-1 text-sm text-slate-500">Đặt tài liệu guideline, thời lượng làm bài (phút) và số đội được đi tiếp.</p></div>
+                            <div className="mt-5 grid gap-4 md:grid-cols-2">
+                                <label className="text-sm font-bold text-slate-700">Guideline / đề bài<input className="input-custom mt-2" placeholder="Link PDF, Drive hoặc tài liệu hướng dẫn" value={form.guidelineUrl} onChange={(event) => setForm({ ...form, guidelineUrl: event.target.value })} /></label>
+                                <label className="text-sm font-bold text-slate-700">Thời lượng làm bài (Phút)<input type="number" min="1" className="input-custom mt-2 font-bold text-[#0f63c9]" placeholder="VD: 60, 90, 120" value={form.durationMinutes} onChange={(event) => setForm({ ...form, durationMinutes: event.target.value })} /></label>
+                            </div>
+                            <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/70 p-3.5 text-xs text-blue-900 leading-relaxed font-medium">
+                                ⏱️ <strong>Cơ chế thời gian:</strong> Thời gian nộp bài chính là thời lượng diễn ra vòng thi (<strong>{form.durationMinutes || 60} phút</strong>).
+                                {Number(selectedMatrix?.roundOrder) === 1 ? (
+                                    <span> Vòng 1 sẽ tự động đếm ngược đúng {form.durationMinutes || 60} phút bắt đầu từ mốc <strong>Thời gian bắt đầu giải đấu</strong>.</span>
+                                ) : (
+                                    <span> Các vòng tiếp theo sẽ tự động đếm ngược đúng {form.durationMinutes || 60} phút ngay từ mốc <strong>Coordinator bấm nút Mở Vòng mới</strong>.</span>
+                                )}
+                            </div>
                             {!selectedMatrix?.finalRound && <label className="mt-4 block max-w-xs text-sm font-bold text-slate-700">Số đội đi tiếp (Top N)<input type="number" min="1" className="input-custom mt-2" value={form.topN} onChange={(event) => setForm({ ...form, topN: event.target.value })} /></label>}
                         </section>}
 
