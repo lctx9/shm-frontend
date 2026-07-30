@@ -1257,8 +1257,21 @@ export default function EventManagement() {
                                     ? Math.min(...unpublishedMatrices.map((matrix) => Number(matrix.roundOrder)))
                                     : null;
                                 const roundMatrices = unpublishedMatrices.filter((matrix) => Number(matrix.roundOrder) === nextRoundOrder);
-                                const isNextRoundFinal = roundMatrices.length > 0 && Boolean(roundMatrices[0].finalRound);
-                                const finalRoundPublished = (selectedEvent.matrices || []).some((m) => m.finalRound && m.isPublished);
+
+                                const totalRounds = Number(selectedEvent.roundCount || 0) || Math.max(...(selectedEvent.rounds || []).map((r) => Number(r.orderIndex) || 1), ...(selectedEvent.matrices || []).map((m) => Number(m.roundOrder) || 1), 1);
+                                const isCurrentRoundFinal = Boolean(nextRoundOrder && nextRoundOrder >= totalRounds);
+
+                                const currentRoundName = roundMatrices[0]?.roundName || `Vòng ${nextRoundOrder}`;
+
+                                // Next round name resolution for intermediate rounds
+                                const nextRoundObj = (selectedEvent.rounds || []).find((r) => Number(r.orderIndex) === nextRoundOrder + 1);
+                                const nextMatrixObj = (selectedEvent.matrices || []).find((m) => Number(m.roundOrder) === nextRoundOrder + 1);
+                                const rawNextName = nextRoundObj?.name || nextMatrixObj?.roundName;
+                                const nextRoundName = rawNextName
+                                    ? (rawNextName.toLowerCase().includes('vòng') ? rawNextName : `Vòng ${rawNextName}`)
+                                    : `Vòng ${nextRoundOrder + 1}`;
+
+                                const finalRoundPublished = (selectedEvent.matrices || []).some((m) => Number(m.roundOrder) >= totalRounds && m.isPublished);
                                 const isEventEnded = Boolean(selectedEvent.endedEarly || eventLifecycle(selectedEvent).id === 'ended');
 
                                 return (
@@ -1271,28 +1284,27 @@ export default function EventManagement() {
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    const roundName = roundMatrices[0].roundName || `Vòng ${nextRoundOrder}`;
-                                                    if (isNextRoundFinal) {
-                                                        if (window.confirm(`Xác nhận CÔNG BỐ ĐIỂM & BẢNG XẾP HẠNG Vòng chung kết cho toàn bộ bảng thuộc ${roundName} của giải đấu "${selectedEvent.name}"?\n\nThông báo sẽ được tự động gửi tới toàn bộ thí sinh và giám khảo.`)) {
+                                                    if (isCurrentRoundFinal) {
+                                                        if (window.confirm(`Xác nhận CÔNG BỐ ĐIỂM & BẢNG XẾP HẠNG Vòng chung kết (${currentRoundName}) cho toàn bộ giải đấu "${selectedEvent.name}"?\n\nThông báo và bảng xếp hạng chung cuộc sẽ được tự động gửi tới toàn bộ thí sinh và giám khảo.`)) {
                                                             handlePublishAndAdvanceRound(nextRoundOrder);
                                                         }
                                                     } else {
-                                                        if (window.confirm(`Xác nhận công bố kết quả và mở vòng tiếp theo cho toàn bộ ${roundMatrices.length} bảng thuộc ${roundName} của giải đấu "${selectedEvent.name}"?`)) {
+                                                        if (window.confirm(`Xác nhận công bố kết quả ${currentRoundName} và mở ${nextRoundName} cho giải đấu "${selectedEvent.name}"?`)) {
                                                             handlePublishAndAdvanceRound(nextRoundOrder);
                                                         }
                                                     }
                                                 }}
                                                 disabled={loading || readOnly}
                                                 className={`rounded-xl border px-4 py-2.5 text-sm font-black transition shadow-sm text-white cursor-pointer flex items-center gap-1.5 ${
-                                                    isNextRoundFinal
+                                                    isCurrentRoundFinal
                                                         ? 'bg-purple-600 border-purple-600 hover:bg-purple-700'
                                                         : 'bg-indigo-600 border-indigo-600 hover:bg-indigo-700'
                                                 }`}
                                             >
-                                                {isNextRoundFinal ? (
+                                                {isCurrentRoundFinal ? (
                                                     <span>🏆 Công bố kết quả & Xếp hạng</span>
                                                 ) : (
-                                                    <span>⚡ Công bố kết quả & Mở Vòng mới</span>
+                                                    <span>⚡ Công bố kết quả & Mở {nextRoundName}</span>
                                                 )}
                                             </button>
                                         )}
