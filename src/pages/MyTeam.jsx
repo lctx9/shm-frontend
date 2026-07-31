@@ -489,6 +489,10 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
         setMessage({ text: '', type: '' });
         try {
             await axiosClient.post(`/teams/invitations/${requestId}/accept`);
+            // Disable all other pending invitations — user is now in a team
+            setMyInvitations((prev) => prev.map((item) =>
+                item.id === requestId ? { ...item, status: 'APPROVED' } : { ...item, status: 'DISABLED' }
+            ));
             setMessage({ text: 'Accepted team invitation successfully!', type: 'success' });
             await fetchData();
         } catch (err) {
@@ -1360,8 +1364,11 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
                                 </div>
                             </div>
                             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                {myInvitations.map((inv) => (
-                                    <div key={inv.id} className="rounded-xl border border-[#d7e6f8] bg-white p-5 shadow-sm flex flex-col justify-between">
+                                {myInvitations.map((inv) => {
+                                    const isDisabled = inv.status === 'DISABLED';
+                                    const isAccepted = inv.status === 'APPROVED';
+                                    return (
+                                    <div key={inv.id} className={`rounded-xl border bg-white p-5 shadow-sm flex flex-col justify-between transition-all duration-200 ${isDisabled ? 'opacity-40 border-slate-200 grayscale' : isAccepted ? 'border-emerald-300 bg-emerald-50/30' : 'border-[#d7e6f8]'}`}>
                                         <div>
                                             <div className="flex items-start justify-between gap-2">
                                                 <h3 className="font-black text-[#071936] text-base">{inv.teamName}</h3>
@@ -1379,23 +1386,35 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
                                             )}
                                         </div>
                                         <div className="mt-5 flex gap-2 pt-4 border-t border-[#f0f4f8]">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleAcceptInvitation(inv.id)}
-                                                className="btn-primary py-1.5 px-4 text-xs bg-emerald-600 hover:bg-emerald-700 hover:border-emerald-700 text-white flex-1 font-bold cursor-pointer"
-                                            >
-                                                ✓ Accept
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRejectInvitation(inv.id)}
-                                                className="btn-secondary py-1.5 px-4 text-xs text-red-600 border-red-200 hover:bg-red-50 flex-1 font-bold cursor-pointer"
-                                            >
-                                                ✕ Decline
-                                            </button>
+                                            {isAccepted ? (
+                                                <div className="w-full text-center text-sm font-black text-emerald-600 py-1 flex items-center justify-center gap-1.5">
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                                    Joined!
+                                                </div>
+                                            ) : isDisabled ? (
+                                                <div className="w-full text-center text-sm font-bold text-slate-400 py-1">No longer available</div>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAcceptInvitation(inv.id)}
+                                                        className="btn-primary py-1.5 px-4 text-xs bg-emerald-600 hover:bg-emerald-700 hover:border-emerald-700 text-white flex-1 font-bold cursor-pointer"
+                                                    >
+                                                        ✓ Accept
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRejectInvitation(inv.id)}
+                                                        className="btn-secondary py-1.5 px-4 text-xs text-red-600 border-red-200 hover:bg-red-50 flex-1 font-bold cursor-pointer"
+                                                    >
+                                                        ✕ Decline
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
