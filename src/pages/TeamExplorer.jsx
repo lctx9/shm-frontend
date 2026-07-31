@@ -29,13 +29,13 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
             <div className="mx-auto my-8 max-w-6xl rounded-lg bg-white shadow-xl">
                 <div className="flex flex-col gap-3 border-b border-blue-100 p-6 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Chi tiết đội thi</p>
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Team Details</p>
                         <h3 className="mt-1 text-2xl font-black text-slate-900">{team.name}</h3>
                         <p className="mt-1 text-sm text-slate-500">{team.eventName} · {team.trackName}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {canChat && <button type="button" onClick={onOpenChat} className="btn-primary">Trao đổi</button>}
-                        <button type="button" onClick={onClose} className="btn-secondary">Đóng</button>
+                        {canChat && <button type="button" onClick={onOpenChat} className="btn-primary">Chat</button>}
+                        <button type="button" onClick={onClose} className="btn-secondary">Close</button>
                     </div>
                 </div>
 
@@ -43,26 +43,26 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                     <section className="space-y-5">
                         {team.disqualificationStatus === 'APPROVED' && (
                             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-900 shadow-sm">
-                                <h4 className="font-black text-red-900 text-sm">Đội thi này đã bị loại khỏi giải đấu</h4>
-                                <p className="text-xs text-red-800 mt-1">Lý do: "{team.disqualificationReason || 'Vi phạm quy chế thi'}"</p>
+                                <h4 className="font-black text-red-900 text-sm">This team has been disqualified from the tournament</h4>
+                                <p className="text-xs text-red-800 mt-1">Reason: "{team.disqualificationReason || 'Rules violation'}"</p>
                             </div>
                         )}
                         <div className="rounded-lg border border-blue-100 bg-blue-50 p-5">
                             <div className="flex items-center justify-between gap-4">
                                 <div>
-                                    <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Tiến độ</p>
+                                    <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Progress</p>
                                     <p className="mt-1 text-3xl font-black text-slate-900">{progress}%</p>
                                 </div>
-                                <Pill tone={progress === 100 ? 'green' : 'amber'}>{completedRounds}/{requiredMatrices.length || 0} vòng đã nộp</Pill>
+                                <Pill tone={progress === 100 ? 'green' : 'amber'}>{completedRounds}/{requiredMatrices.length || 0} rounds submitted</Pill>
                             </div>
                             <div className="mt-4 h-2 overflow-hidden rounded-full bg-white">
                                 <div className="h-full rounded-full bg-[#0f63c9]" style={{ width: `${progress}%` }} />
                             </div>
-                            <p className="mt-4 text-sm leading-6 text-slate-600">{team.description || 'Đội chưa cập nhật mô tả.'}</p>
+                            <p className="mt-4 text-sm leading-6 text-slate-600">{team.description || 'No description provided by team leader.'}</p>
                         </div>
 
                         <div className="rounded-lg border border-blue-100 bg-white p-5">
-                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Thành viên ({(team.members || []).length || team.memberCount || 0})</p>
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Members ({(team.members || []).length || team.memberCount || 0})</p>
                             <div className="mt-4 space-y-3">
                                 {(team.members || []).map((member) => (
                                     <div key={member.id} className="rounded-lg border border-blue-50 bg-slate-50 p-4">
@@ -70,7 +70,7 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                                             <div>
                                                 <p className="font-black text-slate-900">{member.fullName}</p>
                                                 <p className="mt-1 text-sm text-slate-500">{member.email}</p>
-                                                <p className="mt-1 text-sm text-slate-500">MSSV: {member.studentId || 'Chưa có'}</p>
+                                                <p className="mt-1 text-sm text-slate-500">Student ID: {member.studentId || 'N/A'}</p>
                                             </div>
                                             <Pill tone={member.role === 'LEADER' ? 'red' : 'slate'}>{member.role}</Pill>
                                         </div>
@@ -82,7 +82,7 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
 
                     <section className="rounded-lg border border-blue-100 bg-white">
                         <div className="border-b border-blue-100 p-5">
-                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Bài nộp theo vòng</p>
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Submissions per Round</p>
                         </div>
                         <div className="divide-y divide-blue-50">
                             {requiredMatrices.map((matrix) => {
@@ -93,11 +93,11 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                                             <div>
                                                 <p className="font-black text-slate-900">{matrix.roundName}</p>
                                                 <p className="mt-1 text-sm text-slate-500">
-                                                    Deadline: {matrix.submissionDeadline ? new Date(matrix.submissionDeadline).toLocaleString('vi-VN') : 'Chưa đặt'}
+                                                    Deadline: {matrix.submissionDeadline ? new Date(matrix.submissionDeadline).toLocaleString('en-US') : 'Not Set'}
                                                 </p>
                                             </div>
                                             <Pill tone={submission ? (submission.graded ? 'green' : 'amber') : 'slate'}>
-                                                {submission ? (submission.graded ? `Đã chấm ${submission.score}/100` : 'Đã nộp, chờ chấm') : 'Chưa nộp'}
+                                                {submission ? (submission.graded ? `Graded ${submission.score}/100` : 'Submitted, awaiting score') : 'Not Submitted'}
                                             </Pill>
                                         </div>
                                         {submission?.fileUrl && (
@@ -109,7 +109,7 @@ function TeamDetail({ team, submissions, matrices, onClose, onOpenChat, canChat 
                                     </div>
                                 );
                             })}
-                            {requiredMatrices.length === 0 && <p className="p-5 text-sm text-slate-500">Chưa có vòng thi cho track này.</p>}
+                            {requiredMatrices.length === 0 && <p className="p-5 text-sm text-slate-500">No rounds configured for this track.</p>}
                         </div>
                     </section>
                 </div>
@@ -152,7 +152,7 @@ export default function TeamExplorer() {
             setSubmissions(submissionRes.result || []);
             setError('');
         } catch (err) {
-            setError(err.message || 'Không thể tải dữ liệu đội thi.');
+            setError(err.message || 'Failed to load team database.');
         } finally {
             setLoading(false);
         }
@@ -213,17 +213,17 @@ export default function TeamExplorer() {
     }, [filteredTeams, submissions]);
 
     const handleJoinPublic = async (teamId) => {
-        setJoinActionStatus({ teamId, message: 'Đang gửi yêu cầu...', type: 'info' });
+        setJoinActionStatus({ teamId, message: 'Submitting join request...', type: 'info' });
         try {
             await axiosClient.post(`/teams/${teamId}/join-request`);
             await fetchData();
-            setJoinActionStatus({ teamId, message: 'Đã gửi yêu cầu gia nhập đội. Vui lòng chờ Leader duyệt.', type: 'success' });
+            setJoinActionStatus({ teamId, message: 'Join request submitted successfully. Awaiting team leader approval.', type: 'success' });
         } catch (err) {
             setJoinActionStatus({ teamId: null, message: '', type: '' });
             setAlertModal({
                 isOpen: true,
-                title: 'Thông báo lỗi',
-                message: err.message || 'Không thể gia nhập đội.'
+                title: 'Error Message',
+                message: err.message || 'Failed to join team.'
             });
         }
     };
@@ -232,7 +232,7 @@ export default function TeamExplorer() {
         e.preventDefault();
         if (!joinTeam) return;
         if (!/^\d{4}$/.test(joinPassword)) {
-            setJoinError('Mật khẩu đội phải gồm đúng 4 số.');
+            setJoinError('Team join password must be exactly 4 digits.');
             return;
         }
         setJoinError('');
@@ -243,7 +243,7 @@ export default function TeamExplorer() {
             setJoinPassword('');
             window.location.href = '/my-team';
         } catch (err) {
-            setJoinError(err.message || 'Không thể gia nhập đội riêng tư.');
+            setJoinError(err.message || 'Failed to join private team.');
         }
     };
 
@@ -257,35 +257,35 @@ export default function TeamExplorer() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">{isMentor ? 'Mentor workspace' : 'Team explorer'}</p>
-                    <h2 className="text-2xl font-black tracking-tight text-slate-900">{isMentor ? 'Đội đang hướng dẫn' : 'Danh sách đội thi'}</h2>
+                    <h2 className="text-2xl font-black tracking-tight text-slate-900">{isMentor ? 'Assigned Teams' : 'Teams Directory'}</h2>
                     <p className="mt-2 text-sm text-slate-600">
                         {isMentor
-                            ? 'Theo dõi đội được phân công, xem bài nộp, tiến độ và trao đổi trực tiếp với từng đội.'
-                            : 'Theo dõi các đội trong sự kiện, thành viên, track và trạng thái tham gia.'}
+                            ? 'Monitor assigned teams, review submissions, track progress, and communicate directly.'
+                            : 'Browse teams participating in active hackathons, including tracks, members, and progress.'}
                     </p>
                 </div>
-                <button type="button" onClick={fetchData} title="Làm mới dữ liệu" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
+                <button type="button" onClick={fetchData} title="Refresh data" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             <section className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-lg border border-blue-100 bg-white p-5">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Đội</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Teams</p>
                     <p className="mt-2 text-3xl font-black text-slate-900">{stats.teams}</p>
                 </div>
                 <div className="rounded-lg border border-blue-100 bg-white p-5">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Bài nộp</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Submissions</p>
                     <p className="mt-2 text-3xl font-black text-slate-900">{stats.submissions}</p>
                 </div>
                 <div className="rounded-lg border border-blue-100 bg-white p-5">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Chờ chấm</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Pending</p>
                     <p className="mt-2 text-3xl font-black text-slate-900">{stats.pending}</p>
                 </div>
             </section>
 
             <div className="rounded-lg border border-blue-100 bg-white p-4">
-                <label className="mb-1 block text-sm font-bold text-slate-700">Lọc theo giải đấu (đang mở đăng ký)</label>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Filter by Tournament (registration open)</label>
                 <select className="input-custom max-w-md" value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
-                    <option value="ALL">Tất cả giải đấu</option>
+                    <option value="ALL">All Tournaments</option>
                     {registrationEvents.map((event) => (
                         <option key={event.id} value={event.id}>{event.name}</option>
                     ))}
@@ -295,10 +295,10 @@ export default function TeamExplorer() {
             <Toast error={error} onClose={() => setError('')} />
 
             {loading ? (
-                <div className="rounded-lg bg-white p-8 text-center text-gray-500">Đang tải đội thi...</div>
+                <div className="rounded-lg bg-white p-8 text-center text-gray-500">Loading teams database...</div>
             ) : filteredTeams.length === 0 ? (
                 <div className="rounded-lg border border-blue-100 bg-white p-8 text-center text-gray-500">
-                    {isMentor ? 'Mentor chưa được phân công đội nào.' : 'Chưa có đội thi phù hợp.'}
+                    {isMentor ? 'No teams currently assigned under your mentoring tracks.' : 'No matching teams found.'}
                 </div>
             ) : (
                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -310,58 +310,58 @@ export default function TeamExplorer() {
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
                                         <h3 className="text-lg font-black text-slate-900 line-clamp-2" title={team.name}>{team.name}</h3>
-                                        <p className="mt-1 text-sm text-slate-500 line-clamp-1" title={team.eventName}>{team.eventName || 'Chưa gắn giải đấu'}</p>
+                                        <p className="mt-1 text-sm text-slate-500 line-clamp-1" title={team.eventName}>{team.eventName || 'No event attached'}</p>
                                     </div>
                                     <Pill>{team.type}</Pill>
                                 </div>
 
-                                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600 line-clamp-3" title={team.description}>{team.description || 'Đội chưa cập nhật mô tả.'}</p>
+                                <p className="mt-4 min-h-12 text-sm leading-6 text-slate-600 line-clamp-3" title={team.description}>{team.description || 'No description provided by team leader.'}</p>
 
                                 <dl className="mt-5 space-y-2 text-sm text-slate-600">
                                     <div className="flex justify-between gap-4">
                                         <dt className="font-bold text-slate-800">Track</dt>
-                                        <dd className="text-right">{team.trackName || 'Chưa cập nhật'}</dd>
+                                        <dd className="text-right">{team.trackName || 'N/A'}</dd>
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                        <dt className="font-bold text-slate-800">Thành viên</dt>
+                                        <dt className="font-bold text-slate-800">Members</dt>
                                         <dd className="flex items-center gap-1.5 font-semibold">
                                             <span>{team.memberCount || 0}/5</span>
                                             {(team.disqualificationStatus === 'APPROVED') ? (
                                                 <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
                                                     <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-red-600" />
-                                                    Đã bị loại
+                                                    Disqualified
                                                 </span>
                                             ) : (team.memberCount || 0) >= 3 ? (
                                                 <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                                                     <span className="pulsing-dot-green shrink-0" />
-                                                    Chính thức
+                                                    Official
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                                                     <span className="pulsing-dot-amber shrink-0" />
-                                                    Chưa chính thức
+                                                    Unofficial
                                                 </span>
                                             )}
                                         </dd>
                                     </div>
                                     <div className="flex justify-between gap-4">
-                                        <dt className="font-bold text-slate-800">Bài nộp</dt>
-                                        <dd>{teamSubmissions.length} ({gradedCount} đã chấm)</dd>
+                                        <dt className="font-bold text-slate-800">Submissions</dt>
+                                        <dd>{teamSubmissions.length} ({gradedCount} graded)</dd>
                                     </div>
                                 </dl>
 
                                 <div className="mt-auto pt-6">
                                     <div className="grid gap-2 sm:grid-cols-2">
-                                        <button type="button" onClick={() => setSelectedTeam(team)} className="btn-secondary">Chi tiết</button>
+                                        <button type="button" onClick={() => setSelectedTeam(team)} className="btn-secondary">Details</button>
                                         {isMentor || staffRoles.has(role) ? (
-                                            <button type="button" onClick={() => openChatForTeam(team)} className="btn-primary">Trao đổi</button>
+                                            <button type="button" onClick={() => openChatForTeam(team)} className="btn-primary">Chat</button>
                                         ) : canJoin && team.disqualificationStatus !== 'APPROVED' && (
                                             <button
                                                 type="button"
                                                 onClick={() => team.type === 'PUBLIC' ? handleJoinPublic(team.id) : setJoinTeam(team)}
                                                 className="btn-primary"
                                             >
-                                                {team.type === 'PUBLIC' ? 'Xin gia nhập' : 'Nhập mật khẩu'}
+                                                {team.type === 'PUBLIC' ? 'Request to Join' : 'Enter PIN'}
                                             </button>
                                         )}
                                     </div>
@@ -389,10 +389,10 @@ export default function TeamExplorer() {
             )}
 
             {joinTeam && canJoin && !staffRoles.has(role) && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4">
                     <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-                        <h3 className="text-lg font-black tracking-wide text-slate-900">Gia nhập {joinTeam.name}</h3>
-                        <p className="mt-2 text-sm text-slate-600">Đội riêng tư yêu cầu mật khẩu gồm 4 chữ số do Team Leader cung cấp.</p>
+                        <h3 className="text-lg font-black tracking-wide text-slate-900">Join {joinTeam.name}</h3>
+                        <p className="mt-2 text-sm text-slate-600">Private teams require a 4-digit PIN code provided by the Team Leader.</p>
                         <form onSubmit={handleJoinPrivate} className="mt-5 space-y-4">
                             <input 
                                 required 
@@ -404,12 +404,12 @@ export default function TeamExplorer() {
                                     setJoinPassword(e.target.value.replace(/\D/g, '')); 
                                     setJoinError(''); 
                                 }} 
-                                placeholder="Mật khẩu đội (4 số)" 
+                                placeholder="Team PIN (4 digits)" 
                             />
                             {joinError && <p className="mt-2 text-sm font-semibold text-red-600">{joinError}</p>}
                             <div className="flex gap-3">
-                                <button type="button" onClick={() => { setJoinTeam(null); setJoinPassword(''); setJoinError(''); }} className="btn-secondary flex-1">Hủy</button>
-                                <button type="submit" className="btn-primary flex-1">Xác nhận</button>
+                                <button type="button" onClick={() => { setJoinTeam(null); setJoinPassword(''); setJoinError(''); }} className="btn-secondary flex-1">Cancel</button>
+                                <button type="submit" className="btn-primary flex-1">Confirm</button>
                             </div>
                         </form>
                     </div>
@@ -427,7 +427,7 @@ export default function TeamExplorer() {
                                 onClick={() => setAlertModal({ isOpen: false, title: '', message: '' })} 
                                 className="btn-primary flex-1"
                             >
-                                Đồng ý
+                                OK
                             </button>
                         </div>
                     </div>
@@ -450,7 +450,7 @@ function MentorChatModal({ team, onClose }) {
             const response = await axiosClient.get(`/chat/teams/${team.id}`);
             setMessages(response.result || []);
         } catch (err) {
-            setError(err.message || 'Không thể tải tin nhắn.');
+            setError(err.message || 'Failed to load chat history.');
         }
     }, [team.id]);
 
@@ -491,7 +491,7 @@ function MentorChatModal({ team, onClose }) {
                 await fetchMessages();
             }
         } catch (err) {
-            setError(err.message || 'Không thể gửi tin nhắn.');
+            setError(err.message || 'Failed to send message.');
         }
     };
 
@@ -500,28 +500,28 @@ function MentorChatModal({ team, onClose }) {
             <div className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-lg bg-white shadow-xl">
                 <div className="flex items-center justify-between border-b border-blue-100 p-5">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Trao đổi với đội</p>
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Team Chat</p>
                         <h3 className="mt-1 text-lg font-black text-slate-900">{team.name}</h3>
                     </div>
-                    <button type="button" onClick={onClose} className="btn-secondary">Đóng</button>
+                    <button type="button" onClick={onClose} className="btn-secondary">Close</button>
                 </div>
                 {error && <div className="m-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}
                 <div ref={messagesContainerRef} className="flex-1 space-y-3 overflow-y-auto p-5">
                     {messages.length === 0 ? (
-                        <p className="text-center text-sm text-slate-500">Chưa có tin nhắn.</p>
+                        <p className="text-center text-sm text-slate-500">No messages yet.</p>
                     ) : messages.map((message) => (
                         <div key={message.id} className="rounded-lg border border-blue-100 bg-blue-50 p-4">
                             <div className="flex items-center justify-between gap-3">
                                 <p className="font-black text-slate-900">{message.senderName || message.senderEmail}</p>
-                                <p className="text-xs text-slate-500">{message.createdAt ? new Date(message.createdAt).toLocaleString('vi-VN') : ''}</p>
+                                <p className="text-xs text-slate-500">{message.createdAt ? new Date(message.createdAt).toLocaleString('en-US') : ''}</p>
                             </div>
                             <p className="mt-2 text-sm leading-6 text-slate-700">{message.content}</p>
                         </div>
                     ))}
                 </div>
                 <form onSubmit={handleSubmit} className="flex gap-3 border-t border-blue-100 p-4">
-                    <input className="input-custom" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Nhập tin nhắn cho đội..." />
-                    <button type="submit" className="btn-primary">Gửi</button>
+                    <input className="input-custom" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Type message to team..." />
+                    <button type="submit" className="btn-primary">Send</button>
                 </form>
             </div>
         </div>
