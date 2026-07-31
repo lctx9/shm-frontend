@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import axiosClient from '../api/axiosClient';
 
+const currentUserEmail = () => localStorage.getItem('email') || 'anonymous';
+
 // Static mock teams to make the directory look complete
 const MOCK_TEAMS = [
     {
@@ -210,7 +212,8 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
         try {
             if (targetTeam.id.toString().startsWith('mock-')) {
                 await new Promise(resolve => setTimeout(resolve, 800));
-                localStorage.setItem(`shm_sent_join_request_team_${targetTeam.id}`, 'true');
+                const key = `shm_join_req_${currentUserEmail()}_${targetTeam.id}`;
+                localStorage.setItem(key, 'true');
                 setJoinStatuses(prev => ({
                     ...prev,
                     [targetTeam.id]: { text: 'Requested ✓', type: 'success' }
@@ -219,7 +222,8 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
             }
 
             await axiosClient.post(`/teams/${targetTeam.id}/join-request`);
-            localStorage.setItem(`shm_sent_join_request_team_${targetTeam.id}`, 'true');
+            const key = `shm_join_req_${currentUserEmail()}_${targetTeam.id}`;
+            localStorage.setItem(key, 'true');
             setJoinStatuses(prev => ({
                 ...prev,
                 [targetTeam.id]: { text: 'Requested ✓', type: 'success' }
@@ -233,8 +237,9 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
     };
 
     const submitPrivateJoin = async () => {
-        if (!passwordJoinTeam || !joinPassword.trim()) {
-            setJoinError('Password is required');
+        if (!passwordJoinTeam) return;
+        if (!/^\d{4}$/.test(joinPassword)) {
+            setJoinError('PIN must be exactly 4 digits.');
             return;
         }
         const targetTeam = passwordJoinTeam;
@@ -247,6 +252,8 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
         try {
             await axiosClient.post(`/teams/${targetTeam.id}/join-private`, { password: joinPassword });
             setPasswordJoinTeam(null);
+            setJoinPassword('');
+            setJoinError('');
             setJoinStatuses(prev => ({
                 ...prev,
                 [targetTeam.id]: { text: 'Joined ✓', type: 'success' }
@@ -254,7 +261,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
             fetchData();
             if (onTeamJoined) onTeamJoined(true);
         } catch (err) {
-            setJoinError(err.message || 'Incorrect password or failed to join');
+            setJoinError(err.message || 'Incorrect PIN or failed to join');
             setJoinStatuses(prev => ({
                 ...prev,
                 [targetTeam.id]: { text: 'Failed', type: 'error' }
@@ -341,7 +348,8 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                         {filteredTeams.map(team => {
                             const isFull = (team.members?.length || 0) >= 5;
                             const isPrivate = team.type === 'PRIVATE';
-                            const hasRequested = localStorage.getItem(`shm_sent_join_request_team_${team.id}`) === 'true';
+                            // Key scoped per user so different users don't share state
+                            const hasRequested = !isPrivate && localStorage.getItem(`shm_join_req_${currentUserEmail()}_${team.id}`) === 'true';
                             const joinStatus = joinStatuses[team.id];
 
                             return (
@@ -485,13 +493,18 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                         </p>
                         
                         <div className="mt-4">
+                            <label className="block text-sm font-bold text-[#0b1f3f] mb-1">
+                                4-digit PIN <span className="text-red-500">*</span>
+                            </label>
                             <input
-                                type="password"
-                                className="input-custom w-full bg-white border border-slate-200 rounded-lg px-4 py-2 text-sm"
-                                placeholder="Enter Join Password"
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={4}
+                                className="input-custom w-full tracking-widest text-center text-xl font-bold"
+                                placeholder="· · · ·"
                                 value={joinPassword}
                                 onChange={(e) => {
-                                    setJoinPassword(e.target.value);
+                                    setJoinPassword(e.target.value.replace(/\D/g, ''));
                                     setJoinError('');
                                 }}
                             />

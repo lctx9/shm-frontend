@@ -80,7 +80,7 @@ function App() {
                         <Route path="staff" element={<RoleRoute roles={['ADMIN']}><StaffManagement /></RoleRoute>} />
                         <Route path="audit-logs" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><AuditLogs /></RoleRoute>} />
                         <Route path="grading" element={<RoleRoute roles={['JUDGE', 'STAFF', 'COORDINATOR']}><Grading /></RoleRoute>} />
-                        <Route path="scoring-stats" element={<RoleRoute roles={['COORDINATOR', 'ADMIN', 'JUDGE']}><ScoringStats /></RoleRoute>} />
+                        <Route path="scoring-stats" element={<RoleRoute roles={['COORDINATOR', 'ADMIN', 'JUDGE', 'STAFF']}><ScoringStats /></RoleRoute>} />
                         <Route path="leaderboard" element={<Leaderboard />} />
                         <Route path="notifications" element={<Notifications />} />
                         <Route path="chat" element={<TeamChat />} />

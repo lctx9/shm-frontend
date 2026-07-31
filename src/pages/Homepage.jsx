@@ -7,7 +7,7 @@ import logoFptSoftware from '../assets/fpt_software.jpg';
 import logoVpBank from '../assets/VPBank_logo.svg.webp';
 import logoTechcombank from '../assets/Techcombank_logo.png';
 import logo197 from '../assets/197.png';
-import { demoWinners, formatDateTime, getCountdownParts, getEventPhase, pickFeaturedEvent } from '../utils/hackathon';
+import { formatDateTime, getCountdownParts, getEventPhase, pickFeaturedEvent } from '../utils/hackathon';
 
 function Stat({ value, label }) {
     return (
@@ -35,7 +35,7 @@ export default function Homepage() {
     const featuredEvent = useMemo(() => pickFeaturedEvent(events), [events]);
     const phase = getEventPhase(featuredEvent);
     const countdown = getCountdownParts(phase.key === 'registration' ? featuredEvent.regEndDate : featuredEvent.eventStartDate);
-    const winners = rankings.length ? rankings.slice(0, 3) : demoWinners;
+    const winners = rankings.slice(0, 3);
     const isEnded = phase.key === 'ended';
 
     // English phase status mapping

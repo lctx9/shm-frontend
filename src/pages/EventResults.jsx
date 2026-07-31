@@ -14,7 +14,7 @@ export default function EventResults() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        Promise.all([axiosClient.get(`/events/${eventId}`), axiosClient.get('/leaderboard')])
+        Promise.all([axiosClient.get(`/events/${eventId}`), axiosClient.get(`/leaderboard?eventId=${eventId}`)])
             .then(([eventResponse, rankingResponse]) => {
                 setEvent(eventResponse.result);
                 setRankings(rankingResponse.result || []);

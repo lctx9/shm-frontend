@@ -168,10 +168,24 @@ export default function EventDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showJoinModal, setShowJoinModal] = useState(false);
+    const [showCreateDialog, setShowCreateDialog] = useState(false);
+
+    // Create team dialog state
+    const [createForm, setCreateForm] = useState({
+        name: '',
+        trackId: '',
+        type: 'PUBLIC',
+        joinPassword: '',
+    });
+    const [createEmails, setCreateEmails] = useState(['', '']);
+    const [createError, setCreateError] = useState('');
+    const [createSuccess, setCreateSuccess] = useState('');
+    const [creating, setCreating] = useState(false);
 
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     const isManager = ['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR'].includes(role);
+    const currentEmail = localStorage.getItem('email');
 
     useEffect(() => {
         const checkUserTeam = async () => {
@@ -255,13 +269,57 @@ export default function EventDetail() {
 
     const handleCreateTeamPath = () => {
         setShowJoinModal(false);
-        handleTabChange('my-team');
+        setCreateForm({ name: '', trackId: event?.tracks?.[0]?.id || '', type: 'PUBLIC', joinPassword: '' });
+        setCreateEmails(['', '']);
+        setCreateError('');
+        setCreateSuccess('');
+        setShowCreateDialog(true);
     };
 
     const handleLookingPath = () => {
         setShowJoinModal(false);
         localStorage.setItem(`shm_registered_looking_event_${event.id}`, 'true');
-        handleTabChange('participants');
+        handleTabChange('all-teams');
+    };
+
+    const handleCreateTeamSubmit = async (e) => {
+        e.preventDefault();
+        setCreateError('');
+        setCreateSuccess('');
+        const nonNullEmails = createEmails.filter(em => em.trim() !== '');
+        if (nonNullEmails.length < 2) {
+            setCreateError('Bạn cần mời ít nhất 2 thành viên khác.');
+            return;
+        }
+        if (nonNullEmails.includes(currentEmail)) {
+            setCreateError('Bạn không thể tự mời chính mình.');
+            return;
+        }
+        if (createForm.type === 'PRIVATE' && !/^\d{4}$/.test(createForm.joinPassword)) {
+            setCreateError('PIN private phải là đúng 4 chữ số.');
+            return;
+        }
+        try {
+            setCreating(true);
+            await axiosClient.post('/teams/create', {
+                name: createForm.name,
+                type: createForm.type,
+                joinPassword: createForm.type === 'PRIVATE' ? createForm.joinPassword : '',
+                eventId: Number(event.id),
+                trackId: Number(createForm.trackId),
+                memberEmails: nonNullEmails,
+            });
+            setCreateSuccess('Tạo đội thành công! Lời mời đã được gửi tới các thành viên.');
+            setHasTeam(true);
+            setTimeout(() => {
+                setShowCreateDialog(false);
+                handleTabChange('my-team');
+            }, 1500);
+        } catch (err) {
+            setCreateError(err.message || 'Không thể tạo đội.');
+        } finally {
+            setCreating(false);
+        }
     };
 
     const tabClass = (tabName) => {
@@ -333,7 +391,15 @@ export default function EventDetail() {
 
                             {/* Call to Actions inside header block */}
                             <div className="flex flex-wrap items-center gap-4 mb-8">
-                                {canJoin && <button onClick={() => setShowJoinModal(true)} className="btn-primary cursor-pointer">Join Hackathon</button>}
+                                {canJoin && !hasTeam && !isManager && token && (
+                                    <button onClick={() => setShowJoinModal(true)} className="btn-primary cursor-pointer">Join Hackathon</button>
+                                )}
+                                {canJoin && hasTeam && !isManager && token && (
+                                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        Already registered
+                                    </span>
+                                )}
                                 {ended && <Link to={`/events/${event.id}/results`} className="btn-primary">View Results</Link>}
                                 <div className="text-xs text-slate-500">
                                     <strong>Who can register?</strong> Students register in teams of 2 to 5 members.
@@ -513,14 +579,180 @@ export default function EventDetail() {
                                     </div>
                                     <h4 className="font-black text-slate-900 text-base">Looking for Team</h4>
                                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                                        Join the participant pool so other teams and leaders can find and invite you.
+                                        Browse all teams or join as a solo participant looking for a team.
                                     </p>
                                 </div>
                                 <span className="text-xs font-bold text-amber-600 mt-3 inline-flex items-center gap-1">
-                                    Join pool →
+                                    Browse teams →
                                 </span>
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Team Dialog */}
+            {showCreateDialog && event && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+                        {/* Dialog Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-[#0b1f3f]">
+                            <div>
+                                <h3 className="text-lg font-black text-white">🛡️ Create a Team</h3>
+                                <p className="text-xs text-slate-300 mt-0.5">{event.name}</p>
+                            </div>
+                            <button
+                                onClick={() => { setShowCreateDialog(false); setCreateError(''); setCreateSuccess(''); }}
+                                className="text-slate-300 hover:text-white transition-colors cursor-pointer p-1"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Dialog Body */}
+                        <form onSubmit={handleCreateTeamSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+                            {/* Team Name */}
+                            <div>
+                                <label className="block text-sm font-bold text-[#0b1f3f] mb-1">Team Name <span className="text-red-500">*</span></label>
+                                <input
+                                    required
+                                    className="input-custom"
+                                    placeholder="Enter your team name"
+                                    value={createForm.name}
+                                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                                />
+                            </div>
+
+                            {/* Track */}
+                            {(event.tracks || []).length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-bold text-[#0b1f3f] mb-1">Track <span className="text-red-500">*</span></label>
+                                    <select
+                                        required
+                                        className="input-custom"
+                                        value={createForm.trackId}
+                                        onChange={(e) => setCreateForm({ ...createForm, trackId: e.target.value })}
+                                    >
+                                        <option value="">-- Select a track --</option>
+                                        {(event.tracks || []).map((track) => (
+                                            <option key={track.id} value={track.id}>{track.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Visibility */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-[#0b1f3f] mb-1">Visibility</label>
+                                    <select
+                                        className="input-custom"
+                                        value={createForm.type}
+                                        onChange={(e) => setCreateForm({ ...createForm, type: e.target.value, joinPassword: '' })}
+                                    >
+                                        <option value="PUBLIC">🌐 Public</option>
+                                        <option value="PRIVATE">🔒 Private</option>
+                                    </select>
+                                </div>
+                                {createForm.type === 'PRIVATE' && (
+                                    <div>
+                                        <label className="block text-sm font-bold text-[#0b1f3f] mb-1">4-digit PIN <span className="text-red-500">*</span></label>
+                                        <input
+                                            className="input-custom tracking-widest text-center text-lg font-bold"
+                                            inputMode="numeric"
+                                            maxLength={4}
+                                            placeholder="····"
+                                            value={createForm.joinPassword}
+                                            onChange={(e) => setCreateForm({ ...createForm, joinPassword: e.target.value.replace(/\D/g, '') })}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Invite Emails */}
+                            <div>
+                                <label className="block text-sm font-bold text-[#0b1f3f] mb-1">
+                                    Invite Members <span className="text-red-500">*</span>
+                                    <span className="ml-1 text-xs text-slate-400 font-normal">(min. 2, max 4)</span>
+                                </label>
+                                <p className="text-xs text-slate-400 mb-3">Your team needs at least 3 members total (you + 2 others).</p>
+                                <div className="space-y-2.5">
+                                    {createEmails.map((email, idx) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                            <input
+                                                type="email"
+                                                className="input-custom flex-1"
+                                                placeholder={`Member ${idx + 1} email ${idx < 2 ? '(required)' : '(optional)'}`}
+                                                value={email}
+                                                onChange={(e) => {
+                                                    const next = [...createEmails];
+                                                    next[idx] = e.target.value;
+                                                    setCreateEmails(next);
+                                                    setCreateError('');
+                                                }}
+                                            />
+                                            {createEmails.length > 2 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCreateEmails(createEmails.filter((_, i) => i !== idx))}
+                                                    className="shrink-0 rounded-lg border border-red-200 bg-red-50 px-2 py-2 text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {createEmails.length < 4 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setCreateEmails([...createEmails, ''])}
+                                            className="text-xs font-bold text-[#0f63c9] hover:underline flex items-center gap-1 cursor-pointer"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Add another email
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {createError && (
+                                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                                    {createError}
+                                </div>
+                            )}
+                            {createSuccess && (
+                                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 flex items-center gap-2">
+                                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    {createSuccess}
+                                </div>
+                            )}
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowCreateDialog(false); setCreateError(''); setCreateSuccess(''); }}
+                                    className="btn-secondary flex-1"
+                                    disabled={creating}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-primary flex-1"
+                                    disabled={creating}
+                                >
+                                    {creating ? 'Creating...' : '🛡️ Create Team'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
