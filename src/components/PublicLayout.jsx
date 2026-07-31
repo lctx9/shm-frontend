@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import Header from './Header';
 import FloatingChat from './FloatingChat';
+import Sidebar from './Sidebar';
 import logoFpt from '../assets/fpt.jpg';
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
@@ -10,7 +11,16 @@ export default function PublicLayout() {
     const role = localStorage.getItem('role');
 
     if (token && managerRoles.has(role)) {
-        return <Navigate to="/dashboard" replace />;
+        return (
+            <div className="dashboard-shell">
+                <Sidebar />
+                <div className="flex min-w-0 flex-1 flex-col">
+                    <main className="dashboard-content">
+                        <Outlet />
+                    </main>
+                </div>
+            </div>
+        );
     }
 
     return (
