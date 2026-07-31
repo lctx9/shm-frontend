@@ -118,11 +118,7 @@ export default function Homepage() {
                                     <Stat 
                                         key={item.label} 
                                         value={item.value} 
-                                        label={
-                                            item.label === 'Ngày' ? 'Days' : 
-                                            item.label === 'Giờ' ? 'Hours' : 
-                                            item.label === 'Phút' ? 'Mins' : 'Secs'
-                                        } 
+                                        label={item.label} 
                                     />
                                 ))}
                             </div>
