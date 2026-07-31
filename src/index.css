@@ -1831,6 +1831,40 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     font-weight: 600;
 }
 
+/* Event creation wizard: keep its navy palette above dashboard-wide defaults. */
+.event-create-header {
+    background: var(--seal-800);
+}
+
+.dashboard-content .event-create-header__eyebrow {
+    color: var(--seal-200);
+}
+
+.dashboard-content .event-create-header__title {
+    color: #ffffff;
+}
+
+.event-create-cancel {
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: #ffffff;
+    color: var(--seal-800);
+}
+
+.event-create-cancel:hover {
+    background: var(--seal-50);
+}
+
+.event-create-quick-fill {
+    border: 1px solid var(--seal-200);
+    background: var(--seal-50);
+    color: var(--seal-700);
+}
+
+.event-create-quick-fill:hover {
+    border-color: var(--seal-300);
+    background: var(--seal-100);
+}
+
 .dashboard-content section[class*="bg-white"],
 .dashboard-content aside[class*="bg-white"],
 .dashboard-content article[class*="bg-white"],
@@ -1883,6 +1917,35 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 :where(.dashboard-content, .public-content) [class*="bg-blue-100"] { background-color: var(--seal-100) !important; }
 :where(.dashboard-content, .public-content) [class*="text-blue-600"],
 :where(.dashboard-content, .public-content) [class*="text-blue-700"] { color: var(--seal-700) !important; }
+
+.dashboard-content .scoring-config-page [class*="border-blue-"] {
+    border-color: var(--app-border) !important;
+}
+
+.dashboard-content .scoring-config-page [class*="bg-blue-50"],
+.dashboard-content .scoring-config-page [class*="bg-blue-100"],
+.dashboard-content .scoring-config-page [class*="hover:bg-blue-50"]:hover {
+    background-color: #f8fafc !important;
+}
+
+.dashboard-content .scoring-config-page [class*="text-blue-"],
+.dashboard-content .scoring-config-page [style*="#0f63c9"] {
+    color: var(--seal-700) !important;
+}
+
+.dashboard-content .scoring-config-page [class*="border-blue-500"],
+.dashboard-content .scoring-config-page [class*="border-blue-300"],
+.dashboard-content .scoring-config-page [class*="hover:border-blue-300"]:hover {
+    border-color: var(--seal-300) !important;
+}
+
+.dashboard-content .scoring-config-page [class*="ring-blue-"] {
+    --tw-ring-color: rgba(44, 78, 102, 0.16) !important;
+}
+
+.dashboard-content .scoring-config-page [class*="bg-[#0f63c9]"] {
+    background-color: var(--seal-700) !important;
+}
 
 /* Dashboard Tables */
 :where(.section-shell, .dashboard-content) table {
