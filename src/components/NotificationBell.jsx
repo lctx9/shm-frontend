@@ -8,10 +8,10 @@ function formatTime(value) {
     if (!value) return '';
     const date = new Date(value);
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 60) return 'Vừa xong';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`;
-    return date.toLocaleDateString('vi-VN');
+    if (seconds < 60) return "Just finished";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    return date.toLocaleDateString('en-GB');
 }
 
 export default function NotificationBell() {
@@ -94,7 +94,7 @@ export default function NotificationBell() {
                 type="button"
                 className="notification-bell"
                 onClick={() => setOpen((current) => !current)}
-                aria-label={unreadCount ? `${unreadCount} thông báo chưa đọc` : 'Thông báo'}
+                aria-label={unreadCount ? `${unreadCount} unread notification` : "Notification"}
                 aria-expanded={open}
             >
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9">
@@ -104,22 +104,22 @@ export default function NotificationBell() {
             </button>
 
             {open && (
-                <div className="notification-dropdown" role="dialog" aria-label="Thông báo gần đây">
+                <div className="notification-dropdown" role="dialog" aria-label="Recent announcements">
                     <div className="flex items-center justify-between border-b border-[#d7e6f8] px-4 py-3">
                         <div>
-                            <p className="font-black text-[#071936]">Thông báo</p>
-                            <p className="mt-0.5 text-xs text-[#718096]">{unreadCount ? `${unreadCount} thông báo chưa đọc` : 'Bạn đã xem tất cả'}</p>
+                            <p className="font-black text-[#071936]">Notification</p>
+                            <p className="mt-0.5 text-xs text-[#718096]">{unreadCount ? `${unreadCount} unread notification` : "You've seen it all"}</p>
                         </div>
-                        {unreadCount > 0 && <button type="button" onClick={markAllAsRead} className="text-xs font-bold text-[#0f63c9] hover:underline">Đọc tất cả</button>}
+                        {unreadCount > 0 && <button type="button" onClick={markAllAsRead} className="text-xs font-bold text-[#0f63c9] hover:underline">Read them all</button>}
                     </div>
 
                     <div className="max-h-96 overflow-y-auto">
                         {loading ? (
-                            <p className="px-4 py-8 text-center text-sm text-[#718096]">Đang tải...</p>
+                            <p className="px-4 py-8 text-center text-sm text-[#718096]">Loading...</p>
                         ) : notifications.length === 0 ? (
                             <div className="px-6 py-10 text-center">
                                 <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#eaf3ff] text-[#0f63c9]">✓</span>
-                                <p className="mt-3 text-sm font-bold text-[#334860]">Chưa có thông báo mới</p>
+                                <p className="mt-3 text-sm font-bold text-[#334860]">There are no new announcements yet</p>
                             </div>
                         ) : notifications.slice(0, 6).map((item) => (
                             <button key={item.id} type="button" onClick={() => markAsRead(item)} className={`notification-item ${item.read ? '' : 'is-unread'}`}>
@@ -134,7 +134,7 @@ export default function NotificationBell() {
                     </div>
 
                     <Link to={allNotificationsUrl} onClick={() => setOpen(false)} className="block border-t border-[#d7e6f8] px-4 py-3 text-center text-xs font-black text-[#0f63c9] hover:bg-[#f4f8ff]">
-                        Xem tất cả thông báo
+                        See all announcements
                     </Link>
                 </div>
             )}

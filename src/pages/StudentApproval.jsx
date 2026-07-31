@@ -13,10 +13,10 @@ function StatusBadge({ status }) {
     }[status] || 'bg-slate-100 text-slate-700';
 
     const label = {
-        PENDING: 'Chờ duyệt',
-        APPROVED: 'Đã duyệt',
-        REJECTED: 'Đã từ chối',
-        BANNED: 'Đã khóa',
+        PENDING: "Waiting for approval",
+        APPROVED: "Approved",
+        REJECTED: "Rejected",
+        BANNED: "Locked",
     }[status] || status;
 
     return <span className={`rounded-full px-3 py-1 text-xs font-black ${tone}`}>{label}</span>;
@@ -29,7 +29,7 @@ function StudentCardPreview({ user }) {
     if (!user?.studentCardUrl) {
         return (
             <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm font-semibold text-slate-500">
-                Thí sinh chưa upload thẻ sinh viên.
+                The applicant has not uploaded a student ID card yet.
             </div>
         );
     }
@@ -54,8 +54,8 @@ function StudentCardPreview({ user }) {
                     <svg className="h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <p className="text-sm font-bold text-red-600">Không thể tải ảnh</p>
-                    <p className="text-xs text-slate-500">File có thể đã bị xóa hoặc đường dẫn không hợp lệ.</p>
+                    <p className="text-sm font-bold text-red-600">Unable to load photo</p>
+                    <p className="text-xs text-slate-500">The file may have been deleted or the path may be invalid.</p>
                 </div>
             ) : (
                 <div className="relative min-h-[200px]">
@@ -66,7 +66,7 @@ function StudentCardPreview({ user }) {
                     )}
                     <img
                         src={user.studentCardUrl}
-                        alt={`Thẻ sinh viên của ${user.fullName}`}
+                        alt={`Student's card ${user.fullName}`}
                         className="max-h-[520px] w-full object-contain"
                         onLoad={() => setImgLoaded(true)}
                         onError={() => setImgError(true)}
@@ -85,7 +85,7 @@ function StudentCardPreview({ user }) {
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
-                    Mở ảnh gốc trong tab mới ({displayName})
+                    Open the original image in a new tab ({displayName})
                 </a>
             )}
         </div>
@@ -105,11 +105,11 @@ export default function StudentApproval() {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const response = await axiosClient.get('/users');
+            const response = await axiosClient.get('/users/role/USER');
             setUsers(response.result || []);
             setError('');
         } catch (err) {
-            setError(err.message || 'Không thể tải danh sách thí sinh.');
+            setError(err.message || "Unable to load the applicant list.");
         } finally {
             setLoading(false);
         }
@@ -133,7 +133,7 @@ export default function StudentApproval() {
     const handleStatus = async (userId, status, rejectReason = '') => {
         try {
             await axiosClient.put(`/users/${userId}/status`, { status, reason: rejectReason });
-            const response = await axiosClient.get('/users');
+            const response = await axiosClient.get('/users/role/USER');
             const nextUsers = response.result || [];
             setUsers(nextUsers);
             refreshSelectedUser(userId, nextUsers);
@@ -148,7 +148,7 @@ export default function StudentApproval() {
                 new CustomEvent('studentStatusChanged', { detail: { pendingCount: newPendingCount } })
             );
         } catch (err) {
-            setError(err.message || 'Không thể cập nhật trạng thái tài khoản.');
+            setError(err.message || "Unable to update account status.");
         }
     };
 
@@ -162,22 +162,22 @@ export default function StudentApproval() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Student verification</p>
-                    <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Phê duyệt thí sinh</h2>
-                    <p className="mt-2 text-sm text-slate-600">Bấm chi tiết để đối chiếu thông tin đăng ký và thẻ sinh viên đã upload.</p>
+                    <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Student account approvals</h2>
+                    <p className="mt-2 text-sm text-slate-600">Click details to compare registration information and uploaded student card.</p>
                 </div>
-                <button type="button" onClick={fetchUsers} title="Làm mới danh sách" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
+                <button type="button" onClick={fetchUsers} title="Refresh the list" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             <Toast error={error} onClose={() => setError('')} />
 
             <section className="rounded-lg border border-blue-100 bg-white p-4">
-                <label className="mb-1 block text-sm font-bold text-slate-700">Trạng thái</label>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Status</label>
                 <select className="input-custom max-w-xs" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                    <option value="PENDING">Chờ duyệt</option>
-                    <option value="APPROVED">Đã duyệt</option>
-                    <option value="REJECTED">Đã từ chối</option>
-                    <option value="BANNED">Đã khóa</option>
-                    <option value="ALL">Tất cả</option>
+                    <option value="PENDING">Waiting for approval</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                    <option value="BANNED">Locked</option>
+                    <option value="ALL">All</option>
                 </select>
             </section>
 
@@ -186,30 +186,30 @@ export default function StudentApproval() {
                     <table className="w-full text-left">
                         <thead className="border-b border-blue-100 bg-blue-50 text-xs font-black uppercase tracking-wide text-slate-500">
                             <tr>
-                                <th className="px-6 py-4">Thí sinh</th>
-                                <th className="px-6 py-4">MSSV</th>
-                                <th className="px-6 py-4">Trường</th>
-                                <th className="px-6 py-4">Thẻ sinh viên</th>
-                                <th className="px-6 py-4">Trạng thái</th>
-                                <th className="px-6 py-4 text-right">Thao tác</th>
+                                <th className="px-6 py-4">Applicant</th>
+                                <th className="px-6 py-4">Student ID</th>
+                                <th className="px-6 py-4">School</th>
+                                <th className="px-6 py-4">Student card</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-blue-50">
                             {loading ? (
-                                <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">Đang tải...</td></tr>
+                                <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">Loading...</td></tr>
                             ) : students.length === 0 ? (
-                                <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">Không có thí sinh phù hợp.</td></tr>
+                                <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">No matching applicants.</td></tr>
                             ) : students.map((user) => (
                                 <tr key={user.id} className="hover:bg-blue-50/40">
                                     <td className="px-6 py-4">
                                         <p className="font-bold text-slate-900">{user.fullName}</p>
                                         <p className="text-sm text-slate-500">{user.email}</p>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-bold text-slate-700">{user.studentId || 'Chưa có'}</td>
-                                    <td className="px-6 py-4 text-sm text-slate-600">{user.universityName || 'Chưa cập nhật'}</td>
+                                    <td className="px-6 py-4 text-sm font-bold text-slate-700">{user.studentId || "Not yet"}</td>
+                                    <td className="px-6 py-4 text-sm text-slate-600">{user.universityName || "Not updated yet"}</td>
                                     <td className="px-6 py-4">
                                         <span className={`rounded-full px-3 py-1 text-xs font-black ${user.studentCardUrl ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                            {user.studentCardUrl ? 'Đã upload' : 'Chưa upload'}
+                                            {user.studentCardUrl ? "Uploaded" : "Not uploaded yet"}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
@@ -217,7 +217,7 @@ export default function StudentApproval() {
                                         {user.rejectionReason && <p className="mt-2 max-w-xs text-xs text-red-600">{user.rejectionReason}</p>}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button type="button" onClick={() => setSelectedUser(user)} className="btn-primary">Chi tiết</button>
+                                        <button type="button" onClick={() => setSelectedUser(user)} className="btn-primary">Detail</button>
                                     </td>
                                 </tr>
                             ))}
@@ -231,19 +231,19 @@ export default function StudentApproval() {
                     <div className="mx-auto my-8 max-w-6xl rounded-lg bg-white shadow-xl">
                         <div className="flex flex-col gap-3 border-b border-blue-100 p-6 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Chi tiết phê duyệt</p>
+                                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Approval details</p>
                                 <h3 className="mt-1 text-xl font-black text-slate-900">{selectedUser.fullName}</h3>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                <button type="button" onClick={() => setSelectedUser(null)} className="btn-secondary">Đóng</button>
+                                <button type="button" onClick={() => setSelectedUser(null)} className="btn-secondary">Close</button>
                                 {selectedUser.status !== 'APPROVED' && (
-                                    <button type="button" onClick={() => handleStatus(selectedUser.id, 'APPROVED')} className="btn-primary">Duyệt</button>
+                                    <button type="button" onClick={() => handleStatus(selectedUser.id, 'APPROVED')} className="btn-primary">Browse</button>
                                 )}
                                 {selectedUser.status !== 'REJECTED' && (
-                                    <button type="button" onClick={() => openReject(selectedUser)} className="btn-secondary">Từ chối</button>
+                                    <button type="button" onClick={() => openReject(selectedUser)} className="btn-secondary">Refuse</button>
                                 )}
                                 {selectedUser.status !== 'BANNED' && (
-                                    <button type="button" onClick={() => handleStatus(selectedUser.id, 'BANNED')} className="btn-secondary">Khóa</button>
+                                    <button type="button" onClick={() => handleStatus(selectedUser.id, 'BANNED')} className="btn-secondary">Lock</button>
                                 )}
                             </div>
                         </div>
@@ -252,7 +252,7 @@ export default function StudentApproval() {
                             <section className="rounded-lg border border-blue-100 bg-blue-50 p-5">
                                 <div className="mb-5 flex items-center justify-between gap-3">
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Thông tin sinh viên</p>
+                                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Student information</p>
                                         <p className="mt-1 text-lg font-black text-slate-900">{selectedUser.fullName}</p>
                                     </div>
                                     <StatusBadge status={selectedUser.status} />
@@ -264,20 +264,20 @@ export default function StudentApproval() {
                                         <dd className="mt-1 break-all font-semibold text-slate-900">{selectedUser.email}</dd>
                                     </div>
                                     <div>
-                                        <dt className="font-black uppercase tracking-wide text-slate-500">Mã số sinh viên</dt>
-                                        <dd className="mt-1 font-semibold text-slate-900">{selectedUser.studentId || 'Chưa cung cấp'}</dd>
+                                        <dt className="font-black uppercase tracking-wide text-slate-500">Student code</dt>
+                                        <dd className="mt-1 font-semibold text-slate-900">{selectedUser.studentId || "Not provided yet"}</dd>
                                     </div>
                                     <div>
-                                        <dt className="font-black uppercase tracking-wide text-slate-500">Trường</dt>
-                                        <dd className="mt-1 font-semibold text-slate-900">{selectedUser.universityName || 'Chưa cập nhật'}</dd>
+                                        <dt className="font-black uppercase tracking-wide text-slate-500">School</dt>
+                                        <dd className="mt-1 font-semibold text-slate-900">{selectedUser.universityName || "Not updated yet"}</dd>
                                     </div>
                                     <div>
-                                        <dt className="font-black uppercase tracking-wide text-slate-500">Loại sinh viên</dt>
-                                        <dd className="mt-1 font-semibold text-slate-900">{selectedUser.fptStudent ? 'Sinh viên FPT' : 'Sinh viên ngoài FPT'}</dd>
+                                        <dt className="font-black uppercase tracking-wide text-slate-500">Student type</dt>
+                                        <dd className="mt-1 font-semibold text-slate-900">{selectedUser.fptStudent ? "FPT student" : "Students outside FPT"}</dd>
                                     </div>
                                     {selectedUser.rejectionReason && (
                                         <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-                                            <dt className="font-black uppercase tracking-wide text-red-600">Lý do từ chối</dt>
+                                            <dt className="font-black uppercase tracking-wide text-red-600">Reason for refusal</dt>
                                             <dd className="mt-1 text-red-700">{selectedUser.rejectionReason}</dd>
                                         </div>
                                     )}
@@ -287,11 +287,11 @@ export default function StudentApproval() {
                             <section>
                                 <div className="mb-3 flex items-center justify-between gap-3">
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Thẻ sinh viên đã upload</p>
-                                        <h4 className="mt-1 font-black text-slate-900">Đối chiếu hình ảnh</h4>
+                                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">Student card has been uploaded</p>
+                                        <h4 className="mt-1 font-black text-slate-900">Compare images</h4>
                                     </div>
                                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-                                        {selectedUser.studentCardUrl ? 'Có file ảnh' : 'Thiếu file ảnh'}
+                                        {selectedUser.studentCardUrl ? "There are image files" : "Missing image files"}
                                     </span>
                                 </div>
                                 <StudentCardPreview user={selectedUser} />
@@ -310,12 +310,12 @@ export default function StudentApproval() {
                         }}
                         className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
                     >
-                        <h3 className="text-lg font-black uppercase tracking-wide text-slate-900">Lý do từ chối</h3>
+                        <h3 className="text-lg font-black uppercase tracking-wide text-slate-900">Reason for refusal</h3>
                         <p className="mt-2 text-sm text-slate-600">{rejectingUser.fullName} - {rejectingUser.email}</p>
-                        <textarea required rows="4" className="input-custom mt-5" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ví dụ: ảnh thẻ không rõ MSSV..." />
+                        <textarea required rows="4" className="input-custom mt-5" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="For example: The student ID is not visible in the uploaded photo." />
                         <div className="mt-5 flex gap-3">
-                            <button type="button" onClick={() => setRejectingUser(null)} className="btn-secondary flex-1">Hủy</button>
-                            <button type="submit" className="btn-primary flex-1">Xác nhận</button>
+                            <button type="button" onClick={() => setRejectingUser(null)} className="btn-secondary flex-1">Cancel</button>
+                            <button type="submit" className="btn-primary flex-1">Confirm</button>
                         </div>
                     </form>
                 </div>

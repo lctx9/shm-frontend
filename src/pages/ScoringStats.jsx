@@ -5,89 +5,89 @@ import Toast from '../components/Toast';
 const MOCK_MULTI_JUDGE_TEAMS = [
     {
         teamId: 1,
-        teamName: 'Đội 1: Mức An Toàn (0.81 - 1.00)',
-        roundName: 'Vòng Chung Kết',
+        teamName: "Team 1: Safe Level (0.81 - 1.00)",
+        roundName: "Final Round",
         trackName: 'Chung',
         judgeScores: [
-            { judgeName: 'TS. Đỗ Thanh E', judgeEmail: 'dothanhe@seal.dev', score: 96.0, comment: 'Giải pháp hoàn thiện xuất sắc, đáp ứng đầy đủ yêu cầu hệ thống' },
-            { judgeName: 'PGS. Trần Thị B', judgeEmail: 'tranthib@seal.dev', score: 94.0, comment: 'Sản phẩm hoàn thiện cao, giao diện tối ưu mượt mà' },
-            { judgeName: 'TS. Nguyễn Văn A', judgeEmail: 'nguyenvana@seal.dev', score: 95.0, comment: 'Rất ấn tượng với phần trình bày và demo trực tiếp' },
+            { judgeName: "Dr. Do Thanh E", judgeEmail: 'dothanhe@seal.dev', score: 96.0, comment: "Excellent complete solution, fully meeting system requirements" },
+            { judgeName: "Associate Professor. Tran Thi B", judgeEmail: 'tranthib@seal.dev', score: 94.0, comment: "Highly finished product, smooth optimized interface" },
+            { judgeName: "Dr. Nguyen Van A", judgeEmail: 'nguyenvana@seal.dev', score: 95.0, comment: "Very impressed with the presentation and live demo" },
         ],
     },
     {
         teamId: 2,
-        teamName: 'Đội 2: Mức Chấp Nhận Được (0.61 - 0.80)',
-        roundName: 'Vòng Chung Kết',
+        teamName: "Team 2: Acceptable Level (0.61 - 0.80)",
+        roundName: "Final Round",
         trackName: 'Chung',
         judgeScores: [
-            { judgeName: 'TS. Nguyễn Văn A', judgeEmail: 'nguyenvana@seal.dev', score: 91.0, comment: 'Ý tưởng tốt, giải pháp kỹ thuật khả thi' },
-            { judgeName: 'PGS. Trần Thị B', judgeEmail: 'tranthib@seal.dev', score: 80.0, comment: 'Cần mở rộng tính năng và nâng cấp bảo mật' },
-            { judgeName: 'ThS. Lê Hoàng C', judgeEmail: 'lehoangc@seal.dev', score: 85.0, comment: 'Trình bày thuyết phục, trả lời phản biện tốt' },
+            { judgeName: "Dr. Nguyen Van A", judgeEmail: 'nguyenvana@seal.dev', score: 91.0, comment: "Good ideas, feasible technical solutions" },
+            { judgeName: "Associate Professor. Tran Thi B", judgeEmail: 'tranthib@seal.dev', score: 80.0, comment: "Needs feature expansion and security upgrades" },
+            { judgeName: "MSc. Le Hoang C", judgeEmail: 'lehoangc@seal.dev', score: 85.0, comment: "Present convincingly, respond well to criticism" },
         ],
     },
     {
         teamId: 3,
-        teamName: 'Đội 3: Mức Cảnh Báo Nhẹ (0.41 - 0.60)',
-        roundName: 'Vòng Chung Kết',
+        teamName: "Team 3: Mild Warning Level (0.41 - 0.60)",
+        roundName: "Final Round",
         trackName: 'Chung',
         judgeScores: [
-            { judgeName: 'TS. Nguyễn Văn A', judgeEmail: 'nguyenvana@seal.dev', score: 92.0, comment: 'Đánh giá điểm khá cao cho kiến trúc phần mềm' },
-            { judgeName: 'ThS. Lê Hoàng C', judgeEmail: 'lehoangc@seal.dev', score: 76.0, comment: 'Cần bổ sung mô hình tài chính và kế hoạch vận hành' },
-            { judgeName: 'KS. Phạm Minh D', judgeEmail: 'phamminhd@seal.dev', score: 82.0, comment: 'Kỹ thuật tốt nhưng UX cần trau chuốt thêm' },
+            { judgeName: "Dr. Nguyen Van A", judgeEmail: 'nguyenvana@seal.dev', score: 92.0, comment: "High score rating for software architecture" },
+            { judgeName: "MSc. Le Hoang C", judgeEmail: 'lehoangc@seal.dev', score: 76.0, comment: "Need to supplement financial model and operating plan" },
+            { judgeName: "KS. Pham Minh D", judgeEmail: 'phamminhd@seal.dev', score: 82.0, comment: "Technically good but UX needs more refinement" },
         ],
     },
     {
         teamId: 4,
-        teamName: 'Đội 4: Mức Cảnh Báo Cao (0.21 - 0.40)',
-        roundName: 'Vòng Chung Kết',
+        teamName: "Team 4: High Alert Level (0.21 - 0.40)",
+        roundName: "Final Round",
         trackName: 'Chung',
         judgeScores: [
-            { judgeName: 'TS. Nguyễn Văn A', judgeEmail: 'nguyenvana@seal.dev', score: 69.0, comment: 'Cần hoàn thiện kế hoạch doanh thu' },
-            { judgeName: 'ThS. Lê Hoàng C', judgeEmail: 'lehoangc@seal.dev', score: 70.0, comment: 'Báo cáo đạt mức cơ bản' },
-            { judgeName: 'KS. Phạm Minh D', judgeEmail: 'phamminhd@seal.dev', score: 84.0, comment: 'Smart contract lập trình tốt' },
-            { judgeName: 'TS. Đỗ Thanh E', judgeEmail: 'dothanhe@seal.dev', score: 85.0, comment: 'Kiến trúc bảo mật tối ưu' },
+            { judgeName: "Dr. Nguyen Van A", judgeEmail: 'nguyenvana@seal.dev', score: 69.0, comment: "Need to complete revenue plan" },
+            { judgeName: "MSc. Le Hoang C", judgeEmail: 'lehoangc@seal.dev', score: 70.0, comment: "Reporting meets basic level" },
+            { judgeName: "KS. Pham Minh D", judgeEmail: 'phamminhd@seal.dev', score: 84.0, comment: "Smart contract with good programming" },
+            { judgeName: "Dr. Do Thanh E", judgeEmail: 'dothanhe@seal.dev', score: 85.0, comment: "Optimal security architecture" },
         ],
     },
     {
         teamId: 5,
-        teamName: 'Đội 5: Mức Nguy Hiểm (≤ 0.20)',
-        roundName: 'Vòng Chung Kết',
+        teamName: "Team 5: Danger Level (≤ 0.20)",
+        roundName: "Final Round",
         trackName: 'Chung',
         judgeScores: [
-            { judgeName: 'TS. Nguyễn Văn A', judgeEmail: 'nguyenvana@seal.dev', score: 91.0, comment: 'Ý tưởng đột phá xuất sắc' },
-            { judgeName: 'KS. Phạm Minh D', judgeEmail: 'phamminhd@seal.dev', score: 68.0, comment: 'Chưa chứng minh được khả thi kỹ thuật' },
-            { judgeName: 'ThS. Lê Hoàng C', judgeEmail: 'lehoangc@seal.dev', score: 78.0, comment: 'Cần nghiên cứu thêm dữ liệu thị trường' },
+            { judgeName: "Dr. Nguyen Van A", judgeEmail: 'nguyenvana@seal.dev', score: 91.0, comment: "Excellent breakthrough idea" },
+            { judgeName: "KS. Pham Minh D", judgeEmail: 'phamminhd@seal.dev', score: 68.0, comment: "Technical feasibility has not been proven" },
+            { judgeName: "MSc. Le Hoang C", judgeEmail: 'lehoangc@seal.dev', score: 78.0, comment: "Need to research more market data" },
         ],
     },
     {
         teamId: 6,
-        teamName: 'Đội CyberShield (Test 69đ vs 70đ)',
-        roundName: 'Vòng Ý Tưởng',
+        teamName: "CyberShield Team (Test 69v vs 70v)",
+        roundName: "Idea Circle",
         trackName: 'AI & Machine Learning',
         judgeScores: [
-            { judgeName: 'TS. Nguyễn Văn A', judgeEmail: 'nguyenvana@seal.dev', score: 69.0, comment: 'Đánh giá mốc 69.0đ' },
-            { judgeName: 'PGS. Trần Thị B', judgeEmail: 'tranthib@seal.dev', score: 70.0, comment: 'Đánh giá mốc 70.0đ' },
+            { judgeName: "Dr. Nguyen Van A", judgeEmail: 'nguyenvana@seal.dev', score: 69.0, comment: "Evaluation score: 69.0 points" },
+            { judgeName: "Associate Professor. Tran Thi B", judgeEmail: 'tranthib@seal.dev', score: 70.0, comment: "Evaluation score: 70.0 points" },
         ],
     },
     {
         teamId: 7,
-        teamName: 'Đội GreenLife',
-        roundName: 'Vòng Chung Kết',
+        teamName: "GreenLife team",
+        roundName: "Final Round",
         trackName: 'Chung',
         judgeScores: [
-            { judgeName: 'TS. Nguyễn Văn A', judgeEmail: 'nguyenvana@seal.dev', score: 85.0, comment: 'Giao diện mượt mà' },
-            { judgeName: 'ThS. Lê Hoàng C', judgeEmail: 'lehoangc@seal.dev', score: 82.5, comment: 'Cơ sở dữ liệu ổn định' },
-            { judgeName: 'KS. Phạm Minh D', judgeEmail: 'phamminhd@seal.dev', score: 86.0, comment: 'Kỹ năng trình bày tự tin' },
+            { judgeName: "Dr. Nguyen Van A", judgeEmail: 'nguyenvana@seal.dev', score: 85.0, comment: "Smooth interface" },
+            { judgeName: "MSc. Le Hoang C", judgeEmail: 'lehoangc@seal.dev', score: 82.5, comment: "Stable database" },
+            { judgeName: "KS. Pham Minh D", judgeEmail: 'phamminhd@seal.dev', score: 86.0, comment: "Confident presentation skills" },
         ],
     },
     {
         teamId: 8,
-        teamName: 'Đội SmartLogistics',
-        roundName: 'Vòng Ý Tưởng',
+        teamName: "SmartLogistics team",
+        roundName: "Idea Circle",
         trackName: 'Blockchain & FinTech',
         judgeScores: [
-            { judgeName: 'TS. Nguyễn Văn A', judgeEmail: 'nguyenvana@seal.dev', score: 76.0, comment: 'Cần làm rõ giải pháp chuỗi cung ứng' },
-            { judgeName: 'KS. Phạm Minh D', judgeEmail: 'phamminhd@seal.dev', score: 71.0, comment: 'Cần hoàn thiện MVP' },
+            { judgeName: "Dr. Nguyen Van A", judgeEmail: 'nguyenvana@seal.dev', score: 76.0, comment: "Supply chain solutions need to be clarified" },
+            { judgeName: "KS. Pham Minh D", judgeEmail: 'phamminhd@seal.dev', score: 71.0, comment: "MVP needs to be completed" },
         ],
     },
 ];
@@ -105,7 +105,7 @@ export default function ScoringStats() {
     const [searchKeyword, setSearchKeyword] = useState('');
 
     // Filters for Round and Track
-    const [selectedRound, setSelectedRound] = useState('Vòng Chung Kết');
+    const [selectedRound, setSelectedRound] = useState("Final Round");
     const [selectedTrack, setSelectedTrack] = useState('ALL');
 
     const fetchData = async () => {
@@ -118,18 +118,18 @@ export default function ScoringStats() {
                 submissionRes.result.forEach((sub) => {
                     if (!sub.graded) return;
                     const key = `${sub.teamId}_${sub.roundName}`;
-                    const isFinal = (sub.roundName || '').toLowerCase().includes('chung kết') || (sub.roundName || '').toLowerCase().includes('final');
+                    const isFinal = (sub.roundName || '').toLowerCase().includes("final") || (sub.roundName || '').toLowerCase().includes('final');
                     if (!groupedMap.has(key)) {
                         groupedMap.set(key, {
                             teamId: sub.teamId,
-                            teamName: sub.teamName || `Đội #${sub.teamId}`,
-                            roundName: sub.roundName || 'Vòng thi',
-                            trackName: isFinal ? 'Chung' : (sub.trackName || 'Bảng chung'),
+                            teamName: sub.teamName || `Team #${sub.teamId}`,
+                            roundName: sub.roundName || "Competition round",
+                            trackName: isFinal ? 'Chung' : (sub.trackName || "General table"),
                             judgeScores: [],
                         });
                     }
                     groupedMap.get(key).judgeScores.push({
-                        judgeName: sub.judgeName || sub.evaluatorName || 'Giám khảo',
+                        judgeName: sub.judgeName || sub.evaluatorName || "Judge",
                         judgeEmail: sub.judgeEmail || '',
                         score: sub.score || 0,
                         comment: sub.comment || sub.feedback || '',
@@ -159,11 +159,11 @@ export default function ScoringStats() {
 
     const roundOptions = useMemo(() => {
         const unique = [...new Set(teamScoringData.map((t) => t.roundName).filter(Boolean))];
-        return unique.length ? unique : ['Vòng Chung Kết', 'Vòng Ý Tưởng'];
+        return unique.length ? unique : ["Final Round", "Idea Circle"];
     }, [teamScoringData]);
 
     const isFinalRoundSelected = useMemo(() => {
-        return (selectedRound || '').toLowerCase().includes('chung kết') || (selectedRound || '').toLowerCase().includes('final');
+        return (selectedRound || '').toLowerCase().includes("final") || (selectedRound || '').toLowerCase().includes('final');
     }, [selectedRound]);
 
     const trackOptions = useMemo(() => {
@@ -211,8 +211,8 @@ export default function ScoringStats() {
     const kappaLevelLabel = (kw) => {
         if (kw >= 0.81) {
             return {
-                level: 'An toàn: Hội đồng chấm rất đồng đều và nhất quán',
-                short: 'An toàn (0.81 - 1.00)',
+                level: "Strong agreement: the judging panel scored consistently",
+                short: "Safe (0.81 - 1.00)",
                 color: 'emerald',
                 bg: 'bg-emerald-500/10 text-emerald-700 border-emerald-300/80',
                 badgeBg: 'bg-emerald-600 text-white',
@@ -221,8 +221,8 @@ export default function ScoringStats() {
         }
         if (kw >= 0.61) {
             return {
-                level: 'Chấp nhận được: Độ minh bạch đạt chuẩn các cuộc thi lớn',
-                short: 'Chấp nhận được (0.61 - 0.80)',
+                level: "Acceptable: Transparency meets the standards of major competitions",
+                short: "Acceptable (0.61 - 0.80)",
                 color: 'teal',
                 bg: 'bg-teal-500/10 text-teal-700 border-teal-300/80',
                 badgeBg: 'bg-teal-600 text-white',
@@ -231,8 +231,8 @@ export default function ScoringStats() {
         }
         if (kw >= 0.41) {
             return {
-                level: 'Cảnh báo nhẹ: Có sự lệch tay giữa các nhóm giám khảo',
-                short: 'Cảnh báo nhẹ (0.41 - 0.60)',
+                level: "Moderate agreement: review the scoring differences between judges",
+                short: "Mild warning (0.41 - 0.60)",
                 color: 'amber',
                 bg: 'bg-amber-500/10 text-amber-800 border-amber-300/80',
                 badgeBg: 'bg-amber-500 text-white',
@@ -241,8 +241,8 @@ export default function ScoringStats() {
         }
         if (kw >= 0.21) {
             return {
-                level: 'Cảnh báo cao: Độ đồng thuận kém, cần xem xét lại Rubric',
-                short: 'Cảnh báo cao (0.21 - 0.40)',
+                level: "Low agreement: review the rubric and score distribution",
+                short: "High alert (0.21 - 0.40)",
                 color: 'orange',
                 bg: 'bg-orange-500/10 text-orange-800 border-orange-300/80',
                 badgeBg: 'bg-orange-500 text-white',
@@ -250,8 +250,8 @@ export default function ScoringStats() {
             };
         }
         return {
-            level: 'Nguy hiểm: Chấm điểm hoàn toàn ngẫu nhiên/bất đồng nặng',
-            short: 'Nguy hiểm (≤ 0.20)',
+            level: "Danger: Completely random grading/severe disagreement",
+            short: "Dangerous (≤ 0.20)",
             color: 'rose',
             bg: 'bg-rose-500/10 text-rose-800 border-rose-300/80',
             badgeBg: 'bg-rose-600 text-white',
@@ -266,8 +266,8 @@ export default function ScoringStats() {
                 pow: 0,
                 pew: 75.0,
                 delta: 0,
-                level: 'Chưa đủ 2 Giám khảo',
-                short: 'Thiếu dữ liệu',
+                level: "Not enough 2 judges",
+                short: "Missing data",
                 bg: 'bg-slate-100 text-slate-600 border-slate-200',
                 badgeBg: 'bg-slate-500 text-white',
                 barColor: 'bg-slate-400',
@@ -303,17 +303,17 @@ export default function ScoringStats() {
 
     const getDivergenceBadge = (scores) => {
         if (!scores || scores.length < 2) {
-            return { text: 'Chưa đủ 2 Giám khảo', color: 'bg-slate-100 text-slate-600 border-slate-200' };
+            return { text: "Not enough 2 judges", color: 'bg-slate-100 text-slate-600 border-slate-200' };
         }
         const vals = scores.map((s) => Number(s.score || 0));
         const delta = Math.max(...vals) - Math.min(...vals);
         if (delta <= 5.0) {
-            return { text: `Sát điểm (Lệch ${delta.toFixed(1)}đ)`, color: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+            return { text: `Scores aligned (${delta.toFixed(1)} pts spread)`, color: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
         }
         if (delta <= 12.0) {
-            return { text: `Độ lệch vừa (${delta.toFixed(1)}đ)`, color: 'bg-amber-50 text-amber-800 border-amber-200' };
+            return { text: `Medium deviation (${delta.toFixed(1)}D)`, color: 'bg-amber-50 text-amber-800 border-amber-200' };
         }
-        return { text: `Cần đối thoại (Lệch ${delta.toFixed(1)}đ)`, color: 'bg-rose-50 text-rose-800 border-rose-200' };
+        return { text: `Review required (${delta.toFixed(1)} pts spread)`, color: 'bg-rose-50 text-rose-800 border-rose-200' };
     };
 
     return (
@@ -328,13 +328,13 @@ export default function ScoringStats() {
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h1 className="text-lg font-black text-slate-900 tracking-tight">Thống Kê Chấm Điểm & So Sánh GK</h1>
+                            <h1 className="text-lg font-black text-slate-900 tracking-tight">Scoring Statistics & Judge Comparison</h1>
                             <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-indigo-800">
                                 Weighted Kappa Engine
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
-                            Trực quan hóa độ chênh lệch điểm và đo lường chỉ số đồng thuận Weighted Cohen's Kappa từng đội thi
+                            Visualize the score difference and measure the Weighted Cohen's Kappa consensus index for each team
                         </p>
                     </div>
                 </div>
@@ -349,7 +349,7 @@ export default function ScoringStats() {
                         <svg className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        <span>{loading ? 'Đang cập nhật...' : 'Làm mới dữ liệu'}</span>
+                        <span>{loading ? "Updating..." : "Refresh data"}</span>
                     </button>
                 </div>
             </div>
@@ -364,7 +364,7 @@ export default function ScoringStats() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                         </svg>
                         <h2 className="text-xs font-black uppercase tracking-wider text-slate-800">
-                            Bộ Lọc Vòng Thi & Nhánh Chấm
+                            Round and track filters
                         </h2>
                     </div>
 
@@ -372,7 +372,7 @@ export default function ScoringStats() {
                     <div className="flex flex-wrap items-center gap-3">
                         {/* Round Filter */}
                         <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
-                            <span className="text-[10px] font-black uppercase text-slate-400 pl-2">Vòng Thi:</span>
+                            <span className="text-[10px] font-black uppercase text-slate-400 pl-2">Competition Round:</span>
                             <select
                                 value={selectedRound}
                                 onChange={(e) => {
@@ -401,10 +401,10 @@ export default function ScoringStats() {
                                 }`}
                             >
                                 {isFinalRoundSelected ? (
-                                    <option value="ALL">Vòng Chung Kết (Không chia Track)</option>
+                                    <option value="ALL">Final Round (No track division)</option>
                                 ) : (
                                     trackOptions.map((t) => (
-                                        <option key={t} value={t}>{t === 'ALL' ? 'Tất cả Track' : t}</option>
+                                        <option key={t} value={t}>{t === 'ALL' ? "All Tracks" : t}</option>
                                     ))
                                 )}
                             </select>
@@ -417,7 +417,7 @@ export default function ScoringStats() {
                             </svg>
                             <input
                                 type="text"
-                                placeholder="Tìm kiếm đội thi..."
+                                placeholder="Search for teams..."
                                 value={searchKeyword}
                                 onChange={(e) => setSearchKeyword(e.target.value)}
                                 className="h-9 w-44 sm:w-56 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-medium focus:bg-white focus:border-indigo-500 focus:outline-none transition shadow-sm"
@@ -430,10 +430,10 @@ export default function ScoringStats() {
                 <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-medium text-slate-600">
                     <div className="flex items-center gap-2">
                         <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                        <span>Đang xem: <strong className="text-slate-900 font-extrabold">{selectedRound}</strong> {isFinalRoundSelected ? '(Toàn giải)' : `— ${selectedTrack === 'ALL' ? 'Tất cả Track' : selectedTrack}`}</span>
+                        <span>Currently viewing: <strong className="text-slate-900 font-extrabold">{selectedRound}</strong> {isFinalRoundSelected ? "(all tracks)" : `— ${selectedTrack === 'ALL' ? "All Tracks" : selectedTrack}`}</span>
                     </div>
                     <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] font-extrabold text-indigo-900 border border-indigo-100">
-                        Tìm thấy {filteredTeamsInRound.length} Đội thi
+                        {filteredTeamsInRound.length} teams found
                     </span>
                 </div>
             </div>
@@ -458,11 +458,11 @@ export default function ScoringStats() {
                                             <div className="flex items-center gap-2">
                                                 <h3 className="font-black text-slate-900 text-base tracking-tight">{teamItem.teamName}</h3>
                                                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">
-                                                    {isFinalRoundSelected ? 'Chung kết' : (teamItem.trackName || 'Bảng chung')}
+                                                    {isFinalRoundSelected ? "Finals" : (teamItem.trackName || "General table")}
                                                 </span>
                                             </div>
                                             <p className="text-xs text-slate-500 font-medium">
-                                                Điểm trung bình các GK: <strong className="text-indigo-700 font-extrabold font-mono text-sm">{avgTeamScore.toFixed(1)}đ</strong>
+                                                Average judge score: <strong className="text-indigo-700 font-extrabold font-mono text-sm">{avgTeamScore.toFixed(1)} pts</strong>
                                             </p>
                                         </div>
 
@@ -475,18 +475,18 @@ export default function ScoringStats() {
                                     {/* Grouped Bar Chart Visualizer */}
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                                            <span>Biểu đồ so sánh điểm Giám khảo:</span>
-                                            <span className="text-slate-500 font-mono">Thang điểm 100</span>
+                                            <span>Judge score comparison:</span>
+                                            <span className="text-slate-500 font-mono">100 point scale</span>
                                         </div>
 
                                         <div className="relative h-48 rounded-xl bg-slate-50/70 p-4 border border-slate-100 flex flex-col justify-between">
                                             {/* Grid Lines */}
                                             <div className="absolute inset-x-4 inset-y-4 flex flex-col justify-between pointer-events-none text-[9px] font-bold text-slate-300 font-mono">
-                                                <div className="border-b border-dashed border-slate-200/80 pb-0.5">100đ</div>
-                                                <div className="border-b border-dashed border-slate-200/80 pb-0.5">75đ</div>
-                                                <div className="border-b border-dashed border-slate-200/80 pb-0.5">50đ</div>
-                                                <div className="border-b border-dashed border-slate-200/80 pb-0.5">25đ</div>
-                                                <div>0đ</div>
+                                                <div className="border-b border-dashed border-slate-200/80 pb-0.5">100 pts</div>
+                                                <div className="border-b border-dashed border-slate-200/80 pb-0.5">75 pts</div>
+                                                <div className="border-b border-dashed border-slate-200/80 pb-0.5">50 pts</div>
+                                                <div className="border-b border-dashed border-slate-200/80 pb-0.5">25 pts</div>
+                                                <div>0 pts</div>
                                             </div>
 
                                             {/* Column Bars Container */}
@@ -548,7 +548,7 @@ export default function ScoringStats() {
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                 </svg>
                                                 <span className="text-xs font-black uppercase tracking-wider">
-                                                    Chỉ số Cohen's Kappa (κ_w):
+                                                    Cohen's Kappa index (κ_w):
                                                 </span>
                                             </div>
                                             <span className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-black ${teamKappaInfo.badgeBg} shadow-2xs`}>
@@ -563,11 +563,11 @@ export default function ScoringStats() {
                                         {/* Landis-Koch Meter Bar */}
                                         <div className="space-y-1">
                                             <div className="relative h-2.5 w-full rounded-full bg-slate-200 overflow-hidden flex">
-                                                <div className="h-full w-[20%] bg-rose-500" title="Nguy hiểm (≤0.20)" />
-                                                <div className="h-full w-[20%] bg-orange-400" title="Cảnh báo cao (0.21-0.40)" />
-                                                <div className="h-full w-[20%] bg-amber-400" title="Cảnh báo nhẹ (0.41-0.60)" />
-                                                <div className="h-full w-[20%] bg-teal-500" title="Chấp nhận được (0.61-0.80)" />
-                                                <div className="h-full w-[20%] bg-emerald-600" title="An toàn (0.81-1.00)" />
+                                                <div className="h-full w-[20%] bg-rose-500" title="Dangerous (≤0.20)" />
+                                                <div className="h-full w-[20%] bg-orange-400" title="High alert (0.21-0.40)" />
+                                                <div className="h-full w-[20%] bg-amber-400" title="Mild warning (0.41-0.60)" />
+                                                <div className="h-full w-[20%] bg-teal-500" title="Acceptable (0.61-0.80)" />
+                                                <div className="h-full w-[20%] bg-emerald-600" title="Safe (0.81-1.00)" />
                                                 <div
                                                     className="absolute top-0 bottom-0 w-1.5 bg-slate-900 border-x border-white shadow-sm transition-all duration-700"
                                                     style={{ left: `${Math.max(0, Math.min(100, teamKappaInfo.kappa * 100))}%` }}
@@ -578,16 +578,16 @@ export default function ScoringStats() {
                                         {/* Formula Breakdown Stats */}
                                         <div className="grid grid-cols-3 gap-2 border-t border-slate-200/60 pt-2.5 text-[11px] font-medium text-slate-700">
                                             <div>
-                                                <span className="block text-[10px] uppercase text-slate-500 font-bold">Thực tế (P_o_w)</span>
+                                                <span className="block text-[10px] uppercase text-slate-500 font-bold">Actual (P_o_w)</span>
                                                 <strong className="font-mono font-black text-slate-900">{teamKappaInfo.pow}%</strong>
                                             </div>
                                             <div>
-                                                <span className="block text-[10px] uppercase text-slate-500 font-bold">Kỳ vọng (P_e_w)</span>
+                                                <span className="block text-[10px] uppercase text-slate-500 font-bold">Expectation (P_e_w)</span>
                                                 <strong className="font-mono font-black text-slate-900">{teamKappaInfo.pew}%</strong>
                                             </div>
                                             <div>
-                                                <span className="block text-[10px] uppercase text-slate-500 font-bold">Độ lệch (Δ)</span>
-                                                <strong className={`font-mono font-black ${teamKappaInfo.delta > 12 ? 'text-rose-700' : 'text-slate-900'}`}>{teamKappaInfo.delta.toFixed(1)}đ</strong>
+                                                <span className="block text-[10px] uppercase text-slate-500 font-bold">Deviation (Δ)</span>
+                                                <strong className={`font-mono font-black ${teamKappaInfo.delta > 12 ? 'text-rose-700' : 'text-slate-900'}`}>{teamKappaInfo.delta.toFixed(1)} pts</strong>
                                             </div>
                                         </div>
                                     </div>
@@ -596,7 +596,7 @@ export default function ScoringStats() {
                                 {/* Judge Feedback Accordion Box */}
                                 <div className="rounded-xl bg-slate-50/80 p-3.5 space-y-2 border border-slate-100 text-xs mt-2">
                                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                        Nhận xét chi tiết từ Giám khảo:
+                                        Detailed comments from the Judges:
                                     </span>
                                     <div className="space-y-1.5">
                                         {teamItem.judgeScores.map((jScore, idx) => (
@@ -605,7 +605,7 @@ export default function ScoringStats() {
                                                     {jScore.judgeName}
                                                 </span>
                                                 <p className="italic text-slate-600 leading-relaxed font-normal">
-                                                    "{jScore.comment || 'Không có nhận xét chi tiết'}"
+                                                    "{jScore.comment || "There are no detailed comments"}"
                                                 </p>
                                             </div>
                                         ))}
@@ -622,9 +622,9 @@ export default function ScoringStats() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <p className="text-sm font-extrabold text-slate-800">Không tìm thấy bài thi nào phù hợp</p>
+                    <p className="text-sm font-extrabold text-slate-800">No matching teams found</p>
                     <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                        Thử điều chỉnh lại từ khóa tìm kiếm hoặc chọn Vòng thi / Track khác trong bộ lọc phía trên.
+                        Try adjusting your search keywords or selecting another Round / Track in the filter above.
                     </p>
                 </div>
             )}

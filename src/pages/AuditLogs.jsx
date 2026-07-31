@@ -4,11 +4,11 @@ import Toast from '../components/Toast';
 
 function actionLabel(log) {
     if (log.oldScore != null || log.newScore != null) {
-        return log.oldScore == null ? 'Chấm lần đầu' : 'Sửa điểm';
+        return log.oldScore == null ? "Initial score" : "Score updated";
     }
-    if (log.reason?.startsWith('LOẠI ĐỘI:')) return 'Loại đội';
-    if (log.reason?.startsWith('CÔNG BỐ KẾT QUẢ')) return 'Công bố vòng';
-    return 'Vận hành';
+    if (log.reason?.startsWith("TEAM TYPE:")) return "Team type";
+    if (log.reason?.startsWith("RESULTS ANNOUNCEMENT")) return "Round results published";
+    return "Action";
 }
 
 export default function AuditLogs() {
@@ -23,7 +23,7 @@ export default function AuditLogs() {
             setLogs(response.result || []);
             setError('');
         } catch (err) {
-            setError(err.message || 'Không thể tải audit log.');
+            setError(err.message || "Unable to load audit log.");
         } finally {
             setLoading(false);
         }
@@ -37,10 +37,10 @@ export default function AuditLogs() {
         <div className="mx-auto max-w-6xl rounded-lg border border-blue-100 bg-white shadow-sm">
             <div className="flex items-center justify-between border-b border-blue-100 bg-blue-50 px-6 py-4">
                 <div>
-                    <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Audit log chấm điểm & kỷ luật</h2>
-                    <p className="mt-1 text-sm text-slate-600">Truy vết lần chấm đầu, sửa điểm và thao tác loại đội.</p>
+                    <h2 className="text-xl font-black uppercase tracking-wide text-slate-900">Scoring and disciplinary audit log</h2>
+                    <p className="mt-1 text-sm text-slate-600">Track initial scores, score revisions, result publication, and team disqualifications.</p>
                 </div>
-                <button type="button" onClick={fetchLogs} title="Làm mới log" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
+                <button type="button" onClick={fetchLogs} title="Refresh log" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             <Toast error={error} onClose={() => setError('')} />
@@ -49,28 +49,28 @@ export default function AuditLogs() {
                 <table className="w-full text-left">
                     <thead className="border-b border-blue-100 bg-white text-xs font-black uppercase tracking-wide text-slate-500">
                     <tr>
-                        <th className="px-6 py-4">Thời gian</th>
+                        <th className="px-6 py-4">Time</th>
                         <th className="px-6 py-4">Judge</th>
-                        <th className="px-6 py-4">Đội</th>
-                        <th className="px-6 py-4">Thao tác</th>
-                        <th className="px-6 py-4">Điểm cũ</th>
-                        <th className="px-6 py-4">Điểm mới</th>
-                        <th className="px-6 py-4">Lý do</th>
+                        <th className="px-6 py-4">Team</th>
+                        <th className="px-6 py-4">Action</th>
+                        <th className="px-6 py-4">Old score</th>
+                        <th className="px-6 py-4">New score</th>
+                        <th className="px-6 py-4">Reason</th>
                     </tr>
                     </thead>
                     <tbody className="divide-y divide-blue-50">
                     {loading ? (
-                        <tr><td colSpan="7" className="px-6 py-8 text-center text-slate-500">Đang tải...</td></tr>
+                        <tr><td colSpan="7" className="px-6 py-8 text-center text-slate-500">Loading...</td></tr>
                     ) : logs.length === 0 ? (
-                        <tr><td colSpan="7" className="px-6 py-8 text-center text-slate-500">Chưa có thao tác nào được ghi nhận.</td></tr>
+                        <tr><td colSpan="7" className="px-6 py-8 text-center text-slate-500">No actions have been recorded yet.</td></tr>
                     ) : logs.map((log) => (
                         <tr key={log.id} className="hover:bg-blue-50/40">
-                            <td className="px-6 py-4 text-sm text-slate-600">{log.createdAt ? new Date(log.createdAt).toLocaleString('vi-VN') : ''}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600">{log.createdAt ? new Date(log.createdAt).toLocaleString('en-GB') : ''}</td>
                             <td className="px-6 py-4">
                                 <p className="font-bold text-slate-900">{log.judgeName}</p>
                                 <p className="text-xs text-slate-500">{log.judgeEmail}</p>
                             </td>
-                            <td className="px-6 py-4 font-bold text-slate-800">{log.teamName || 'Không rõ đội'}</td>
+                            <td className="px-6 py-4 font-bold text-slate-800">{log.teamName || "Team unknown"}</td>
                             <td className="px-6 py-4">
                                 <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
                                     {actionLabel(log)}
