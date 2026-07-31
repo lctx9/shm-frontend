@@ -18,6 +18,7 @@ const coordinatorGroups = [
             { to: '/dashboard/scoring-config', label: 'Scoring Configuration' },
             { to: '/dashboard/teams', label: 'Teams' },
             { to: '/dashboard/submissions', label: 'Submissions' },
+            { to: '/dashboard/student-approval', label: 'Account Approvals' },
         ],
     },
     {
@@ -36,25 +37,14 @@ const adminGroups = [
         items: [
             { to: '/dashboard', label: 'System Overview', match: ['/dashboard'] },
             { to: '/dashboard/users', label: 'Accounts & Permissions' },
-            { to: '/dashboard/student-approval', label: 'Account Approvals' },
             { to: '/dashboard/staff', label: 'Staff Management' },
             { to: '/dashboard/monitoring', label: 'System Monitoring' },
         ],
     },
     {
-        title: 'Competition Operations',
-        items: [
-            { to: '/dashboard/events', label: 'Events (View Only)' },
-            { to: '/dashboard/scoring-config', label: 'Scoring Config (View Only)' },
-            { to: '/dashboard/submissions', label: 'Submissions' },
-        ],
-    },
-    {
         title: 'Grading & Results',
         items: [
-            { to: '/dashboard/grading', label: 'Grading Progress (View Only)' },
             { to: '/dashboard/scoring-stats', label: 'Scoring Statistics' },
-            { to: '/dashboard/leaderboard', label: 'Leaderboard' },
             { to: '/dashboard/audit-logs', label: 'Scoring Audit' },
         ],
     },
