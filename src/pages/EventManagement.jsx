@@ -537,15 +537,16 @@ export default function EventManagement() {
         setLoading(true);
         setMessage(null);
         try {
-            const response = await axiosClient.post('/events', eventPayload());
-            const eventId = response.result?.id;
             const validPrizes = form.draftPrizes.filter((prize) => prize.name.trim());
-            await Promise.all(validPrizes.map((prize) => axiosClient.post(`/events/${eventId}/prizes`, {
+            const response = await axiosClient.post('/events/setup', {
+                event: eventPayload(),
+                prizes: validPrizes.map((prize) => ({
                 name: prize.name.trim(),
                 description: prize.description.trim(),
                 teamId: null,
-            })));
-            await axiosClient.post(`/events/${eventId}/initialize-structure`);
+                })),
+            });
+            const eventId = response.result?.id;
             await fetchAll(eventId);
             setActiveTab('overview');
             setMessage({ type: 'success', text: "Created competition and match schedule. Use the Grading Configuration section on the sidebar to set up rubric, Top N and Judge." });
@@ -819,14 +820,19 @@ export default function EventManagement() {
         setLoading(true);
         setMessage(null);
         try {
-            await Promise.all(sameRoundMatrices.map((matrix) => axiosClient.put(`/events/matrices/${matrix.id}`, {
-                guidelineUrl: matrixForm.guidelineUrl,
-                submissionStartDate: matrixForm.submissionStartDate || null,
-                submissionDeadline: matrixForm.submissionDeadline || null,
-                judgeIds: matrixForm.judgeIds.map(Number),
-                topN: matrix.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
-                scoringCriteriaJson: JSON.stringify(matrixForm.criteria),
-            })));
+            await axiosClient.put('/events/matrices/batch', {
+                updates: sameRoundMatrices.map((matrix) => ({
+                    matrixId: matrix.id,
+                    config: {
+                        guidelineUrl: matrixForm.guidelineUrl,
+                        submissionStartDate: matrixForm.submissionStartDate || null,
+                        submissionDeadline: matrixForm.submissionDeadline || null,
+                        judgeIds: matrixForm.judgeIds.map(Number),
+                        topN: matrix.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
+                        scoringCriteriaJson: JSON.stringify(matrixForm.criteria),
+                    },
+                })),
+            });
             setMessage({ type: 'success', text: `Configuration applied to ${sameRoundMatrices.length} tracks in ${selectedMatrix.roundName}.` });
             await fetchAll(selectedEventId);
         } catch (err) {
@@ -1417,7 +1423,7 @@ export default function EventManagement() {
                                     <label className="text-sm font-bold text-slate-700">Close registration<input required type="datetime-local" className="input-custom mt-1" value={form.regEndDate} onChange={(e) => setForm({ ...form, regEndDate: e.target.value })} /></label>
                                     <label className="text-sm font-bold text-slate-700">Start exam<input required type="datetime-local" className="input-custom mt-1" value={form.eventStartDate} onChange={(e) => setForm({ ...form, eventStartDate: e.target.value })} /></label>
                                     <label className="text-sm font-bold text-slate-700">End of exam<input required type="datetime-local" className="input-custom mt-1" value={form.eventEndDate} onChange={(e) => setForm({ ...form, eventEndDate: e.target.value })} /></label>
-                                    <label className="text-sm font-bold text-slate-700">Total number of rounds (including finals)<input required min="2" type="number" className="input-custom mt-1" value={form.roundCount} onChange={(e) => setForm({ ...form, roundCount: Math.max(2, Number(e.target.value)) })} /></label>
+                                    <label className="text-sm font-bold text-slate-700">Total number of rounds (including finals)<input required min="2" type="number" disabled={Boolean(selectedEvent?.structureInitialized)} className="input-custom mt-1 disabled:cursor-not-allowed disabled:bg-slate-100" value={form.roundCount} onChange={(e) => setForm({ ...form, roundCount: Math.max(2, Number(e.target.value)) })} /></label>
                                 </div>
                                 <div className="rounded-xl border border-blue-100 bg-slate-50 p-4">
                                     <div className="mb-2 flex items-center justify-between">

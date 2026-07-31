@@ -168,7 +168,9 @@ export default function ScoringConfiguration() {
         setSaving(true);
         setMessage(null);
         try {
-            await Promise.all(targets.map((matrix) => axiosClient.put(`/events/matrices/${matrix.id}`, payloadFor(matrix))));
+            await axiosClient.put('/events/matrices/batch', {
+                updates: targets.map((matrix) => ({ matrixId: matrix.id, config: payloadFor(matrix) })),
+            });
             setMessage({ type: 'success', text: applyToRound ? `Applied the duration and configuration to ${targets.length} tracks in ${displayCompetitionLabel(selectedMatrix.roundName)}.` : "Round configuration saved." });
             await loadData(selectedEventId, selectedMatrixId);
         } catch (error) {
