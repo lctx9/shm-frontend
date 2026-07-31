@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
+import PasswordInput from '../components/PasswordInput';
 import logoFpt from '../assets/fpt.jpg';
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
@@ -95,16 +96,16 @@ export default function Login() {
                         />
                         
                         <label htmlFor="login-password">Password</label>
-                        <input 
-                            id="login-password" 
-                            type="password" 
-                            required 
-                            placeholder="••••••••" 
-                            value={formData.password} 
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })} 
+                        <PasswordInput
+                            id="login-password"
+                            required
+                            placeholder="••••••••"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            ariaLabel="Login Password"
                         />
                         
-                        <button type="submit" disabled={loading}>
+                        <button type="submit" disabled={loading} className="mt-4">
                             {loading ? 'Processing...' : 'Sign In'}
                         </button>
                     </form>

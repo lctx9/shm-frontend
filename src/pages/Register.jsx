@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
+import PasswordInput from '../components/PasswordInput';
+import PasswordStrengthBar from '../components/PasswordStrengthBar';
 import logoFpt from '../assets/fpt.jpg';
 
 async function uploadImageFile(file) {
@@ -35,6 +37,9 @@ export default function Register() {
     const [fieldErrors, setFieldErrors] = useState({});
     const [otpSuccess, setOtpSuccess] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [studentCardFile, setStudentCardFile] = useState(null);
     const [studentCardPreview, setStudentCardPreview] = useState('');
@@ -529,24 +534,25 @@ export default function Register() {
                         {step === 3 && (
                             <>
                                 <label htmlFor="register-password">Password</label>
-                                <input
+                                <PasswordInput
                                     id="register-password"
                                     required
-                                    type="password"
                                     placeholder="••••••••"
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    ariaLabel="Registration Password"
                                 />
+                                <PasswordStrengthBar password={formData.password} />
                                 {fieldErrors.password && <p className="text-red-500 text-xs font-bold mt-1">{fieldErrors.password}</p>}
 
-                                <label htmlFor="register-confirm-password">Confirm Password</label>
-                                <input
+                                <label htmlFor="register-confirm-password" className="mt-3 block">Confirm Password</label>
+                                <PasswordInput
                                     id="register-confirm-password"
                                     required
-                                    type="password"
                                     placeholder="••••••••"
                                     value={formData.confirmPassword}
                                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                    ariaLabel="Confirm Password"
                                 />
                                 {fieldErrors.confirmPassword && <p className="text-red-500 text-xs font-bold mt-1">{fieldErrors.confirmPassword}</p>}
                             </>

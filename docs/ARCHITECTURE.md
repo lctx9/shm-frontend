@@ -53,6 +53,8 @@ The frontend is constructed as a Single Page Application (SPA) using **React 18*
 - `Header.jsx`: Site-wide header featuring brand mark, primary navigation (`Events`, `Leaderboard`, `About Us`, `My Event`), user dropdown, and mobile navigation overlay.
 - `NotificationBell.jsx`: Real-time notification trigger showing unread counts and interactive dropdown.
 - `Toast.jsx`: Standardized notification alert banner for success and error messages.
+- `PasswordInput.jsx`: Encapsulated password input component with built-in visibility toggle icon.
+- `PasswordStrengthBar.jsx`: Dynamic visual security evaluator calculating real-time password complexity.
 
 ### 4. Application Pages (`src/pages/`)
 - **Public**: `Homepage.jsx`, `Events.jsx`, `EventDetail.jsx`, `Leaderboard.jsx`, `About.jsx`.
