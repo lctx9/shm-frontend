@@ -302,7 +302,7 @@ export default function Sidebar() {
     return (
         <aside className="dashboard-sidebar shadow-xl" style={{ background: '#ffffff', borderRight: '1px solid #e2e8f0' }}>
             <div className="flex h-20 items-center gap-3 px-5" style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <Link to="/" className="flex items-center gap-2">
+                <Link to="/dashboard" className="flex items-center gap-2">
                     <img src={logoFpt} alt="FPT Logo" style={{ width: '40px', height: '30px' }} className="object-contain rounded" />
                     <div className="h-6 border-l border-slate-300"></div>
                     <div className="flex flex-col relative -top-[1px]">
