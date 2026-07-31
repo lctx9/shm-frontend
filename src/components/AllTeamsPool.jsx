@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 
 const currentUserEmail = () => localStorage.getItem('email') || 'anonymous';
@@ -70,6 +71,7 @@ const MOCK_TEAMS = [
 ];
 
 export default function AllTeamsPool({ eventId, onTeamJoined }) {
+    const navigate = useNavigate();
     const [mockTeams, setMockTeams] = useState(MOCK_TEAMS);
     const [teams, setTeams] = useState([]);
     const [event, setEvent] = useState(null);
@@ -290,6 +292,9 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                     [targetTeam.id]: { text: 'Joined ✓', type: 'success' }
                 }));
                 if (onTeamJoined) onTeamJoined(true);
+                setTimeout(() => {
+                    navigate('/my-team');
+                }, 1000);
                 return;
             }
 
@@ -303,6 +308,9 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
             }));
             fetchData();
             if (onTeamJoined) onTeamJoined(true);
+            setTimeout(() => {
+                navigate('/my-team');
+            }, 1000);
         } catch (err) {
             setJoinError(err.message || 'Incorrect PIN or failed to join');
             setJoinStatuses(prev => ({
