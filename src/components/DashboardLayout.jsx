@@ -319,104 +319,75 @@ export default function DashboardLayout() {
         navigate('/login');
     };
 
-    const isActive = (item) => {
+    const isTabActive = (item) => {
         const activePath = item.activePath || item.to;
         if (item.match) return item.match.includes(location.pathname);
         return location.pathname === activePath;
     };
 
-    const navClass = (item) => (
-        isActive(item)
-            ? 'dashboard-nav-link is-active'
-            : 'dashboard-nav-link'
-    );
     const currentPageTitle = location.pathname === '/dashboard' && role === 'ADMIN'
         ? 'Tổng quan hệ thống'
         : pageTitles[location.pathname] || 'Dashboard';
 
+    const currentGroups = (['STAFF', 'MENTOR', 'JUDGE'].includes(role) ? getStaffGroups(assignments) : getGroups(role));
+    const allNavItems = currentGroups.flatMap(group => group.items);
+
     return (
-        <div className="dashboard-shell">
-            <aside className="dashboard-sidebar text-white shadow-xl" style={{ background: '#0e5362', borderRight: '1px solid rgba(21,94,117,0.5)' }}>
-                <div className="flex h-20 items-center gap-3 px-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                    <Link to="/dashboard" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform hover:scale-105" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(165,243,252,0.35)' }} aria-label="SEAL Dashboard">
-                        <span className="text-xs font-black tracking-widest text-[#a5f3fc]">SEAL</span>
-                    </Link>
-                    <div className="sidebar-copy min-w-0">
-                        <p className="truncate text-sm font-black text-white tracking-wide">SEAL Dashboard</p>
-                        <p className="text-xs font-extrabold text-[#a5f3fc] uppercase tracking-wider">{role}</p>
-                    </div>
-                </div>
-
-                <nav className="flex-1 space-y-5 overflow-y-auto p-4">
-                    {(['STAFF', 'MENTOR', 'JUDGE'].includes(role) ? getStaffGroups(assignments) : getGroups(role)).map((group) => (
-                        <section key={group.title}>
-                            <p className="sidebar-label mb-2 px-3 text-[11px] font-black uppercase tracking-[0.16em] text-[#a5f3fc]/90">
-                                {group.title}
-                            </p>
-                            <div className="space-y-1">
-                                {group.items.map((item) => (
-                                    <Link 
-                                        key={item.to} 
-                                        to={item.to} 
-                                        className={navClass(item)} 
-                                        title={item.label}
-                                    >
-                                        <span>{item.label}</span>
-                                        {item.to === '/dashboard/student-approval' && pendingCount > 0 && (
-                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-sm">
-                                                {pendingCount}
-                                            </span>
-                                        )}
-                                        {item.to === '/dashboard/grading' && pendingGradingCount > 0 && (
-                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-sm">
-                                                {pendingGradingCount}
-                                            </span>
-                                        )}
-                                        {item.to === '/dashboard/chat' && pendingChatCount > 0 && (
-                                            <span className="ml-2 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white shadow-sm">
-                                                {pendingChatCount}
-                                            </span>
-                                        )}
-                                    </Link>
-                                ))}
-                            </div>
-                        </section>
-                    ))}
-                </nav>
-
-                <div className="p-4 space-y-3" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <div className="flex items-center gap-2.5 rounded-xl p-2.5" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black text-[#a5f3fc]" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(165,243,252,0.3)' }}>
-                            {(email || 'U').charAt(0).toUpperCase()}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-bold text-white" title={email}>{email}</p>
-                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#a5f3fc]">{role}</p>
-                        </div>
-                    </div>
-
-                    <Link to="/dashboard/profile" className={`block rounded-lg px-3 py-2 text-sm font-bold ${navClass({ to: '/dashboard/profile' })}`}>
-                        Hồ sơ
-                    </Link>
-                    <button type="button" onClick={logout} className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-rose-600 hover:border-rose-500 transition-all shadow-sm">Đăng xuất</button>
-                </div>
-            </aside>
-
-            <div className="flex min-w-0 flex-1 flex-col">
-                <header className="dashboard-topbar">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+            {/* Top Sub-Navigation Bar for Dashboard */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-4">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0f63c9]">SEAL Hackathon</p>
-                        <h1 className="mt-1 text-xl font-black text-[#071936]">{currentPageTitle}</h1>
+                        <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-[#0f63c9]">
+                            {role} DASHBOARD
+                        </span>
+                        <h1 className="mt-1 text-2xl font-black text-slate-900 tracking-tight">{currentPageTitle}</h1>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <NotificationBell />
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                        <span>Đăng nhập bởi: <strong className="text-slate-800">{email}</strong></span>
                     </div>
-                </header>
+                </div>
 
-                <main className="dashboard-content">
-                    <Outlet />
-                </main>
+                {/* Subnav Tabs */}
+                <div className="mt-4 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                    {allNavItems.map((item) => {
+                        const active = isTabActive(item);
+                        return (
+                            <Link
+                                key={item.to}
+                                to={item.to}
+                                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-extrabold transition-all ${
+                                    active
+                                        ? 'bg-[#0f63c9] text-white shadow-sm'
+                                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                }`}
+                            >
+                                <span>{item.label}</span>
+                                {item.to === '/dashboard/student-approval' && pendingCount > 0 && (
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white">
+                                        {pendingCount}
+                                    </span>
+                                )}
+                                {item.to === '/dashboard/grading' && pendingGradingCount > 0 && (
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white">
+                                        {pendingGradingCount}
+                                    </span>
+                                )}
+                                {item.to === '/dashboard/chat' && pendingChatCount > 0 && (
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-black text-white">
+                                        {pendingChatCount}
+                                    </span>
+                                )}
+                            </Link>
+                        );
+                    })}
+                </div>
             </div>
+
+            {/* Dashboard Main Content Area */}
+            <main className="min-h-[500px]">
+                <Outlet />
+            </main>
         </div>
     );
 }

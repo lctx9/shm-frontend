@@ -2,16 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import Header from './Header';
 import logoFpt from '../assets/fpt.jpg';
 
-const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
-
 export default function PublicLayout() {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-
-    if (token && managerRoles.has(role)) {
-        return <Navigate to="/dashboard" replace />;
-    }
-
     return (
         <div className="page-shell">
             <Header />

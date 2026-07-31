@@ -60,33 +60,32 @@ function App() {
                         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                         <Route path="/chat" element={<ProtectedRoute><TeamChat /></ProtectedRoute>} />
                         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+                        <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                            <Route index element={<Dashboard />} />
+                            <Route path="teams" element={<TeamExplorer />} />
+                            <Route path="my-team" element={<Navigate to="/my-team" replace />} />
+                            <Route path="submissions" element={<SubmissionManagement />} />
+                            <Route path="events" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><EventManagement /></RoleRoute>} />
+                            <Route path="scoring-config" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><ScoringConfiguration /></RoleRoute>} />
+                            <Route path="users" element={<RoleRoute roles={['ADMIN']}><UserManagement /></RoleRoute>} />
+                            <Route path="monitoring" element={<RoleRoute roles={['ADMIN']}><AdminMonitoring /></RoleRoute>} />
+                            <Route path="backups" element={<RoleRoute roles={['ADMIN']}><BackupRestore /></RoleRoute>} />
+                            <Route path="settings" element={<RoleRoute roles={['ADMIN']}><AdminSettings /></RoleRoute>} />
+                            <Route path="student-approval" element={<RoleRoute roles={['ADMIN']}><StudentApproval /></RoleRoute>} />
+                            <Route path="staff" element={<RoleRoute roles={['ADMIN']}><StaffManagement /></RoleRoute>} />
+                            <Route path="audit-logs" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><AuditLogs /></RoleRoute>} />
+                            <Route path="grading" element={<RoleRoute roles={['JUDGE', 'STAFF', 'COORDINATOR', 'ADMIN']}><Grading /></RoleRoute>} />
+                            <Route path="scoring-stats" element={<RoleRoute roles={['COORDINATOR', 'ADMIN', 'JUDGE']}><ScoringStats /></RoleRoute>} />
+                            <Route path="leaderboard" element={<Leaderboard />} />
+                            <Route path="notifications" element={<Notifications />} />
+                            <Route path="chat" element={<TeamChat />} />
+                            <Route path="profile" element={<Profile />} />
+                        </Route>
                     </Route>
 
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
-
-                    <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                        <Route index element={<Dashboard />} />
-                        <Route path="teams" element={<TeamExplorer />} />
-                        <Route path="my-team" element={<Navigate to="/my-team" replace />} />
-                        <Route path="submissions" element={<SubmissionManagement />} />
-                        <Route path="events" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><EventManagement /></RoleRoute>} />
-                        <Route path="scoring-config" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><ScoringConfiguration /></RoleRoute>} />
-                        <Route path="users" element={<RoleRoute roles={['ADMIN']}><UserManagement /></RoleRoute>} />
-                        <Route path="monitoring" element={<RoleRoute roles={['ADMIN']}><AdminMonitoring /></RoleRoute>} />
-                        <Route path="backups" element={<RoleRoute roles={['ADMIN']}><BackupRestore /></RoleRoute>} />
-                        <Route path="settings" element={<RoleRoute roles={['ADMIN']}><AdminSettings /></RoleRoute>} />
-                        <Route path="student-approval" element={<RoleRoute roles={['ADMIN']}><StudentApproval /></RoleRoute>} />
-                        <Route path="staff" element={<RoleRoute roles={['ADMIN']}><StaffManagement /></RoleRoute>} />
-                        <Route path="audit-logs" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><AuditLogs /></RoleRoute>} />
-                        <Route path="grading" element={<RoleRoute roles={['JUDGE', 'STAFF', 'COORDINATOR', 'ADMIN']}><Grading /></RoleRoute>} />
-                        <Route path="scoring-stats" element={<RoleRoute roles={['COORDINATOR', 'ADMIN', 'JUDGE']}><ScoringStats /></RoleRoute>} />
-                        <Route path="leaderboard" element={<Leaderboard />} />
-                        <Route path="notifications" element={<Notifications />} />
-                        <Route path="chat" element={<TeamChat />} />
-                        <Route path="profile" element={<Profile />} />
-                    </Route>
-
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </div>
