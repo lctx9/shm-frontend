@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { formatDateTime, getCountdownParts, getEventPhase } from '../utils/hackathon';
-import TeamChat from './TeamChat';
 import Toast from '../components/Toast';
 
-export default function MyTeam() {
+export default function MyTeam({ eventId: propEventId, embedded = false, onTeamChanged }) {
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTeamId = searchParams.get('teamId');
     const paramEventId = searchParams.get('registerEventId') || searchParams.get('eventId');
-    const registeringEventId = paramEventId;
-    const preselectedEventId = searchParams.get('eventId') || searchParams.get('registerEventId');
+    const registeringEventId = embedded ? propEventId : paramEventId;
+    const preselectedEventId = embedded ? propEventId : (searchParams.get('eventId') || searchParams.get('registerEventId'));
     const currentEmail = localStorage.getItem('email');
  
     const [team, setTeam] = useState(null);
@@ -51,6 +51,7 @@ export default function MyTeam() {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
+        skillsNeeded: '',
         type: 'PUBLIC',
         joinPassword: '',
         eventId: '',
@@ -127,9 +128,25 @@ export default function MyTeam() {
     };
 
     useEffect(() => {
-        window.scrollTo(0, 0);
-        fetchData();
-    }, [preselectedEventId]);
+        if (!embedded) {
+            const doRedirect = async () => {
+                try {
+                    const res = await axiosClient.get('/teams/my-team');
+                    const myTeamsList = res.result || [];
+                    if (myTeamsList.length > 0) {
+                        navigate(`/events/${myTeamsList[0].eventId}?tab=my-team`, { replace: true });
+                    } else {
+                        navigate('/events', { replace: true });
+                    }
+                } catch (err) {
+                    navigate('/events', { replace: true });
+                }
+            };
+            doRedirect();
+        } else {
+            fetchData();
+        }
+    }, [preselectedEventId, embedded, navigate]);
 
     useEffect(() => {
         if (activeTeamId && myTeams.length > 0) {
@@ -162,9 +179,18 @@ export default function MyTeam() {
 
     useEffect(() => {
         const fetchTeamDataForEvent = async () => {
-            if (!formData.eventId || myTeams.length === 0) return;
+            if (!formData.eventId) return;
+            if (myTeams.length === 0) {
+                setTeam(null);
+                setMatrices([]);
+                setSubmission(null);
+                setJoinRequests([]);
+                if (onTeamChanged) onTeamChanged(false);
+                return;
+            }
             const currentEventTeam = myTeams.find(t => String(t.eventId) === String(formData.eventId)) || null;
             setTeam(currentEventTeam);
+            if (onTeamChanged) onTeamChanged(Boolean(currentEventTeam));
 
             if (currentEventTeam) {
                 try {
@@ -341,23 +367,23 @@ export default function MyTeam() {
 
         let hasErr = false;
         if (formData.type === 'PRIVATE' && !/^\d{4}$/.test(formData.joinPassword)) {
-            setPinError('Mã PIN đội private phải gồm đúng 4 số.');
+            setPinError('Private team PIN must be exactly 4 digits.');
             hasErr = true;
         }
         const nonNullEmails = memberEmails.filter(email => email.trim() !== '');
         if (nonNullEmails.length < 2) {
-            setEmailsError('Bạn phải điền tối thiểu 2 email của thành viên khác.');
+            setEmailsError('You must invite at least 2 other members.');
             hasErr = true;
         }
         if (nonNullEmails.includes(currentEmail)) {
-            setEmailsError('Bạn không thể tự mời chính mình vào đội.');
+            setEmailsError('You cannot invite yourself.');
             hasErr = true;
         }
         const selectedTrack = (selectedEvent?.tracks || []).find((t) => String(t.id) === String(formData.trackId));
         if (selectedTrack && selectedTrack.maxTeams && selectedTrack.maxTeams > 0) {
             const currentTeams = selectedTrack.currentTeamsCount || 0;
             if (currentTeams >= selectedTrack.maxTeams) {
-                setCreateError(`Bảng đấu ${selectedTrack.name} đã đạt giới hạn tối đa ${selectedTrack.maxTeams} đội tham gia.`);
+                setCreateError(`Track ${selectedTrack.name} has reached the maximum limit of ${selectedTrack.maxTeams} teams.`);
                 hasErr = true;
             }
         }
@@ -369,6 +395,7 @@ export default function MyTeam() {
             const response = await axiosClient.post('/teams/create', {
                 name: formData.name,
                 description: formData.description,
+                skillsNeeded: formData.skillsNeeded,
                 type: formData.type,
                 joinPassword: formData.type === 'PRIVATE' ? formData.joinPassword : '',
                 eventId: Number(formData.eventId),
@@ -376,18 +403,18 @@ export default function MyTeam() {
                 memberEmails: nonNullEmails,
             });
             setTeam(response.result);
-            setCreateSuccess('Tạo đội thành công! Lời mời gia nhập đã được gửi tới các thành viên được mời.');
+            setCreateSuccess('Team created successfully! Invitations have been sent to the invited members.');
             setSearchParams({ teamId: response.result.id });
             await fetchData();
         } catch (err) {
-            setCreateError(err.message || 'Không thể tạo đội thi.');
+            setCreateError(err.message || 'Unable to create team.');
         } finally {
             setCreating(false);
         }
     };
 
     const handleJoin = async (targetTeam) => {
-        setLobbyActionStatus({ teamId: targetTeam.id, message: 'Đang gửi yêu cầu...', type: 'info' });
+        setLobbyActionStatus({ teamId: targetTeam.id, message: 'Sending request...', type: 'info' });
         try {
             if (targetTeam.type === 'PRIVATE') {
                 setPrivateTeam(targetTeam);
@@ -395,7 +422,7 @@ export default function MyTeam() {
                 return;
             }
             await axiosClient.post(`/teams/${targetTeam.id}/join-request`);
-            setLobbyActionStatus({ teamId: targetTeam.id, message: 'Đã gửi yêu cầu gia nhập thành công. Đang chờ Leader duyệt.', type: 'success' });
+            setLobbyActionStatus({ teamId: targetTeam.id, message: 'Join request sent successfully. Awaiting Leader approval.', type: 'success' });
             setTimeout(() => {
                 setSearchParams({});
             }, 2000);
@@ -404,8 +431,8 @@ export default function MyTeam() {
             setLobbyActionStatus({ teamId: null, message: '', type: '' });
             setConfirmModal({
                 isOpen: true,
-                title: 'Thông báo lỗi',
-                message: err.message || 'Không thể gửi yêu cầu tham gia đội.',
+                title: 'Error Notification',
+                message: err.message || 'Unable to send join request.',
                 isAlert: true,
                 onConfirm: null
             });
@@ -415,7 +442,7 @@ export default function MyTeam() {
     const handlePrivateJoin = async (e) => {
         e.preventDefault();
         if (!/^\d{4}$/.test(joinPassword)) {
-            setJoinError('Mã PIN phải gồm đúng 4 số.');
+            setJoinError('PIN must be exactly 4 digits.');
             return;
         }
         setJoinError('');
@@ -425,9 +452,9 @@ export default function MyTeam() {
             setJoinPassword('');
             setSearchParams({ teamId: privateTeam.id });
             await fetchData();
-            setMessage({ text: 'Gia nhập đội thành công!', type: 'success' });
+            setMessage({ text: 'Joined team successfully!', type: 'success' });
         } catch (err) {
-            setJoinError(err.message || 'Mã PIN không đúng hoặc không thể tham gia đội.');
+            setJoinError(err.message || 'Incorrect PIN or unable to join team.');
         }
     };
 
@@ -439,10 +466,10 @@ export default function MyTeam() {
             const response = await axiosClient.post(`/teams/${team.id}/invite`, { email: inviteEmail });
             setTeam(response.result);
             setInviteEmail('');
-            setInviteSuccess('Đã gửi lời mời đến thành viên! Đang chờ thành viên đồng ý.');
+            setInviteSuccess('Invitation sent to member! Awaiting confirmation.');
             await fetchData();
         } catch (err) {
-            setInviteError(err.message || 'Không thể mời thành viên.');
+            setInviteError(err.message || 'Unable to invite member.');
         }
     };
 
@@ -451,10 +478,10 @@ export default function MyTeam() {
         setInviteSuccess('');
         try {
             await axiosClient.post(`/teams/${team.id}/invite`, { email });
-            setInviteSuccess(`Đã gửi lời mời lại cho ${email}!`);
+            setInviteSuccess(`Resent invitation to ${email}!`);
             await fetchData();
         } catch (err) {
-            setInviteError(err.message || 'Không thể gửi lời mời lại.');
+            setInviteError(err.message || 'Unable to resend invitation.');
         }
     };
 
@@ -462,10 +489,10 @@ export default function MyTeam() {
         setMessage({ text: '', type: '' });
         try {
             await axiosClient.post(`/teams/invitations/${requestId}/accept`);
-            setMessage({ text: 'Chấp nhận lời mời gia nhập đội thành công!', type: 'success' });
+            setMessage({ text: 'Accepted team invitation successfully!', type: 'success' });
             await fetchData();
         } catch (err) {
-            setMessage({ text: err.message || 'Không thể chấp nhận lời mời.', type: 'error' });
+            setMessage({ text: err.message || 'Unable to accept invitation.', type: 'error' });
         }
     };
 
@@ -474,9 +501,9 @@ export default function MyTeam() {
         try {
             await axiosClient.post(`/teams/invitations/${requestId}/reject`);
             setMyInvitations((prev) => prev.filter((item) => item.id !== requestId));
-            setMessage({ text: 'Đã từ chối lời mời gia nhập đội.', type: 'success' });
+            setMessage({ text: 'Declined team invitation.', type: 'success' });
         } catch (err) {
-            setMessage({ text: err.message || 'Không thể từ chối lời mời.', type: 'error' });
+            setMessage({ text: err.message || 'Unable to decline invitation.', type: 'error' });
         }
     };
 
@@ -484,15 +511,15 @@ export default function MyTeam() {
         setActionMessage({ text: '', type: '' });
         setConfirmModal({
             isOpen: true,
-            title: 'Chuyển quyền Trưởng nhóm',
-            message: 'Bạn có chắc chắn muốn chuyển quyền Trưởng nhóm cho thành viên này?',
+            title: 'Transfer Leader Authority',
+            message: 'Are you sure you want to transfer Leader authority to this member?',
             onConfirm: async () => {
                 try {
                     const response = await axiosClient.put(`/teams/${team.id}/leader/${memberId}`);
                     setTeam(response.result);
-                    setActionMessage({ text: 'Chuyển quyền Trưởng nhóm thành công!', type: 'success' });
+                    setActionMessage({ text: 'Leader authority transferred successfully!', type: 'success' });
                 } catch (err) {
-                    setActionMessage({ text: err.message || 'Không thể chuyển quyền Trưởng nhóm.', type: 'error' });
+                    setActionMessage({ text: err.message || 'Unable to transfer leader authority.', type: 'error' });
                 }
             }
         });
@@ -500,22 +527,22 @@ export default function MyTeam() {
 
     const handleKick = async (memberId) => {
         const memberCount = team?.members?.length || 0;
-        let confirmMsg = "Bạn có chắc chắn muốn xóa thành viên này khỏi đội?";
+        let confirmMsg = "Are you sure you want to remove this member from the team?";
         if (memberCount <= 3) {
-            confirmMsg = "Đội hiện tại chỉ có 3 người. Nếu bạn xóa thành viên này, số thành viên sẽ dưới 3 và đội sẽ tự động bị GIẢI TÁN. Bạn có chắc chắn muốn xóa?";
+            confirmMsg = "The team currently has only 3 members. If you remove this member, the size will fall below 3 and the team will be automatically DISBANDED. Are you sure you want to proceed?";
         }
         setActionMessage({ text: '', type: '' });
         setConfirmModal({
             isOpen: true,
-            title: 'Xóa thành viên',
+            title: 'Remove Member',
             message: confirmMsg,
             onConfirm: async () => {
                 try {
                     await axiosClient.delete(`/teams/${team.id}/members/${memberId}`);
-                    setActionMessage({ text: 'Xóa thành viên khỏi đội thành công!', type: 'success' });
+                    setActionMessage({ text: 'Member removed from team successfully!', type: 'success' });
                     await fetchData();
                 } catch (err) {
-                    setActionMessage({ text: err.message || 'Không thể xóa thành viên.', type: 'error' });
+                    setActionMessage({ text: err.message || 'Unable to remove member.', type: 'error' });
                 }
             }
         });
@@ -527,9 +554,9 @@ export default function MyTeam() {
             const response = await axiosClient.post(`/teams/${team.id}/join-requests/${requestId}/approve`);
             setTeam(response.result);
             setJoinRequests((current) => current.filter((request) => request.id !== requestId));
-            setActionMessage({ text: 'Đã duyệt yêu cầu tham gia!', type: 'success' });
+            setActionMessage({ text: 'Approved join request!', type: 'success' });
         } catch (err) {
-            setActionMessage({ text: err.message || 'Không thể duyệt yêu cầu.', type: 'error' });
+            setActionMessage({ text: err.message || 'Unable to approve request.', type: 'error' });
         }
     };
 
@@ -538,9 +565,9 @@ export default function MyTeam() {
         try {
             await axiosClient.post(`/teams/${team.id}/join-requests/${requestId}/reject`);
             setJoinRequests((current) => current.filter((request) => request.id !== requestId));
-            setActionMessage({ text: 'Đã từ chối yêu cầu tham gia.', type: 'success' });
+            setActionMessage({ text: 'Declined join request.', type: 'success' });
         } catch (err) {
-            setActionMessage({ text: err.message || 'Không thể từ chối yêu cầu.', type: 'error' });
+            setActionMessage({ text: err.message || 'Unable to decline request.', type: 'error' });
         }
     };
 
@@ -550,8 +577,8 @@ export default function MyTeam() {
         if (isLeader) {
             setConfirmModal({
                 isOpen: true,
-                title: 'Không thể rời đội',
-                message: 'Bạn đang là Trưởng nhóm (Leader). Bạn phải chuyển quyền Trưởng nhóm cho thành viên khác trước khi rời khỏi đội.',
+                title: 'Cannot Leave Team',
+                message: 'You are the Team Leader. You must transfer Leader authority to another member before leaving the team.',
                 isAlert: true,
                 isError: true,
                 onConfirm: null,
@@ -561,16 +588,16 @@ export default function MyTeam() {
 
         setConfirmModal({
             isOpen: true,
-            title: 'Xác nhận rời đội',
-            message: `Bạn có chắc chắn muốn rời khỏi đội "${team?.name}" không?`,
+            title: 'Confirm Leave Team',
+            message: `Are you sure you want to leave team "${team?.name}"?`,
             onConfirm: async () => {
                 try {
                     await axiosClient.post(`/teams/leave?teamId=${team.id}`);
                     setTeam(null);
-                    setMessage({ text: 'Rời khỏi đội thành công!', type: 'success' });
+                    setMessage({ text: 'Left team successfully!', type: 'success' });
                     await fetchData();
                 } catch (err) {
-                    setActionMessage({ text: err.message || 'Không thể rời đội.', type: 'error' });
+                    setActionMessage({ text: err.message || 'Unable to leave team.', type: 'error' });
                 }
             }
         });
@@ -581,17 +608,17 @@ export default function MyTeam() {
 
         setConfirmModal({
             isOpen: true,
-            title: 'Xác nhận xóa đội thi',
-            message: `Bạn có chắc chắn muốn XÓA đội thi "${team?.name}" không? Thao tác này sẽ xóa hoàn toàn đội khỏi cuộc thi.`,
+            title: 'Confirm Disband Team',
+            message: `Are you sure you want to DISBAND team "${team?.name}"? This action will permanently remove the team from the event.`,
             isError: true,
             onConfirm: async () => {
                 try {
                     await axiosClient.delete(`/teams/${team.id}`);
                     setTeam(null);
-                    setMessage({ text: 'Xóa đội thi thành công!', type: 'success' });
+                    setMessage({ text: 'Team disbanded successfully!', type: 'success' });
                     await fetchData();
                 } catch (err) {
-                    setActionMessage({ text: err.message || 'Không thể xóa đội.', type: 'error' });
+                    setActionMessage({ text: err.message || 'Unable to disband team.', type: 'error' });
                 }
             }
         });
@@ -602,7 +629,7 @@ export default function MyTeam() {
         setSubmitError('');
         setSubmitSuccess('');
         if (!isLeader) {
-            setSubmitError('Chỉ Team Leader được nộp hoặc cập nhật bài.');
+            setSubmitError('Only Team Leader can edit or upload submissions.');
             return;
         }
         try {
@@ -615,7 +642,7 @@ export default function MyTeam() {
                 // Validate các trường required từ schema
                 for (const field of submissionSchema) {
                     if (field.required && !submissionValues[field.id]?.trim()) {
-                        setSubmitError(`Vui lòng điền đầy đủ trường "${field.label}"`);
+                        setSubmitError(`Please fill in the required field "${field.label}"`);
                         return;
                     }
                 }
@@ -639,62 +666,132 @@ export default function MyTeam() {
             const saved = response.result;
             setSubmission(saved);
             setSubmissionsMap(prev => ({ ...prev, [String(formData.matrixId)]: saved }));
-            setSubmitSuccess('Lưu bài nộp thành công!');
+            setSubmitSuccess('Submission saved successfully!');
         } catch (err) {
-            setSubmitError(err.message || 'Không thể lưu bài nộp.');
+            setSubmitError(err.message || 'Unable to save submission.');
         } finally {
             setSavingSubmission(false);
         }
     };
 
     if (loading) {
-        return <main className="section-shell"><div className="rounded-lg bg-white p-8 text-center text-[#5c6d83]">Đang tải dữ liệu đội thi...</div></main>;
+        if (embedded) {
+            return <div className="w-full text-center text-[#5c6d83] py-8">Loading team data...</div>;
+        }
+        return <main className="section-shell"><div className="rounded-lg bg-white p-8 text-center text-[#5c6d83]">Loading team data...</div></main>;
     }
 
+    const getRoundStatusBadge = (matrix) => {
+        const sub = submissionsMap[String(matrix.id)];
+        const hasSub = Boolean(sub && sub.fileUrl);
+        const isGraded = Boolean(sub && sub.graded);
+        
+        if (isGraded) {
+            return (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full font-bold shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    Graded
+                </span>
+            );
+        }
+        
+        if (hasSub) {
+            return (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full font-bold shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    Submitted
+                </span>
+            );
+        }
+        
+        const isDeadlinePassed = matrix.submissionDeadline ? new Date() > new Date(matrix.submissionDeadline) : false;
+        const isStartOpened = matrix.submissionStartDate ? new Date() >= new Date(matrix.submissionStartDate) : true;
+        
+        if (isDeadlinePassed) {
+            return (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-red-50 border border-red-200 text-red-700 px-2 py-0.5 rounded-full font-bold shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    Overdue
+                </span>
+            );
+        }
+        
+        if (!isStartOpened) {
+            return (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-slate-50 border border-slate-200 text-slate-400 px-2 py-0.5 rounded-full font-bold shadow-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                    Upcoming
+                </span>
+            );
+        }
+        
+        return (
+            <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded-full font-bold shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                Pending
+            </span>
+        );
+    };
+
+    const Wrapper = embedded ? 'div' : 'main';
+    const wrapperClass = embedded ? 'w-full space-y-6' : 'section-shell';
+
     return (
-        <main className="section-shell">
+        <Wrapper className={wrapperClass}>
             <Toast message={message} onClose={() => setMessage({ text: '', type: '' })} />
 
-            {activeTeamId && team ? (
-                /* VIEW 1: ĐỘI THI CHI TIẾT (Trang riêng hiển thị khi click vào một đội) */
+            {(embedded ? team : (activeTeamId && team)) ? (
+                /* VIEW 1: TEAM DETAILS WORKSPACE */
                 <div className="space-y-6">
-                    <div className="flex justify-end mb-4">
-                        <Link to="/teams" className="btn-secondary flex items-center gap-1.5 font-bold text-xs py-2 px-3 shrink-0">
-                            <span>Xem Lobby</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-slate-500">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94-3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                            </svg>
-                        </Link>
-                    </div>
+                    {!embedded && (
+                        <div className="flex justify-end mb-4">
+                            <Link to="/teams" className="btn-secondary flex items-center gap-1.5 font-bold text-xs py-2 px-3 shrink-0">
+                                <span>View Lobby</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-slate-500">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94-3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                                </svg>
+                            </Link>
+                        </div>
+                    )}
 
                     <section className="rounded-lg border border-[#d7e6f8] bg-white p-6">
                         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                             <div>
-                                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">{team.eventName || 'Chưa gắn giải đấu'}</p>
+                                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">{team.eventName || 'No event linked'}</p>
                                 <h1 className="mt-2 text-3xl font-black uppercase tracking-[0.06em] text-[#071936]">{team.name}</h1>
-                                <p className="mt-2 text-sm leading-7 text-[#5c6d83]">{team.description || 'Đội chưa thêm mô tả.'}</p>
+                                <p className="mt-2 text-sm leading-7 text-[#5c6d83]">{team.description || 'No description added yet.'}</p>
                                 <p className="mt-3 text-sm font-bold text-[#0f63c9]">{team.trackName}</p>
+                                {team.skillsNeeded && (
+                                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                                        <span className="text-xs font-bold text-[#5c6d83]">Skills needed:</span>
+                                        {team.skillsNeeded.split(',').map(s => s.trim()).filter(Boolean).map(skill => (
+                                            <span key={skill} className="inline-flex items-center rounded bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="badge-status-pill">{team.type}</span>
                                 {team.disqualificationStatus === 'APPROVED' ? (
                                     <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700 border border-red-200">
                                         <span className="shrink-0 w-2 h-2 rounded-full bg-red-600" />
-                                        Đã bị loại
+                                        Disqualified
                                     </span>
                                 ) : team.disqualificationStatus === 'PENDING' ? (
                                     <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700 border border-amber-200">
-                                        Chờ duyệt loại
+                                        Pending Disqualification
                                     </span>
                                 ) : (team.members?.length || team.memberCount || 0) >= 3 ? (
                                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700 border border-emerald-200">
                                         <span className="pulsing-dot-green shrink-0" />
-                                        Đội chính thức
+                                        Official Team
                                     </span>
                                 ) : (
                                     <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700 border border-amber-200">
                                         <span className="pulsing-dot-amber shrink-0" />
-                                        Đội chưa chính thức
+                                        Unofficial Team
                                     </span>
                                 )}
                             </div>
@@ -706,11 +803,11 @@ export default function MyTeam() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
                                 <div>
-                                    <h4 className="font-black text-red-900 text-sm">Đội thi của bạn đã bị loại khỏi giải đấu</h4>
+                                    <h4 className="font-black text-red-900 text-sm">Your team has been disqualified from the event</h4>
                                     <p className="text-xs text-red-800 mt-1 leading-relaxed">
-                                        Lý do: <strong>"{team.disqualificationReason || 'Vi phạm quy chế thi'}"</strong>.
-                                        {team.disqualifierEmail && <span> Người thực hiện: <strong>{team.disqualifierEmail}</strong>.</span>}
-                                        {' '}Tất cả các tính năng nộp bài và cập nhật đã bị khóa. Các thông tin nộp bài trước đó vẫn được lưu giữ để phục vụ tra cứu.
+                                        Reason: <strong>"{team.disqualificationReason || 'Violation of rules'}"</strong>.
+                                        {team.disqualifierEmail && <span> Actioned by: <strong>{team.disqualifierEmail}</strong>.</span>}
+                                        {' '}All submission and modification features have been locked. Past submission data is preserved for reference.
                                     </p>
                                 </div>
                             </div>
@@ -722,9 +819,9 @@ export default function MyTeam() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
                                 <div>
-                                    <h4 className="font-black text-amber-900 text-sm">Đội thi hiện tại là Đội chưa chính thức</h4>
+                                    <h4 className="font-black text-amber-900 text-sm">The team is currently Unofficial</h4>
                                     <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                                        Đội của bạn hiện tại chưa đủ tối thiểu 3 thành viên xác nhận tham gia. Hãy mời thêm thành viên hoặc đợi người được mời chấp nhận để đội trở thành <strong>Đội chính thức</strong> và mở quyền nộp bài dự thi.
+                                        Your team does not have the minimum of 3 members who have confirmed participation. Please invite more members or wait for pending invitees to accept to become an <strong>Official Team</strong> and unlock submission access.
                                     </p>
                                 </div>
                             </div>
@@ -734,44 +831,33 @@ export default function MyTeam() {
                                 {startCountdown.map((item) => (
                                     <div key={item.label} className="rounded-lg border border-[#d7e6f8] bg-[#f8fbff] p-4 text-center">
                                         <p className="text-3xl font-black text-[#071936]">{item.value}</p>
-                                        <p className="text-xs font-black uppercase text-[#5c6d83]">{item.label} đến khi bắt đầu</p>
+                                        <p className="text-xs font-black uppercase text-[#5c6d83]">{item.label === 'ngày' ? 'days' : item.label === 'giờ' ? 'hours' : item.label === 'phút' ? 'minutes' : 'seconds'} until start</p>
                                     </div>
                                 ))}
                             </div>
                         )}
                     </section>
 
-                    <section className="team-workspace">
-                        <div className="team-mentor-chat">
-                            <div className="team-mentor-chat__intro">
-                                <div>
-                                    <p>Trao đổi cùng mentor</p>
-                                    <h2>Chat mentor</h2>
-                                    <span>Hỏi nhanh và nhận góp ý từ mentor.</span>
-                                </div>
-                                <strong>Realtime</strong>
-                            </div>
-                            <TeamChat embedded teamId={team.id} />
-                        </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mt-6">
+                        {/* Left Columns: Chat and Submissions */}
+                        <div className="lg:col-span-2 space-y-6">
+
                         <div className="team-submission-panel rounded-lg border border-[#d7e6f8] bg-white p-6">
                             <div className="flex items-center justify-between gap-3 mb-4">
-                                <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Đề thi và nộp bài</h2>
+                                <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Tasks & Submissions</h2>
                                 <span className="text-xs font-bold text-[#5c6d83] bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
-                                    Thành viên & Leader có thể chọn vòng để xem lại bài nộp
+                                    Members & Leader can select a round to review submissions
                                 </span>
                             </div>
 
                             {matrices.length === 0 ? (
-                                <p className="mt-4 text-sm text-[#5c6d83]">Coordinator chưa thêm đề thi/guideline cho hạng mục này.</p>
+                                <p className="mt-4 text-sm text-[#5c6d83]">Coordinator has not added guidelines/tasks for this track yet.</p>
                             ) : (
                                 <div>
                                     {/* === ROUND STEPPER / TABS BAR === */}
                                     <div className="flex flex-wrap gap-2 mb-5 border-b border-[#cbd5e1] pb-3">
                                         {matrices.map((matrix) => {
                                             const isSelected = String(matrix.id) === String(formData.matrixId);
-                                            const sub = submissionsMap[String(matrix.id)];
-                                            const hasSub = Boolean(sub && sub.fileUrl);
-                                            const isGraded = Boolean(sub && sub.graded);
 
                                             return (
                                                 <button
@@ -785,11 +871,7 @@ export default function MyTeam() {
                                                     }`}
                                                 >
                                                     <span>{matrix.roundName}</span>
-                                                    {isGraded ? (
-                                                        <span className="text-[10px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-full font-bold">✓ Đã chấm</span>
-                                                    ) : hasSub ? (
-                                                        <span className="text-[10px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-bold">✓ Đã nộp</span>
-                                                    ) : null}
+                                                    {getRoundStatusBadge(matrix)}
                                                 </button>
                                             );
                                         })}
@@ -799,15 +881,15 @@ export default function MyTeam() {
                                      {selectedMatrix?.breakRemainingSeconds > 0 && (
                                          <div className="mb-5 rounded-xl border border-violet-200 bg-violet-50 p-4 text-violet-900 shadow-sm flex items-center justify-between">
                                              <div>
-                                                 <p className="text-xs font-black uppercase tracking-wider text-violet-700">☕ Thời gian nghỉ giữa các vòng thi</p>
-                                                 <p className="text-sm font-bold text-violet-900 mt-0.5">Thời gian nghỉ và chuẩn bị cho vòng tiếp theo. Đề thi vòng sau sẽ được công bố khi hết giờ nghỉ.</p>
+                                                 <p className="text-xs font-black uppercase tracking-wider text-violet-700">☕ Inter-round Break</p>
+                                                 <p className="text-sm font-bold text-violet-900 mt-0.5">Break and preparation time for the next round. The next task guideline will be released when the break ends.</p>
                                              </div>
                                              <div className="text-right">
                                                  <span className="text-2xl font-black text-violet-700">
                                                      {Math.floor(selectedMatrix.breakRemainingSeconds / 60)}:
                                                      {String(selectedMatrix.breakRemainingSeconds % 60).padStart(2, '0')}
                                                  </span>
-                                                 <p className="text-[10px] uppercase font-bold text-violet-600">Thời gian nghỉ còn lại</p>
+                                                 <p className="text-[10px] uppercase font-bold text-violet-600">Break Time Remaining</p>
                                              </div>
                                          </div>
                                      )}
@@ -816,19 +898,19 @@ export default function MyTeam() {
                                     {selectedMatrix && (
                                         <div className="mb-5 rounded-xl border border-blue-100 bg-[#f8fafc] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
                                             <div>
-                                                <p className="text-xs font-black uppercase text-[#0f63c9]">Đề bài {selectedMatrix.roundName}</p>
-                                                <p className="text-sm font-bold text-slate-800 mt-0.5">{selectedMatrix.trackName || 'Bảng thi'}</p>
+                                                <p className="text-xs font-black uppercase text-[#0f63c9]">Guideline for {selectedMatrix.roundName}</p>
+                                                <p className="text-sm font-bold text-slate-800 mt-0.5">{selectedMatrix.trackName || 'Track'}</p>
                                                 {selectedMatrix.submissionDeadline && (
-                                                    <p className="text-xs font-semibold text-slate-500 mt-1">Hạn nộp: {formatDateTime(selectedMatrix.submissionDeadline)}</p>
+                                                    <p className="text-xs font-semibold text-slate-500 mt-1">Deadline: {formatDateTime(selectedMatrix.submissionDeadline)}</p>
                                                 )}
                                             </div>
                                             {selectedMatrix.guidelineUrl ? (
                                                 <a href={selectedMatrix.guidelineUrl} target="_blank" rel="noreferrer" className="btn-primary py-2 px-4 text-xs shrink-0 flex items-center gap-1.5">
                                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                                    Tải Đề bài / Quy chế Vòng này
+                                                    Download Task Guideline
                                                 </a>
                                             ) : (
-                                                <span className="text-xs text-slate-400 font-semibold italic">Chưa có link đề bài</span>
+                                                <span className="text-xs text-slate-400 font-semibold italic">No guideline link available</span>
                                             )}
                                         </div>
                                     )}
@@ -837,16 +919,16 @@ export default function MyTeam() {
                                     {submission && submission.graded && (
                                         <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-2">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-xs font-black uppercase tracking-wider text-emerald-800">Kết quả chấm điểm Vòng này</span>
+                                                <span className="text-xs font-black uppercase tracking-wider text-emerald-800">Graded Results for This Round</span>
                                                 {submission.score != null && (
                                                     <span className="text-sm font-black bg-emerald-600 text-white px-3 py-1 rounded-full shadow-xs">
-                                                        {submission.score} / 100 điểm
+                                                        {submission.score} / 100 points
                                                     </span>
                                                 )}
                                             </div>
                                             {submission.feedback && (
                                                 <div className="mt-2 text-xs text-slate-700 bg-white p-3 rounded-lg border border-emerald-100">
-                                                    <strong>Nhận xét từ Giám khảo:</strong> {submission.feedback}
+                                                    <strong>Feedback from Judge:</strong> {submission.feedback}
                                                 </div>
                                             )}
                                         </div>
@@ -855,27 +937,27 @@ export default function MyTeam() {
                                      <form onSubmit={handleSubmission} className="space-y-5">
                                         {team?.disqualificationStatus === 'APPROVED' && (
                                             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800">
-                                                Đội thi của bạn đã bị loại khỏi cuộc thi. Cổng nộp bài và chỉnh sửa bài làm đã bị đóng.
+                                                Your team has been disqualified. Submission access is closed.
                                             </div>
                                         )}
                                         {team?.disqualificationStatus !== 'APPROVED' && !isEventStarted && currentEvent?.eventStartDate && (
                                             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
-                                                Giải đấu chưa chính thức bắt đầu. Thời gian bắt đầu: {formatDateTime(currentEvent.eventStartDate)}.
+                                                Event has not started yet. Start time: {formatDateTime(currentEvent.eventStartDate)}.
                                             </div>
                                         )}
                                         {team?.disqualificationStatus !== 'APPROVED' && isEventStarted && !isPreviousRoundEnded && (
                                             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
-                                                Vui lòng đợi vòng thi trước kết thúc mới được nộp bài cho vòng này.
+                                                Please wait for the previous round to close before submitting for this round.
                                             </div>
                                         )}
                                         {team?.disqualificationStatus !== 'APPROVED' && isEventStarted && isPreviousRoundEnded && !isSubmissionStarted && selectedMatrix?.submissionStartDate && (
-                                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
-                                                Cổng nộp bài chưa mở. Vui lòng quay lại sau thời gian mở nộp bài.
+                                            <div className="rounded-lg border border-[#cbd5e1] bg-slate-50 p-3 text-xs font-bold text-slate-500">
+                                                Submission gate is not open yet. Please return later.
                                             </div>
                                         )}
                                         {team?.disqualificationStatus !== 'APPROVED' && isSubmissionEnded && (
                                             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800">
-                                                Đã quá hạn nộp bài của vòng thi này.
+                                                Submission deadline for this round has passed.
                                             </div>
                                         )}
 
@@ -910,12 +992,12 @@ export default function MyTeam() {
                                                 ))}
                                             </div>
                                         ) : (
-                                            /* Fallback: form cũ — event chưa cấu hình schema */
-                                            <input required type="url" className="input-custom" placeholder="Link GitHub, Drive hoặc demo" value={formData.fileUrl} disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
+                                            /* Fallback: old form — event has no schema */
+                                            <input required type="url" className="input-custom" placeholder="GitHub, Drive, or demo link" value={formData.fileUrl} disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
                                         )}
 
                                          <button type="submit" disabled={team?.disqualificationStatus === 'APPROVED' || savingSubmission || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
-                                            {team?.disqualificationStatus === 'APPROVED' ? 'Đội thi đã bị loại' : !isLeader ? 'Chỉ Team Leader mới được sửa / nộp bài' : savingSubmission ? 'Đang lưu...' : !isEventStarted ? 'Giải đấu chưa bắt đầu' : !isPreviousRoundEnded ? 'Vòng trước chưa kết thúc' : !isSubmissionStarted ? 'Cổng nộp bài chưa mở' : isSubmissionEnded ? 'Đã hết hạn nộp bài' : submission ? 'Cập nhật bài nộp' : 'Nộp bài'}
+                                            {team?.disqualificationStatus === 'APPROVED' ? 'Disqualified' : !isLeader ? 'Only Team Leader can edit or upload submissions' : savingSubmission ? 'Saving...' : !isEventStarted ? 'Event not started' : !isPreviousRoundEnded ? 'Previous round active' : !isSubmissionStarted ? 'Gate not open' : isSubmissionEnded ? 'Overdue' : submission ? 'Update Submission' : 'Submit'}
                                         </button>
                                         {submitError && <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p>}
                                         {submitSuccess && <p className="mt-2 text-sm font-semibold text-green-600">{submitSuccess}</p>}
@@ -923,18 +1005,21 @@ export default function MyTeam() {
                                 </div>
                             )}
                         </div>
+                        </div>
 
+                        {/* Right Column: Members Panel */}
+                        <div className="space-y-6">
                         <div className="team-members-panel rounded-lg border border-[#d7e6f8] bg-white p-6">
                             <div className="flex items-center justify-between gap-3">
-                                <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Thành viên ({team.members?.length || 0})</h2>
+                                <h2 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Members ({team.members?.length || 0})</h2>
                                 <div className="flex items-center gap-2.5">
-                                    {isLeader && (
+                                    {isLeader && !isEventStarted && (
                                         <>
-                                            <button type="button" onClick={() => setShowActions((value) => !value)} className="btn-secondary">Thao tác</button>
+                                            <button type="button" onClick={() => setShowActions((value) => !value)} className="btn-secondary">Manage</button>
                                             <button 
                                                 type="button" 
                                                 onClick={handleDisbandTeam} 
-                                                title="Xóa đội (Dành cho Trưởng nhóm)" 
+                                                title="Disband Team (Leader Only)" 
                                                 className="flex items-center justify-center rounded-lg border border-red-300 bg-red-100 hover:bg-red-200 text-red-700 p-2.5 transition-all duration-200 cursor-pointer shadow-sm"
                                             >
                                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -943,16 +1028,18 @@ export default function MyTeam() {
                                             </button>
                                         </>
                                     )}
-                                    <button 
-                                        type="button" 
-                                        onClick={handleLeave} 
-                                        title="Rời khỏi đội" 
-                                        className="flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 p-2.5 transition-all duration-200 cursor-pointer shadow-sm"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                                        </svg>
-                                    </button>
+                                    {!isEventStarted && (
+                                        <button 
+                                            type="button" 
+                                            onClick={handleLeave} 
+                                            title="Leave Team" 
+                                            className="flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700 p-2.5 transition-all duration-200 cursor-pointer shadow-sm"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                            </svg>
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                             {actionMessage.text && (
@@ -972,11 +1059,11 @@ export default function MyTeam() {
                                         </div>
                                         {showActions && isLeader && member.role !== 'LEADER' && (
                                             <div className="mt-3 flex items-center gap-2">
-                                                <button type="button" onClick={() => handleTransfer(member.id)} className="btn-secondary text-xs py-1 px-3">Chuyển leader</button>
+                                                <button type="button" onClick={() => handleTransfer(member.id)} className="btn-secondary text-xs py-1 px-3">Transfer Leader</button>
                                                 <button 
                                                     type="button" 
                                                     onClick={() => handleKick(member.id)} 
-                                                    title="Xóa thành viên khỏi đội" 
+                                                    title="Remove member from team" 
                                                     className="flex items-center justify-center rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 p-1.5 transition-all duration-200 cursor-pointer"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
@@ -990,20 +1077,28 @@ export default function MyTeam() {
                             </div>
                             {isLeader && (
                                 <div className="mt-6 border-t border-[#d7e6f8] pt-5 space-y-6">
-                                    <div>
-                                        <h3 className="mb-3 text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Mời thành viên</h3>
-                                        <form onSubmit={handleInvite} className="flex gap-2">
-                                            <input required type="email" className="input-custom" placeholder="Email thành viên" value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); setInviteSuccess(''); }} />
-                                            <button type="submit" className="btn-primary">Mời</button>
-                                        </form>
-                                        {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
-                                        {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
-                                    </div>
+                                    {!isEventStarted ? (
+                                        <div>
+                                            <h3 className="mb-3 text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Invite Member</h3>
+                                            <form onSubmit={handleInvite} className="flex gap-2">
+                                                <input required type="email" className="input-custom" placeholder="Member Email" value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteError(''); setInviteSuccess(''); }} />
+                                                <button type="submit" className="btn-primary">Invite</button>
+                                            </form>
+                                            {inviteError && <p className="mt-1.5 text-xs font-semibold text-red-600">{inviteError}</p>}
+                                            {inviteSuccess && <p className="mt-1.5 text-xs font-semibold text-green-600">{inviteSuccess}</p>}
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <p className="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 p-3 rounded-lg">
+                                                Team modifications & invitations are locked as the event is active.
+                                            </p>
+                                        </div>
+                                    )}
 
                                     {sentInvitations.length > 0 && (
                                         <div className="border-t border-[#d7e6f8] pt-5">
                                             <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936] mb-3">
-                                                Lời mời đã gửi ({sentInvitations.length})
+                                                Sent Invitations ({sentInvitations.length})
                                             </h3>
                                             <div className="space-y-2">
                                                 {sentInvitations.map((inv) => (
@@ -1015,19 +1110,21 @@ export default function MyTeam() {
                                                         {inv.status === 'REJECTED' ? (
                                                             <div className="flex items-center gap-2 shrink-0">
                                                                 <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600">
-                                                                    Đã từ chối
+                                                                    Declined
                                                                 </span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => handleReInvite(inv.email)}
-                                                                    className="btn-primary py-1 px-3 text-xs shrink-0"
-                                                                >
-                                                                    Mời lại
-                                                                </button>
+                                                                {!isEventStarted && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleReInvite(inv.email)}
+                                                                        className="btn-primary py-1 px-3 text-xs shrink-0"
+                                                                    >
+                                                                        Resend
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         ) : (
                                                             <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700 shrink-0">
-                                                                Đang chờ phản hồi
+                                                                Pending Response
                                                             </span>
                                                         )}
                                                     </div>
@@ -1038,10 +1135,10 @@ export default function MyTeam() {
 
                                     <div className="border-t border-[#d7e6f8] pt-5">
                                         <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Yêu cầu tham gia</h3>
-                                            {joinRequests.length > 0 && (
+                                            <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[#071936]">Join Requests</h3>
+                                            {joinRequests.length > 0 && !isEventStarted && (
                                                 <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-600 animate-pulse">
-                                                    {joinRequests.length} mới
+                                                    {joinRequests.length} new
                                                 </span>
                                             )}
                                         </div>
@@ -1052,58 +1149,65 @@ export default function MyTeam() {
                                                         <p className="font-bold text-[#071936]">{request.fullName || request.email}</p>
                                                         <p className="text-sm text-[#5c6d83]">{request.email}</p>
                                                     </div>
-                                                    <div className="flex gap-2 shrink-0">
-                                                        <button type="button" onClick={() => handleApproveRequest(request.id)} className="btn-primary py-1.5 px-3 text-xs">Duyệt</button>
-                                                        <button type="button" onClick={() => handleRejectRequest(request.id)} className="btn-secondary py-1.5 px-3 text-xs">Từ chối</button>
-                                                    </div>
+                                                    {!isEventStarted ? (
+                                                        <div className="flex gap-2 shrink-0">
+                                                            <button type="button" onClick={() => handleApproveRequest(request.id)} className="btn-primary py-1.5 px-3 text-xs">Approve</button>
+                                                            <button type="button" onClick={() => handleRejectRequest(request.id)} className="btn-secondary py-1.5 px-3 text-xs">Decline</button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400 italic font-semibold">Locked</span>
+                                                    )}
                                                 </div>
-                                            )) : <p className="text-sm text-[#5c6d83]">Chưa có yêu cầu tham gia nào.</p>}
+                                            )) : <p className="text-sm text-[#5c6d83]">No pending join requests.</p>}
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </div>
-                    </section>
+                        </div>
+                    </div>
                 </div>
             ) : registeringEventId ? (
-                /* VIEW 2: ĐĂNG KÝ GIẢI ĐẤU MỚI (Trang riêng tương tự lobby khi bấm Đăng ký ngay) */
+                /* VIEW 2: REGISTER FOR NEW EVENT */
                 (() => {
                     const registeringEvent = events.find(e => String(e.id) === String(registeringEventId));
                     if (!registeringEvent) {
-                        return <div className="rounded-lg bg-white p-8 text-center text-[#5c6d83]">Giải đấu không tồn tại hoặc đã đóng.</div>;
+                        return <div className="rounded-lg bg-white p-8 text-center text-[#5c6d83]">The hackathon does not exist or has been closed.</div>;
                     }
                     return (
                         <div className="space-y-6">
 
                             <div className="w-full rounded-2xl bg-white p-6 shadow-md border border-[#d7e6f8]">
-                                <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                    <div>
-                                        <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-100 uppercase tracking-wider mb-2">
-                                            Đăng ký giải đấu
-                                        </span>
-                                        <h2 className="text-2xl font-black text-[#0b1f3f]">{registeringEvent.name}</h2>
-                                        <p className="text-sm text-[#5c6d83] mt-1">{registeringEvent.description || 'Chưa có mô tả ngắn cho giải đấu.'}</p>
+                                {!embedded && (
+                                    <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                        <div>
+                                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-100 uppercase tracking-wider mb-2">
+                                                Register Event
+                                            </span>
+                                            <h2 className="text-2xl font-black text-[#0b1f3f]">{registeringEvent.name}</h2>
+                                            <p className="text-sm text-[#5c6d83] mt-1">{registeringEvent.description || 'No description available.'}</p>
+                                        </div>
+                                        <Link to={`/events/${registeringEvent.id}`} className="group inline-flex items-center gap-1.5 rounded-full bg-[#f4f7fa] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0f63c9] transition-all hover:bg-[#e6eff8] shrink-0 w-fit">
+                                            View Event Details
+                                            <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </Link>
                                     </div>
-                                    <Link to={`/events/${registeringEvent.id}`} className="group inline-flex items-center gap-1.5 rounded-full bg-[#f4f7fa] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0f63c9] transition-all hover:bg-[#e6eff8] shrink-0 w-fit">
-                                        Xem chi tiết sự kiện
-                                        <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    </Link>
-                                </div>
+                                )}
 
                                 <div className="grid gap-3 sm:grid-cols-2 mb-6">
-                                    <button type="button" onClick={() => setMode('FIND')} className={mode === 'FIND' ? 'btn-primary' : 'btn-secondary'}>Tìm đội</button>
-                                    <button type="button" onClick={() => setMode('CREATE')} className={mode === 'CREATE' ? 'btn-primary' : 'btn-secondary'}>Tạo đội</button>
+                                    <button type="button" onClick={() => setMode('FIND')} className={mode === 'FIND' ? 'btn-primary' : 'btn-secondary'}>Find Team</button>
+                                    <button type="button" onClick={() => setMode('CREATE')} className={mode === 'CREATE' ? 'btn-primary' : 'btn-secondary'}>Create Team</button>
                                 </div>
 
                                 <div>
                                     {mode === 'FIND' ? (
                                         <section className="rounded-lg border border-[#d7e6f8] bg-white p-6">
                                             <div className="mb-5">
-                                                <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Lọc theo hạng mục</label>
+                                                <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Filter by Track</label>
                                                 <select className="input-custom max-w-md" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
-                                                    <option value="ALL">Tất cả hạng mục</option>
+                                                    <option value="ALL">All Tracks</option>
                                                     {(registeringEvent.tracks || []).map((track) => (
                                                         <option key={track.id} value={track.id}>{track.name}</option>
                                                     ))}
@@ -1113,12 +1217,12 @@ export default function MyTeam() {
                                                 {filteredTeams.map((item) => (
                                                     <article key={item.id} className="feature-card flex flex-col h-full border border-[#d7e6f8] rounded-xl p-4 bg-slate-50/50 shadow-sm">
                                                         <h3 className="text-lg font-black uppercase tracking-[0.06em] text-[#071936] line-clamp-2" title={item.name}>{item.name}</h3>
-                                                        <p className="mt-2 text-sm text-[#5c6d83] line-clamp-3" title={item.description}>{item.description || 'Đội chưa thêm mô tả.'}</p>
+                                                        <p className="mt-2 text-sm text-[#5c6d83] line-clamp-3" title={item.description}>{item.description || 'No description added yet.'}</p>
                                                         
                                                         <div className="mt-auto pt-5">
-                                                            <p className="text-sm font-bold text-[#0f63c9] line-clamp-1" title={item.trackName}>{item.trackName || 'Chưa chọn hạng mục'}</p>
+                                                            <p className="text-sm font-bold text-[#0f63c9] line-clamp-1" title={item.trackName}>{item.trackName || 'No track chosen'}</p>
                                                             <button type="button" onClick={() => handleJoin(item)} className="btn-primary mt-4 w-full">
-                                                                    {item.type === 'PRIVATE' ? 'Nhập mã PIN' : 'Gửi request'}
+                                                                    {item.type === 'PRIVATE' ? 'Enter PIN' : 'Send Join Request'}
                                                             </button>
                                                             {lobbyActionStatus.teamId === item.id && lobbyActionStatus.message && (
                                                                 <p className={`mt-2 text-xs font-semibold text-center ${
@@ -1132,7 +1236,7 @@ export default function MyTeam() {
                                                     </article>
                                                 ))}
                                                 {filteredTeams.length === 0 && (
-                                                    <p className="col-span-full text-center text-sm text-slate-500 py-8">Không có đội thi nào phù hợp trong lobby.</p>
+                                                    <p className="col-span-full text-center text-sm text-slate-500 py-8">No matching teams in the lobby.</p>
                                                 )}
                                             </div>
                                         </section>
@@ -1141,26 +1245,32 @@ export default function MyTeam() {
                                             <form onSubmit={handleCreateTeam} className="space-y-5">
                                                 <div className="grid gap-5 md:grid-cols-2">
                                                     <div className="md:col-span-2">
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Tên team</label>
+                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Team Name</label>
                                                         <input required className="input-custom" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
                                                     </div>
                                                 </div>
                                                 <div className="grid gap-5 md:grid-cols-2">
                                                     <div className="md:col-span-2">
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mô tả đội</label>
-                                                        <textarea className="input-custom min-h-[100px]" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Kỹ năng, mục tiêu, hoặc ý tưởng dự án..." />
+                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Team Description</label>
+                                                        <textarea className="input-custom min-h-[100px]" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Skills, goals, or project ideas..." />
+                                                    </div>
+                                                </div>
+                                                <div className="grid gap-5 md:grid-cols-2">
+                                                    <div className="md:col-span-2">
+                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Skills Needed</label>
+                                                        <input className="input-custom" value={formData.skillsNeeded} onChange={(e) => setFormData({ ...formData, skillsNeeded: e.target.value })} placeholder="Desired skills (comma-separated, e.g. Python, React, UI Design)" />
                                                     </div>
                                                 </div>
 
                                                 <div className="grid gap-5 md:grid-cols-2">
                                                     <div>
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Hạng mục</label>
+                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Track</label>
                                                         <select required className="input-custom" value={formData.trackId} onChange={(e) => setFormData({ ...formData, trackId: e.target.value })}>
                                                             {(registeringEvent.tracks || []).map((track) => <option key={track.id} value={track.id}>{track.name}</option>)}
                                                         </select>
                                                     </div>
                                                     <div>
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Chế độ</label>
+                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Visibility</label>
                                                         <select className="input-custom" value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
                                                             <option value="PUBLIC">Public</option>
                                                             <option value="PRIVATE">Private</option>
@@ -1169,22 +1279,22 @@ export default function MyTeam() {
                                                 </div>
                                                 {formData.type === 'PRIVATE' && (
                                                     <div>
-                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">Mã PIN 4 số</label>
+                                                        <label className="mb-1 block text-sm font-bold text-[#0b1f3f]">4-digit PIN</label>
                                                         <input className="input-custom max-w-xs" inputMode="numeric" maxLength={4} value={formData.joinPassword} onChange={(e) => setFormData({ ...formData, joinPassword: e.target.value.replace(/\D/g, '') })} />
                                                     </div>
                                                 )}
 
                                                 <div>
                                                     <label className="mb-2 block text-sm font-bold text-[#0b1f3f]">
-                                                        Mời thành viên khác (Tối thiểu 2 người, tối đa 4)
+                                                        Invite members (Min 2, Max 4)
                                                     </label>
-                                                    <p className="text-xs text-[#5c6d83] mb-2">Đội của bạn phải có ít nhất 3 thành viên khi tạo (bản thân bạn và ít nhất 2 thành viên khác).</p>
+                                                    <p className="text-xs text-[#5c6d83] mb-2">Your team must have at least 3 members (yourself and at least 2 others).</p>
                                                     <div className="space-y-3">
                                                         {memberEmails.map((email, index) => (
                                                             <div key={index} className="flex items-center gap-2">
                                                                 <input
                                                                     type="email"
-                                                                    placeholder={`Email thành viên ${index + 1} ${index < 2 ? '(Bắt buộc)' : '(Tùy chọn)'}`}
+                                                                    placeholder={`Member ${index + 1} Email ${index < 2 ? '(Required)' : '(Optional)'}`}
                                                                     required={index < 2}
                                                                     className="input-custom flex-1"
                                                                     value={email}
@@ -1205,7 +1315,7 @@ export default function MyTeam() {
                                                                             setEmailsError('');
                                                                         }}
                                                                     >
-                                                                        Xóa
+                                                                        Remove
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -1216,7 +1326,7 @@ export default function MyTeam() {
                                                                 className="btn-secondary text-xs py-1.5 px-3 block w-fit"
                                                                 onClick={() => setMemberEmails([...memberEmails, ''])}
                                                             >
-                                                                + Thêm ô nhập email
+                                                                + Add Email Input
                                                             </button>
                                                         )}
                                                         {emailsError && <p className="mt-1.5 text-xs font-semibold text-red-600">{emailsError}</p>}
@@ -1224,7 +1334,7 @@ export default function MyTeam() {
                                                 </div>
 
                                                 {createError && <p className="text-sm font-semibold text-red-600">{createError}</p>}
-                                                <button type="submit" disabled={creating} className="btn-primary w-full">{creating ? 'Đang tạo...' : 'Tạo đội'}</button>
+                                                <button type="submit" disabled={creating} className="btn-primary w-full">{creating ? 'Creating...' : 'Create Team'}</button>
                                             </form>
                                         </section>
                                     )}
@@ -1234,7 +1344,7 @@ export default function MyTeam() {
                     );
                 })()
             ) : (
-                /* VIEW 3: DASHBOARD CHÍNH (Chỉ hiển thị danh sách Đội đang tham gia & các giải đấu có thể đăng ký) */
+                /* VIEW 3: MAIN DASHBOARD (List of joined teams & events available to register) */
                 <>
                     {myInvitations.length > 0 && (
                         <div className="mb-8 rounded-2xl border-2 border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-md animate-fade-in">
@@ -1242,10 +1352,10 @@ export default function MyTeam() {
                                 <div>
                                     <h2 className="text-lg font-black uppercase tracking-[0.06em] text-[#071936] flex items-center gap-2">
                                         <span className="flex h-3 w-3 rounded-full bg-blue-600 animate-ping"></span>
-                                        Lời mời gia nhập đội ({myInvitations.length})
+                                        Team Invitations ({myInvitations.length})
                                     </h2>
                                     <p className="text-xs text-[#5c6d83] mt-1 font-semibold">
-                                        Bạn có lời mời tham gia đội thi. Bạn có quyền chấp nhận hoặc từ chối lời mời bên dưới.
+                                        You have pending invitations to join teams. You can accept or decline them below.
                                     </p>
                                 </div>
                             </div>
@@ -1256,15 +1366,15 @@ export default function MyTeam() {
                                             <div className="flex items-start justify-between gap-2">
                                                 <h3 className="font-black text-[#071936] text-base">{inv.teamName}</h3>
                                                 <span className="rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-bold text-[#0f63c9] shrink-0 uppercase tracking-wider">
-                                                    {inv.trackName || 'Hạng mục'}
+                                                    {inv.trackName || 'Track'}
                                                 </span>
                                             </div>
                                             <p className="mt-2 text-xs text-[#5c6d83] font-semibold">
-                                                Giải đấu: <strong className="text-[#071936]">{inv.eventName || 'Sự kiện'}</strong>
+                                                Event: <strong className="text-[#071936]">{inv.eventName || 'Event'}</strong>
                                             </p>
                                             {inv.inviterName && (
                                                 <p className="mt-1 text-xs text-[#5c6d83] font-semibold">
-                                                    Người mời: <strong className="text-[#071936]">{inv.inviterName}</strong>
+                                                    Invited by: <strong className="text-[#071936]">{inv.inviterName}</strong>
                                                 </p>
                                             )}
                                         </div>
@@ -1274,14 +1384,14 @@ export default function MyTeam() {
                                                 onClick={() => handleAcceptInvitation(inv.id)}
                                                 className="btn-primary py-1.5 px-4 text-xs bg-emerald-600 hover:bg-emerald-700 hover:border-emerald-700 text-white flex-1 font-bold cursor-pointer"
                                             >
-                                                ✓ Chấp nhận
+                                                ✓ Accept
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => handleRejectInvitation(inv.id)}
                                                 className="btn-secondary py-1.5 px-4 text-xs text-red-600 border-red-200 hover:bg-red-50 flex-1 font-bold cursor-pointer"
                                             >
-                                                ✕ Từ chối
+                                                ✕ Decline
                                             </button>
                                         </div>
                                     </div>
@@ -1300,12 +1410,12 @@ export default function MyTeam() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                         </svg>
                                     </span>
-                                    <h2 className="text-xl sm:text-2xl font-black text-[#0b1f3f]">Đội thi của bạn</h2>
+                                    <h2 className="text-xl sm:text-2xl font-black text-[#0b1f3f]">Your Teams</h2>
                                 </div>
-                                <p className="text-xs sm:text-sm text-[#5c6d83] font-medium mt-1">Bấm vào đội thi để xem chi tiết, quản lý thành viên và nộp bài</p>
+                                <p className="text-xs sm:text-sm text-[#5c6d83] font-medium mt-1">Click on a team to view details, manage members, and submit work</p>
                             </div>
                             <span className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-[#0f63c9] bg-blue-100/80 border border-blue-200 shadow-inner">
-                                {myTeams.length} Đội thi
+                                {myTeams.length} {myTeams.length === 1 ? 'Team' : 'Teams'}
                             </span>
                         </div>
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1327,25 +1437,25 @@ export default function MyTeam() {
                                         <p className="text-xs text-[#5c6d83] mt-1 font-semibold">{item.trackName}</p>
                                         <div className="mt-4 flex items-center justify-between pt-3 border-t border-blue-100/80">
                                             <div className="flex items-center gap-1.5 text-xs text-[#5c6d83] font-bold">
-                                                <span>{item.memberCount || 0} TV</span>
+                                                <span>{item.memberCount || 0} {item.memberCount === 1 ? 'Member' : 'Members'}</span>
                                                 {item.disqualificationStatus === 'APPROVED' ? (
                                                     <span className="inline-flex items-center gap-1 text-[10px] font-black text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
                                                         <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-red-600" />
-                                                        Đã bị loại
+                                                        Disqualified
                                                     </span>
                                                 ) : item.disqualificationStatus === 'PENDING' ? (
                                                     <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                                                        Chờ duyệt loại
+                                                        Pending
                                                     </span>
                                                 ) : isOfficial ? (
                                                     <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                                                         <span className="pulsing-dot-green shrink-0" />
-                                                        Chính thức
+                                                        Official
                                                     </span>
                                                 ) : (
                                                     <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                                                         <span className="pulsing-dot-amber shrink-0" />
-                                                        Chưa chính thức
+                                                        Unofficial
                                                     </span>
                                                 )}
                                             </div>
@@ -1360,7 +1470,7 @@ export default function MyTeam() {
                             })}
                             {myTeams.length === 0 && (
                                 <div className="sm:col-span-2 lg:col-span-3 bg-white border border-dashed border-[#d7e6f8] rounded-xl p-8 text-center text-[#5c6d83]">
-                                    Bạn chưa tham gia đội thi nào. Hãy đăng ký giải đấu bên dưới để bắt đầu!
+                                    You haven't joined any teams yet. Register for a hackathon below to get started!
                                 </div>
                             )}
                         </div>
@@ -1377,12 +1487,12 @@ export default function MyTeam() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                         </span>
-                                        <h2 className="text-xl sm:text-2xl font-black text-emerald-950">Đăng ký giải đấu khác</h2>
+                                        <h2 className="text-xl sm:text-2xl font-black text-emerald-950">Register for Other Events</h2>
                                     </div>
-                                    <p className="text-xs sm:text-sm text-emerald-800/80 font-medium mt-1">Danh sách các giải đấu đang mở cổng đăng ký. Click vào giải đấu để tạo đội hoặc tìm đội.</p>
+                                    <p className="text-xs sm:text-sm text-emerald-800/80 font-medium mt-1">List of active hackathons open for registration. Click on any event to create or search for a team.</p>
                                 </div>
                                 <span className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider text-emerald-800 bg-emerald-100/90 border border-emerald-300 shadow-inner">
-                                    {availableEventsToRegister.length} Mùa giải mới
+                                    {availableEventsToRegister.length} {availableEventsToRegister.length === 1 ? 'Active Season' : 'Active Seasons'}
                                 </span>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1396,16 +1506,16 @@ export default function MyTeam() {
                                         <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-bl from-emerald-400/10 to-transparent rounded-bl-full pointer-events-none group-hover:from-emerald-500/20 transition-colors" />
                                         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-black text-emerald-700 border border-emerald-200/80 uppercase tracking-wider mb-2">
                                             <span className="pulsing-dot-green shrink-0" />
-                                            Đang mở đăng ký
+                                            Registration Open
                                         </span>
                                         <h3 className="text-base font-black text-[#0b1f3f] group-hover:text-emerald-700 transition-colors line-clamp-1">{event.name}</h3>
-                                        <p className="text-xs text-[#5c6d83] mt-1 line-clamp-2 min-h-[32px]">{event.description || 'Chưa có mô tả ngắn cho giải đấu.'}</p>
+                                        <p className="text-xs text-[#5c6d83] mt-1 line-clamp-2 min-h-[32px]">{event.description || 'No description available.'}</p>
                                         <div className="mt-4 flex items-center justify-between border-t border-emerald-100/80 pt-3">
                                             <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">
-                                                Hạn: {new Date(event.regEndDate).toLocaleDateString('vi-VN')}
+                                                Deadline: {new Date(event.regEndDate).toLocaleDateString('en-US')}
                                             </span>
                                             <span className="text-xs font-black text-emerald-700 group-hover:translate-x-1 inline-flex items-center gap-1 transition-transform">
-                                                Đăng ký ngay
+                                                Register Now
                                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                                                 </svg>
@@ -1423,12 +1533,12 @@ export default function MyTeam() {
             {privateTeam && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
                     <form onSubmit={handlePrivateJoin} className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-[#d7e6f8]">
-                        <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Nhập mã PIN của {privateTeam.name}</h3>
+                        <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Enter PIN for {privateTeam.name}</h3>
                         <input required className="input-custom mt-5" inputMode="numeric" maxLength={4} value={joinPassword} onChange={(e) => { setJoinPassword(e.target.value.replace(/\D/g, '')); setJoinError(''); }} />
                         {joinError && <p className="mt-2 text-sm font-semibold text-red-600">{joinError}</p>}
                         <div className="mt-5 flex gap-3">
-                            <button type="button" onClick={() => { setPrivateTeam(null); setJoinPassword(''); setJoinError(''); }} className="btn-secondary flex-1">Hủy</button>
-                            <button type="submit" className="btn-primary flex-1">Vào đội</button>
+                            <button type="button" onClick={() => { setPrivateTeam(null); setJoinPassword(''); setJoinError(''); }} className="btn-secondary flex-1">Cancel</button>
+                            <button type="submit" className="btn-primary flex-1">Join Team</button>
                         </div>
                     </form>
                 </div>
@@ -1450,7 +1560,7 @@ export default function MyTeam() {
                                     onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} 
                                     className={`btn-primary flex-1 ${confirmModal.isError ? '!bg-red-600 hover:!bg-red-700 text-white' : ''}`}
                                 >
-                                    Đồng ý
+                                    Confirm
                                 </button>
                             ) : (
                                 <>
@@ -1459,7 +1569,7 @@ export default function MyTeam() {
                                         onClick={() => setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} 
                                         className="btn-secondary flex-1"
                                     >
-                                        Hủy
+                                        Cancel
                                     </button>
                                     <button 
                                         type="button" 
@@ -1469,7 +1579,7 @@ export default function MyTeam() {
                                         }} 
                                         className="btn-primary bg-red-600 hover:bg-red-700 text-white flex-1"
                                     >
-                                        Đồng ý
+                                        Confirm
                                     </button>
                                 </>
                             )}
@@ -1477,6 +1587,6 @@ export default function MyTeam() {
                     </div>
                 </div>
             )}
-        </main>
+        </Wrapper>
     );
 }
