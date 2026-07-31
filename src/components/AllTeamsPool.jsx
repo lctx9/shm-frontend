@@ -436,13 +436,26 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                                                     Requested ✓
                                                 </span>
                                             ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleJoinRequest(team)}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 hover:border-blue-700 py-1.5 px-4 rounded-xl text-xs font-black shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-sm hover:shadow-md"
-                                                >
-                                                    {isPrivate ? 'Join Team' : 'Request to Join'}
-                                                </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleJoinRequest(team)}
+                                                className={isPrivate 
+                                                    ? "bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 hover:border-indigo-700 py-1.5 px-4 rounded-xl text-xs font-black shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-sm hover:shadow-md inline-flex items-center gap-1.5"
+                                                    : "bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 hover:border-blue-700 py-1.5 px-4 rounded-xl text-xs font-black shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-sm hover:shadow-md inline-flex items-center gap-1.5"
+                                                }
+                                            >
+                                                {isPrivate ? (
+                                                    <>
+                                                        <span>Join with PIN</span>
+                                                        <span className="text-[10px]">🔒</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>Request to Join</span>
+                                                        <span className="text-[10px]">✉️</span>
+                                                    </>
+                                                )}
+                                            </button>
                                             )}
                                         </td>
                                     )}
@@ -494,7 +507,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                     <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-slate-200">
                         <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Join Private Team</h3>
                         <p className="mt-3 text-sm leading-relaxed text-[#5c6d83]">
-                            Team <strong>{passwordJoinTeam.name}</strong> is private. Please enter the team password to join immediately.
+                            Team <strong>{passwordJoinTeam.name}</strong> is private. Please enter the 4-digit PIN to join the team immediately.
                         </p>
                         
                         <div className="mt-4">
