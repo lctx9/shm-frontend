@@ -70,6 +70,7 @@ const MOCK_TEAMS = [
 ];
 
 export default function AllTeamsPool({ eventId, onTeamJoined }) {
+    const [mockTeams, setMockTeams] = useState(MOCK_TEAMS);
     const [teams, setTeams] = useState([]);
     const [event, setEvent] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
@@ -85,29 +86,29 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
     const [joinPassword, setJoinPassword] = useState('');
     const [joinError, setJoinError] = useState('');
     const [joinStatuses, setJoinStatuses] = useState({}); // teamId -> { text: string, type: 'info'|'success'|'error' }
-
+ 
     const isEventStarted = useMemo(() => {
         if (!event?.eventStartDate) return false;
         return new Date() >= new Date(event.eventStartDate);
     }, [event]);
-
+ 
     const isRegistrationEnded = useMemo(() => {
         if (!event?.regEndDate) return false;
         return new Date() > new Date(event.regEndDate);
     }, [event]);
-
+ 
     // Combine mock teams and database teams
     const allTeams = useMemo(() => {
         // Map database teams event properties
-        return [...MOCK_TEAMS, ...teams];
-    }, [teams]);
-
+        return [...mockTeams, ...teams];
+    }, [mockTeams, teams]);
+ 
     // Check if user is currently in a team for this event
     const userTeam = useMemo(() => {
         if (!currentUser) return null;
         return allTeams.find(t => t.members?.some(m => m.userId === currentUser.id || m.email === currentUser.email));
     }, [allTeams, currentUser]);
-
+ 
     const isManager = useMemo(() => {
         if (!currentUser) return false;
         return ['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR'].includes(currentUser.role);
@@ -265,6 +266,22 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                     }));
                     return;
                 }
+                // Add current user to mock team's members list in state
+                setMockTeams(prev => prev.map(t => {
+                    if (t.id === targetTeam.id) {
+                        const newMember = {
+                            id: currentUser?.id || 'mock-user-id',
+                            fullName: currentUser?.fullName || 'You',
+                            email: currentUser?.email || currentUserEmail(),
+                            role: 'MEMBER'
+                        };
+                        return {
+                            ...t,
+                            members: [...(t.members || []), newMember]
+                        };
+                    }
+                    return t;
+                }));
                 setPasswordJoinTeam(null);
                 setJoinPassword('');
                 setJoinError('');
