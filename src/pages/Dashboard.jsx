@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 import AdminOverview from './AdminOverview';
+import DemographicsDashboard from '../components/DemographicsDashboard';
 
 const roleCopy = {
     ADMIN: 'System Administrator',
@@ -224,6 +225,9 @@ function OperationalDashboard() {
                     </Link>
                 </div>
             </section>
+
+            {/* Advanced demographics metrics */}
+            <DemographicsDashboard />
 
             {/* Quick Actions & Navigation Link section */}
             <section className="rounded-xl border border-[var(--shield-line)] bg-white p-6 shadow-sm">

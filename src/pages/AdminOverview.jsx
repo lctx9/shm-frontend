@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
+import DemographicsDashboard from '../components/DemographicsDashboard';
 
 export default function AdminOverview() {
     const [data, setData] = useState(null);
@@ -30,6 +31,10 @@ export default function AdminOverview() {
         </section>
         <Toast error={error} onClose={() => setError('')} />
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{cards.map(([label, value, helper]) => <article key={label} className="rounded-lg border border-blue-100 bg-white p-5 shadow-sm"><p className="text-sm font-bold text-slate-600">{label}</p><p className="mt-2 text-4xl font-black text-slate-900">{data ? value || 0 : '...'}</p><p className="mt-2 text-xs font-semibold text-slate-500">{helper}</p></article>)}</section>
+        
+        {/* Advanced demographics metrics */}
+        <DemographicsDashboard />
+
         <section className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
             <article className="rounded-lg border border-blue-100 bg-white p-6 shadow-sm"><h3 className="font-black text-slate-900">Phân bổ vai trò</h3><div className="mt-4 space-y-3">{Object.entries(data?.roles || {}).map(([role, count]) => <div key={role} className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3"><span className="text-sm font-bold text-slate-700">{role}</span><span className="font-black text-[#0f63c9]">{count}</span></div>)}</div></article>
             <article className="rounded-lg border border-blue-100 bg-white p-6 shadow-sm"><h3 className="font-black text-slate-900">Truy cập nhanh</h3><div className="mt-4 grid gap-3 sm:grid-cols-2">{[['/dashboard/users','Tài khoản & phân quyền'],['/dashboard/monitoring','Giám sát hệ thống'],['/dashboard/backups','Sao lưu dữ liệu'],['/dashboard/settings','Cấu hình hệ thống']].map(([to,label]) => <Link key={to} to={to} className="rounded-lg border border-blue-100 p-4 text-sm font-black text-[#0f63c9] transition hover:bg-blue-50">{label} →</Link>)}</div></article>
