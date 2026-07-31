@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 
 const currentUserEmail = () => localStorage.getItem('email') || 'anonymous';
@@ -70,6 +71,8 @@ const MOCK_TEAMS = [
 ];
 
 export default function AllTeamsPool({ eventId, onTeamJoined }) {
+    const navigate = useNavigate();
+    const [mockTeams, setMockTeams] = useState(MOCK_TEAMS);
     const [teams, setTeams] = useState([]);
     const [event, setEvent] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
@@ -78,6 +81,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [requiredSkillFilter, setRequiredSkillFilter] = useState('ALL');
     const [loading, setLoading] = useState(true);
+    const [pinAttempts, setPinAttempts] = useState({}); // teamId -> count
     
     // Modal states
     const [confirmJoinTeam, setConfirmJoinTeam] = useState(null); // team object
@@ -85,24 +89,29 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
     const [joinPassword, setJoinPassword] = useState('');
     const [joinError, setJoinError] = useState('');
     const [joinStatuses, setJoinStatuses] = useState({}); // teamId -> { text: string, type: 'info'|'success'|'error' }
-
+ 
     const isEventStarted = useMemo(() => {
         if (!event?.eventStartDate) return false;
         return new Date() >= new Date(event.eventStartDate);
     }, [event]);
-
+ 
+    const isRegistrationEnded = useMemo(() => {
+        if (!event?.regEndDate) return false;
+        return new Date() > new Date(event.regEndDate);
+    }, [event]);
+ 
     // Combine mock teams and database teams
     const allTeams = useMemo(() => {
         // Map database teams event properties
-        return [...MOCK_TEAMS, ...teams];
-    }, [teams]);
-
+        return [...mockTeams, ...teams];
+    }, [mockTeams, teams]);
+ 
     // Check if user is currently in a team for this event
     const userTeam = useMemo(() => {
         if (!currentUser) return null;
         return allTeams.find(t => t.members?.some(m => m.userId === currentUser.id || m.email === currentUser.email));
     }, [allTeams, currentUser]);
-
+ 
     const isManager = useMemo(() => {
         if (!currentUser) return false;
         return ['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR'].includes(currentUser.role);
@@ -187,13 +196,19 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
     }, [allTeams, searchQuery, trackFilter, statusFilter, requiredSkillFilter]);
 
     const handleJoinRequest = (team) => {
-        if (team.id.toString().startsWith('mock-')) {
-            // For mock teams, simulate action
-            setConfirmJoinTeam(team);
-        } else if (team.type === 'PRIVATE') {
+        if (team.type === 'PRIVATE') {
+            const attemptsKey = `shm_pin_attempts_${currentUserEmail()}_${team.id}`;
+            const attempts = pinAttempts[team.id] !== undefined ? pinAttempts[team.id] : Number(localStorage.getItem(attemptsKey) || 0);
+            if (attempts >= 3) {
+                alert('This team is locked due to too many incorrect PIN attempts.');
+                return;
+            }
             setPasswordJoinTeam(team);
             setJoinPassword('');
             setJoinError('');
+        } else if (team.id.toString().startsWith('mock-')) {
+            // For mock teams, simulate action
+            setConfirmJoinTeam(team);
         } else {
             setConfirmJoinTeam(team);
         }
@@ -243,6 +258,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
             return;
         }
         const targetTeam = passwordJoinTeam;
+        const attemptsKey = `shm_pin_attempts_${currentUserEmail()}_${targetTeam.id}`;
 
         setJoinStatuses(prev => ({
             ...prev,
@@ -250,7 +266,70 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
         }));
 
         try {
+            if (targetTeam.id.toString().startsWith('mock-')) {
+                await new Promise(resolve => setTimeout(resolve, 800));
+                if (joinPassword !== '1234') {
+                    const currentAttempts = Number(localStorage.getItem(attemptsKey) || 0) + 1;
+                    localStorage.setItem(attemptsKey, String(currentAttempts));
+                    setPinAttempts(prev => ({ ...prev, [targetTeam.id]: currentAttempts }));
+
+                    if (currentAttempts >= 3) {
+                        setJoinError('Incorrect PIN. You have exceeded 3 attempts. This team is now locked.');
+                        setTimeout(() => {
+                            setPasswordJoinTeam(null);
+                            setJoinPassword('');
+                            setJoinError('');
+                        }, 2500);
+                    } else {
+                        setJoinError(`Incorrect PIN. You have ${3 - currentAttempts} attempts remaining.`);
+                    }
+                    setJoinStatuses(prev => ({
+                        ...prev,
+                        [targetTeam.id]: { text: 'Failed', type: 'error' }
+                    }));
+                    return;
+                }
+
+                // Clear attempts on success
+                localStorage.removeItem(attemptsKey);
+                setPinAttempts(prev => ({ ...prev, [targetTeam.id]: 0 }));
+
+                // Add current user to mock team's members list in state
+                setMockTeams(prev => prev.map(t => {
+                    if (t.id === targetTeam.id) {
+                        const newMember = {
+                            id: currentUser?.id || 'mock-user-id',
+                            fullName: currentUser?.fullName || 'You',
+                            email: currentUser?.email || currentUserEmail(),
+                            role: 'MEMBER'
+                        };
+                        return {
+                            ...t,
+                            members: [...(t.members || []), newMember]
+                        };
+                    }
+                    return t;
+                }));
+                setPasswordJoinTeam(null);
+                setJoinPassword('');
+                setJoinError('');
+                setJoinStatuses(prev => ({
+                    ...prev,
+                    [targetTeam.id]: { text: 'Joined ✓', type: 'success' }
+                }));
+                if (onTeamJoined) onTeamJoined(true);
+                setTimeout(() => {
+                    navigate('/my-team');
+                }, 1000);
+                return;
+            }
+
             await axiosClient.post(`/teams/${targetTeam.id}/join-private`, { password: joinPassword });
+            
+            // Clear attempts on success
+            localStorage.removeItem(attemptsKey);
+            setPinAttempts(prev => ({ ...prev, [targetTeam.id]: 0 }));
+
             setPasswordJoinTeam(null);
             setJoinPassword('');
             setJoinError('');
@@ -260,8 +339,25 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
             }));
             fetchData();
             if (onTeamJoined) onTeamJoined(true);
+            setTimeout(() => {
+                navigate('/my-team');
+            }, 1000);
         } catch (err) {
-            setJoinError(err.message || 'Incorrect PIN or failed to join');
+            const currentAttempts = Number(localStorage.getItem(attemptsKey) || 0) + 1;
+            localStorage.setItem(attemptsKey, String(currentAttempts));
+            setPinAttempts(prev => ({ ...prev, [targetTeam.id]: currentAttempts }));
+
+            if (currentAttempts >= 3) {
+                setJoinError('Incorrect PIN. You have exceeded 3 attempts. This team is now locked.');
+                setTimeout(() => {
+                    setPasswordJoinTeam(null);
+                    setJoinPassword('');
+                    setJoinError('');
+                }, 2500);
+            } else {
+                setJoinError(`Incorrect PIN. You have ${3 - currentAttempts} attempts remaining.`);
+            }
+
             setJoinStatuses(prev => ({
                 ...prev,
                 [targetTeam.id]: { text: 'Failed', type: 'error' }
@@ -339,7 +435,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                             <th className="px-6 py-4 border-b border-slate-200">Members</th>
                             <th className="px-6 py-4 border-b border-slate-200">Capacity</th>
                             <th className="px-6 py-4 border-b border-slate-200">Status</th>
-                            {!isManager && !userTeam && !isEventStarted && (
+                            {!isManager && !userTeam && !isEventStarted && !isRegistrationEnded && (
                                 <th className="px-6 py-4 border-b border-slate-200 text-right">Action</th>
                             )}
                         </tr>
@@ -414,31 +510,64 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                                     </td>
 
                                     {/* Action Column */}
-                                    {!isManager && !userTeam && !isEventStarted && (
+                                    {!isManager && !userTeam && !isEventStarted && !isRegistrationEnded && (
                                         <td className="px-6 py-4 text-right shrink-0">
-                                            {isFull ? (
-                                                <span className="text-xs text-slate-400 italic font-semibold">Locked</span>
-                                            ) : joinStatus ? (
-                                                <span className={`inline-flex items-center text-xs font-extrabold px-3 py-1.5 rounded-lg border ${
-                                                    joinStatus.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                    joinStatus.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' :
-                                                    'bg-blue-50 text-blue-700 border-blue-200 animate-pulse'
-                                                }`}>
-                                                    {joinStatus.text}
-                                                </span>
-                                            ) : hasRequested ? (
-                                                <span className="inline-flex items-center text-xs font-extrabold px-3 py-1.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-200">
-                                                    Requested ✓
-                                                </span>
-                                            ) : (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleJoinRequest(team)}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 hover:border-blue-700 py-1.5 px-4 rounded-xl text-xs font-black shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-sm hover:shadow-md"
-                                                >
-                                                    {isPrivate ? 'Join Team' : 'Request to Join'}
-                                                </button>
-                                            )}
+                                            {(() => {
+                                                const attemptsKey = `shm_pin_attempts_${currentUserEmail()}_${team.id}`;
+                                                const attempts = pinAttempts[team.id] !== undefined ? pinAttempts[team.id] : Number(localStorage.getItem(attemptsKey) || 0);
+                                                const isPinLocked = attempts >= 3;
+
+                                                if (isFull) {
+                                                    return <span className="text-xs text-slate-400 italic font-semibold">Locked</span>;
+                                                }
+                                                if (isPinLocked) {
+                                                    return (
+                                                        <span className="inline-flex items-center text-xs font-black px-3 py-1.5 rounded-lg border bg-red-50 text-red-650 border-red-200 uppercase tracking-wider">
+                                                            PIN Locked 🔒
+                                                        </span>
+                                                    );
+                                                }
+                                                if (joinStatus) {
+                                                    return (
+                                                        <span className={`inline-flex items-center text-xs font-extrabold px-3 py-1.5 rounded-lg border ${
+                                                            joinStatus.type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                            joinStatus.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' :
+                                                            'bg-blue-50 text-blue-700 border-blue-200 animate-pulse'
+                                                        }`}>
+                                                            {joinStatus.text}
+                                                        </span>
+                                                    );
+                                                }
+                                                if (hasRequested) {
+                                                    return (
+                                                        <span className="inline-flex items-center text-xs font-extrabold px-3 py-1.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                                            Requested ✓
+                                                        </span>
+                                                    );
+                                                }
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleJoinRequest(team)}
+                                                        className={isPrivate 
+                                                            ? "bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 hover:border-indigo-700 py-1.5 px-4 rounded-xl text-xs font-black shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-sm hover:shadow-md inline-flex items-center gap-1.5"
+                                                            : "bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 hover:border-blue-700 py-1.5 px-4 rounded-xl text-xs font-black shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition-all shadow-sm hover:shadow-md inline-flex items-center gap-1.5"
+                                                        }
+                                                    >
+                                                        {isPrivate ? (
+                                                            <>
+                                                                <span>Join with PIN</span>
+                                                                <span className="text-[10px]">🔒</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <span>Request to Join</span>
+                                                                <span className="text-[10px]">✉️</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })()}
                                         </td>
                                     )}
                                 </tr>
@@ -446,7 +575,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                         })}
                         {filteredTeams.length === 0 && (
                             <tr>
-                                <td colSpan={(!isManager && !userTeam && !isEventStarted) ? 5 : 4} className="text-center py-10 text-slate-400 font-semibold italic">
+                                <td colSpan={(!isManager && !userTeam && !isEventStarted && !isRegistrationEnded) ? 5 : 4} className="text-center py-10 text-slate-400 font-semibold italic">
                                     No teams found.
                                 </td>
                             </tr>
@@ -489,7 +618,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                     <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl border border-slate-200">
                         <h3 className="text-lg font-black uppercase tracking-[0.08em] text-[#071936]">Join Private Team</h3>
                         <p className="mt-3 text-sm leading-relaxed text-[#5c6d83]">
-                            Team <strong>{passwordJoinTeam.name}</strong> is private. Please enter the team password to join immediately.
+                            Team <strong>{passwordJoinTeam.name}</strong> is private. Please enter the 4-digit PIN to join the team immediately.
                         </p>
                         
                         <div className="mt-4">

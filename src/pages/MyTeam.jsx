@@ -375,7 +375,12 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
             setEmailsError('You must invite at least 2 other members.');
             hasErr = true;
         }
-        if (nonNullEmails.includes(currentEmail)) {
+        const uniqueEmails = [...new Set(nonNullEmails.map(email => email.trim().toLowerCase()))];
+        if (uniqueEmails.length < nonNullEmails.length) {
+            setEmailsError('Invited emails must be unique.');
+            hasErr = true;
+        }
+        if (nonNullEmails.includes(currentEmail.toLowerCase())) {
             setEmailsError('You cannot invite yourself.');
             hasErr = true;
         }

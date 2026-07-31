@@ -209,7 +209,7 @@ export default function Events() {
             { key: 'ended', label: 'Finished', dot: 'gray' },
         ];
         if (token && !isManager && myTeams.length > 0) {
-            options.unshift({ key: 'participating', label: 'My Events (Đã tham gia)', dot: 'emerald' });
+            options.unshift({ key: 'participating', label: 'My Event', dot: 'emerald' });
         }
         return options;
     }, [token, isManager, myTeams]);

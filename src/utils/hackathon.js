@@ -48,8 +48,8 @@ export const demoWinners = [
 ];
 
 export function formatDateTime(value) {
-    if (!value) return 'Chưa cập nhật';
-    return new Date(value).toLocaleString('vi-VN', {
+    if (!value) return 'N/A';
+    return new Date(value).toLocaleString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
         day: '2-digit',
@@ -65,32 +65,32 @@ export function getEventPhase(event) {
     const eventEnd = event?.eventEndDate ? new Date(event.eventEndDate) : null;
 
     if (eventEnd && now > eventEnd) {
-        return { key: 'ended', label: 'GIẢI ĐẤU ĐÃ KẾT THÚC' };
+        return { key: 'ended', label: 'EVENT ENDED' };
     }
 
     if (regStart && now < regStart) {
-        return { key: 'upcoming', label: 'SẮP MỞ ĐĂNG KÝ' };
+        return { key: 'upcoming', label: 'UPCOMING REGISTRATION' };
     }
 
     if (regEnd && now <= regEnd) {
-        return { key: 'registration', label: 'ĐANG MỞ ĐĂNG KÝ' };
+        return { key: 'registration', label: 'REGISTRATION OPEN' };
     }
 
-    return { key: 'running', label: 'ĐANG DIỄN RA' };
+    return { key: 'running', label: 'EVENT ONGOING' };
 }
 
 export function pickFeaturedEvent(events = []) {
     if (!events.length) return demoEvent;
     
-    // Ưu tiên 1: Sự kiện đang trong thời gian mở đăng ký
+    // Priority 1: Event in registration phase
     const regEvent = events.find(e => getEventPhase(e).key === 'registration');
     if (regEvent) return regEvent;
 
-    // Ưu tiên 2: Sự kiện đang diễn ra hoặc sắp ra mắt
+    // Priority 2: Event ongoing or upcoming
     const activeEvent = events.find(e => ['running', 'upcoming'].includes(getEventPhase(e).key));
     if (activeEvent) return activeEvent;
 
-    // Mặc định: Sắp xếp theo thời gian gần nhất
+    // Default: Sort by closest time
     return [...events].sort((a, b) => {
         const aTime = new Date(a.regEndDate || a.eventStartDate || 0).getTime();
         const bTime = new Date(b.regEndDate || b.eventStartDate || 0).getTime();
@@ -109,9 +109,9 @@ export function getCountdownParts(target) {
     const minutes = totalMinutes % 60;
 
     return [
-        { label: 'Ngày', value: days },
-        { label: 'Giờ', value: hours },
-        { label: 'Phút', value: minutes },
+        { label: 'Days', value: days },
+        { label: 'Hours', value: hours },
+        { label: 'Mins', value: minutes },
     ];
 }
 

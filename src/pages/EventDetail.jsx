@@ -291,7 +291,12 @@ export default function EventDetail() {
             setCreateError('Bạn cần mời ít nhất 2 thành viên khác.');
             return;
         }
-        if (nonNullEmails.includes(currentEmail)) {
+        const uniqueEmails = [...new Set(nonNullEmails.map(email => email.trim().toLowerCase()))];
+        if (uniqueEmails.length < nonNullEmails.length) {
+            setCreateError('Các email mời không được trùng nhau.');
+            return;
+        }
+        if (nonNullEmails.includes(currentEmail.toLowerCase())) {
             setCreateError('Bạn không thể tự mời chính mình.');
             return;
         }
@@ -509,6 +514,9 @@ export default function EventDetail() {
                             embedded={true} 
                             onTeamChanged={(teamExists) => {
                                 setHasTeam(teamExists);
+                                if (!teamExists) {
+                                    handleTabChange('all-teams');
+                                }
                             }} 
                         />
                     </div>
