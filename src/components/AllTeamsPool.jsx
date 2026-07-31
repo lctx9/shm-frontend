@@ -192,13 +192,13 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
     }, [allTeams, searchQuery, trackFilter, statusFilter, requiredSkillFilter]);
 
     const handleJoinRequest = (team) => {
-        if (team.id.toString().startsWith('mock-')) {
-            // For mock teams, simulate action
-            setConfirmJoinTeam(team);
-        } else if (team.type === 'PRIVATE') {
+        if (team.type === 'PRIVATE') {
             setPasswordJoinTeam(team);
             setJoinPassword('');
             setJoinError('');
+        } else if (team.id.toString().startsWith('mock-')) {
+            // For mock teams, simulate action
+            setConfirmJoinTeam(team);
         } else {
             setConfirmJoinTeam(team);
         }
@@ -255,6 +255,19 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
         }));
 
         try {
+            if (targetTeam.id.toString().startsWith('mock-')) {
+                await new Promise(resolve => setTimeout(resolve, 800));
+                setPasswordJoinTeam(null);
+                setJoinPassword('');
+                setJoinError('');
+                setJoinStatuses(prev => ({
+                    ...prev,
+                    [targetTeam.id]: { text: 'Joined ✓', type: 'success' }
+                }));
+                if (onTeamJoined) onTeamJoined(true);
+                return;
+            }
+
             await axiosClient.post(`/teams/${targetTeam.id}/join-private`, { password: joinPassword });
             setPasswordJoinTeam(null);
             setJoinPassword('');
