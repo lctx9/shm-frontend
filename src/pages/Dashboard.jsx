@@ -257,6 +257,7 @@ function StaffDashboard() {
     const [pendingChatCount, setPendingChatCount] = useState(0);
     const [assignedTeams, setAssignedTeams] = useState([]);
     const [assignedMatrices, setAssignedMatrices] = useState([]);
+    const [assignedEventsList, setAssignedEventsList] = useState([]);
 
     useEffect(() => {
         let active = true;
@@ -269,96 +270,113 @@ function StaffDashboard() {
                 if (active) {
                     setAssignments(userAssignments);
                 }
-                
-                const promises = [];
-                
-                if (userAssignments.judge) {
-                    promises.push(
-                        Promise.all([
-                            axiosClient.get('/submissions'),
-                            axiosClient.get('/events').catch(() => ({ result: [] })),
-                        ]).then(([subRes, eventRes]) => {
-                            if (!active) return;
-                            const subs = subRes.result || [];
-                            const evts = eventRes.result || [];
-                            const matrixMap = new Map();
-                            const judgeMatricesList = [];
-                            
-                            evts.forEach((event) => 
-                                (event.matrices || []).forEach((matrix) => {
-                                    matrixMap.set(String(matrix.id), matrix);
-                                    if ((matrix.judges || []).some(j => j.email === email)) {
-                                        judgeMatricesList.push({
-                                            id: matrix.id,
-                                            roundName: matrix.roundName,
-                                            trackName: matrix.trackName,
-                                            eventName: event.name,
-                                            eventId: event.id
-                                        });
-                                    }
-                                })
-                            );
-                            
-                            const visible = subs.filter((sub) => {
-                                const matrix = matrixMap.get(String(sub.matrixId));
-                                return (matrix?.judges || []).some((judge) => judge.email === email);
+
+                // Fetch everything unified to compute assignments by event
+                const [eventsRes, teamsRes, submissionsRes] = await Promise.all([
+                    axiosClient.get('/events').catch(() => ({ result: [] })),
+                    axiosClient.get('/teams').catch(() => ({ result: [] })),
+                    axiosClient.get('/submissions').catch(() => ({ result: [] }))
+                ]);
+
+                const evts = eventsRes.result || [];
+                const teams = teamsRes.result || [];
+                const subs = submissionsRes.result || [];
+
+                // Compute judge matrices
+                const judgeMatricesList = [];
+                const matrixMap = new Map();
+                evts.forEach((event) => {
+                    (event.matrices || []).forEach((matrix) => {
+                        matrixMap.set(String(matrix.id), matrix);
+                        if ((matrix.judges || []).some(j => j.email === email)) {
+                            judgeMatricesList.push({
+                                id: matrix.id,
+                                roundName: matrix.roundName,
+                                trackName: matrix.trackName,
+                                eventName: event.name,
+                                eventId: event.id
                             });
-                            const count = visible.filter((sub) => !sub.graded).length;
-                            setPendingGradingCount(count);
-                            setAssignedMatrices(judgeMatricesList);
-                        }).catch(() => {})
+                        }
+                    });
+                });
+
+                // Compute mentor teams
+                const trackIds = new Set(
+                    evts
+                        .flatMap((event) => event.matrices || [])
+                        .filter((matrix) => (matrix.mentors || []).some((mentor) => mentor.email === email))
+                        .map((matrix) => String(matrix.trackId))
+                );
+                const myTeams = teams.filter((team) => trackIds.has(String(team.trackId)));
+
+                // Group by Event ID
+                const groupedMap = new Map();
+                evts.forEach(event => {
+                    const isMentorForEvent = (event.matrices || []).some(matrix => 
+                        (matrix.mentors || []).some(m => m.email === email)
                     );
-                }
-                
-                if (userAssignments.mentor) {
-                    promises.push(
-                        Promise.all([
-                            axiosClient.get('/teams'),
-                            axiosClient.get('/events'),
-                        ]).then(async ([teamRes, eventRes]) => {
-                            if (!active) return;
-                            const allTeams = teamRes.result || [];
-                            const allEvents = eventRes.result || [];
-                            const trackIds = new Set(
-                                allEvents
-                                    .flatMap((event) => event.matrices || [])
-                                    .filter((matrix) => (matrix.mentors || []).some((mentor) => mentor.email === email))
-                                    .map((matrix) => String(matrix.trackId))
-                            );
-                            const myTeams = allTeams.filter((team) => trackIds.has(String(team.trackId)));
-                            setAssignedTeams(myTeams);
-                            
-                            const chatPromises = myTeams.map(team => 
-                                axiosClient.get(`/chat/teams/${team.id}`)
-                                    .then(res => ({ teamId: team.id, messages: res.result || [] }))
-                                    .catch(() => ({ teamId: team.id, messages: [] }))
-                            );
-                            
-                            const chatResults = await Promise.all(chatPromises);
-                            
-                            if (active) {
-                                let unreadCount = 0;
-                                chatResults.forEach(res => {
-                                    const msgList = res.messages;
-                                    if (msgList.length > 0) {
-                                        const lastMsg = msgList[msgList.length - 1];
-                                        if (lastMsg.senderEmail !== email) {
-                                            const lastReadId = localStorage.getItem(`lastReadChat_${res.teamId}`);
-                                            if (String(lastReadId) !== String(lastMsg.id)) {
-                                                unreadCount += 1;
-                                            }
-                                        }
+                    const isJudgeForEvent = (event.matrices || []).some(matrix => 
+                        (matrix.judges || []).some(j => j.email === email)
+                    );
+
+                    if (isMentorForEvent || isJudgeForEvent) {
+                        const eventTeams = myTeams.filter(team => String(team.eventId) === String(event.id));
+                        const eventMatrices = judgeMatricesList.filter(matrix => String(matrix.eventId) === String(event.id));
+
+                        groupedMap.set(String(event.id), {
+                            id: event.id,
+                            name: event.name,
+                            season: event.season,
+                            year: event.year,
+                            status: event.status || 'ACTIVE',
+                            isMentor: isMentorForEvent,
+                            isJudge: isJudgeForEvent,
+                            teams: eventTeams,
+                            matrices: eventMatrices
+                        });
+                    }
+                });
+
+                if (active) {
+                    setAssignedTeams(myTeams);
+                    setAssignedMatrices(judgeMatricesList);
+                    setAssignedEventsList(Array.from(groupedMap.values()));
+                    
+                    // Compute pending counts
+                    if (userAssignments.judge) {
+                        const visible = subs.filter((sub) => {
+                            const matrix = matrixMap.get(String(sub.matrixId));
+                            return (matrix?.judges || []).some((judge) => judge.email === email);
+                        });
+                        const count = visible.filter((sub) => !sub.graded).length;
+                        setPendingGradingCount(count);
+                    }
+
+                    if (userAssignments.mentor) {
+                        // Calculate unread chat messages
+                        const chatPromises = myTeams.map(team => 
+                            axiosClient.get(`/chat/teams/${team.id}`)
+                                .then(res => ({ teamId: team.id, messages: res.result || [] }))
+                                .catch(() => ({ teamId: team.id, messages: [] }))
+                        );
+                        const chatResults = await Promise.all(chatPromises);
+                        let unreadCount = 0;
+                        chatResults.forEach(res => {
+                            const msgList = res.messages;
+                            if (msgList.length > 0) {
+                                const lastMsg = msgList[msgList.length - 1];
+                                if (lastMsg.senderEmail !== email) {
+                                    const lastReadId = localStorage.getItem(`lastReadChat_${res.teamId}`);
+                                    if (String(lastReadId) !== String(lastMsg.id)) {
+                                        unreadCount += 1;
                                     }
-                                });
-                                setPendingChatCount(unreadCount);
+                                }
                             }
-                        }).catch(() => {})
-                    );
+                        });
+                        setPendingChatCount(unreadCount);
+                    }
                 }
-                
-                if (promises.length > 0) {
-                    await Promise.allSettled(promises);
-                }
+
             } catch (err) {
                 // Ignore
             } finally {
@@ -392,155 +410,151 @@ function StaffDashboard() {
             </section>
 
             {loading ? (
-                <div className="text-center text-sm text-[var(--shield-copy)] py-12 animate-pulse">
-                    Đang xác thực thông tin phân công...
+                <div className="text-center text-sm text-slate-500 py-12 animate-pulse">
+                    Verifying assignments information...
                 </div>
             ) : (
-                <div className="grid gap-6 md:grid-cols-2">
-                    {/* Mentor Section */}
-                    {assignments.mentor && (
-                        <section className="rounded-xl border border-[var(--shield-line)] bg-white p-6 shadow-sm flex flex-col justify-between">
+                <div className="space-y-6">
+                    {/* Workspace Summary Cards */}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
                             <div>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-[var(--shield-green)]"></span>
-                                    <h2 className="text-lg font-black text-[var(--shield-ink)]">Nhiệm vụ Mentor</h2>
-                                </div>
-                                <p className="text-xs text-[var(--shield-copy)] mt-1">Hướng dẫn và hỗ trợ các đội thi được phân công</p>
-                                
-                                <div className="mt-6 space-y-3 text-sm text-[var(--shield-copy)] leading-relaxed">
-                                    <p>• Xem thông tin chi tiết các đội thi bạn phụ trách.</p>
-                                    <p>• Trao đổi trực tiếp, giải đáp thắc mắc của đội thi qua kênh chat thời gian thực.</p>
+                                <p className="text-xs font-black uppercase tracking-wider text-slate-400">Assigned Roles</p>
+                                <div className="flex gap-1.5 mt-2">
+                                    {assignments.mentor && <span className="bg-emerald-50 border border-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black uppercase">Mentor</span>}
+                                    {assignments.judge && <span className="bg-blue-50 border border-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black uppercase">Judge</span>}
+                                    {!assignments.mentor && !assignments.judge && <span className="bg-slate-50 border border-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-black uppercase">No Roles</span>}
                                 </div>
                             </div>
-                            
-                            <div className="mt-8 space-y-3">
-                                <Link to="/dashboard/teams" className="btn-primary w-full text-center text-xs font-bold py-2.5 block">
-                                    Xem danh sách đội thi phụ trách &rarr;
-                                </Link>
-                                <Link to="/dashboard/chat" className="btn-secondary w-full text-center text-xs font-bold py-2.5 block">
-                                    <span className="flex items-center justify-center gap-2">
-                                        Mở kênh Chat thảo luận
-                                        {pendingChatCount > 0 && (
-                                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
-                                                {pendingChatCount}
-                                            </span>
-                                        )}
-                                    </span>
-                                </Link>
+                            <p className="text-xs text-slate-400 mt-4 font-semibold">Roles active on your account</p>
+                        </div>
+                        {assignments.mentor && (
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-wider text-slate-400">Assigned Teams</p>
+                                    <p className="mt-2 text-3xl font-black text-[#071936]">{assignedTeams.length}</p>
+                                </div>
+                                <p className="text-xs text-slate-400 mt-4 font-semibold">Active team guilds you are guiding</p>
                             </div>
-                        </section>
-                    )}
+                        )}
+                        {assignments.judge && (
+                            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs flex flex-col justify-between">
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-wider text-slate-400">Grading Duties</p>
+                                    <p className="mt-2 text-3xl font-black text-[#071936]">{assignedMatrices.length} Rounds</p>
+                                </div>
+                                <p className="text-xs text-slate-400 mt-4 font-semibold">{pendingGradingCount} submissions awaiting score</p>
+                            </div>
+                        )}
+                    </div>
 
-                    {/* Judge Section */}
-                    {assignments.judge && (
-                        <section className="rounded-xl border border-[var(--shield-line)] bg-white p-6 shadow-sm flex flex-col justify-between">
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-[var(--shield-blue)]"></span>
-                                    <h2 className="text-lg font-black text-[var(--shield-ink)]">Nhiệm vụ Giám khảo (Judge)</h2>
-                                </div>
-                                <p className="text-xs text-[var(--shield-copy)] mt-1">Đánh giá và chấm điểm các bài dự thi</p>
-                                
-                                <div className="mt-6 space-y-3 text-sm text-[var(--shield-copy)] leading-relaxed">
-                                    <p>• Xem danh sách bài nộp và tài liệu dự thi được phân công chấm.</p>
-                                    <p>• Cho điểm và ghi nhận xét (feedback) dựa trên tiêu chí (rubric) của vòng thi.</p>
-                                </div>
+                    {/* Detailed Assignments Grouped by Event/Tournament */}
+                    {assignedEventsList.length > 0 ? (
+                        <div className="space-y-6 mt-6">
+                            <div className="border-b border-slate-200 pb-3">
+                                <h3 className="text-base font-black text-[#071936] tracking-tight">Active Tournament Duty Schedule</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">List of tournaments and specific deliverables assigned to your staff profile.</p>
                             </div>
-                            
-                            <div className="mt-8 space-y-3">
-                                <Link to="/dashboard/grading" className="btn-primary w-full text-center text-xs font-bold py-2.5 block">
-                                    <span className="flex items-center justify-center gap-2">
-                                        Bắt đầu chấm bài thi
-                                        {pendingGradingCount > 0 && (
-                                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white">
-                                                {pendingGradingCount}
-                                            </span>
-                                        )}
-                                    </span>
-                                </Link>
-                                <Link to="/dashboard/leaderboard" className="btn-secondary w-full text-center text-xs font-bold py-2.5 block">
-                                    Xem bảng xếp hạng cuộc thi &rarr;
-                                </Link>
-                            </div>
-                        </section>
-                    )}
 
-                    {/* Fallback if somehow they have no assignments yet */}
-                    {!assignments.mentor && !assignments.judge && (
-                        <div className="col-span-2 rounded-xl bg-amber-50 border border-amber-200 p-6 text-center">
+                            <div className="grid gap-6">
+                                {assignedEventsList.map((evt) => (
+                                    <div key={evt.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs hover:shadow-sm transition-all space-y-5">
+                                        {/* Tournament Header */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse"></span>
+                                                    <h4 className="text-base font-black text-[#071936]">{evt.name}</h4>
+                                                </div>
+                                                <p className="text-xs text-slate-400 font-semibold mt-1">Season: {evt.season} {evt.year}</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {evt.isMentor && (
+                                                    <span className="bg-emerald-50 border border-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">Mentor</span>
+                                                )}
+                                                {evt.isJudge && (
+                                                    <span className="bg-blue-50 border border-blue-100 text-blue-700 px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">Judge</span>
+                                                )}
+                                                <span className={`px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
+                                                    evt.status === 'ONGOING' || evt.status === 'ACTIVE'
+                                                        ? 'bg-amber-50 border border-amber-100 text-amber-700'
+                                                        : 'bg-slate-50 border border-slate-100 text-slate-600'
+                                                }`}>
+                                                    {evt.status}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Columns for Duties */}
+                                        <div className="grid gap-6 md:grid-cols-2">
+                                            {/* Mentor Duty Details */}
+                                            {evt.isMentor && (
+                                                <div className="space-y-3">
+                                                    <p className="text-xs font-black uppercase tracking-wider text-slate-400">Mentor Workload ({evt.teams.length} Teams)</p>
+                                                    {evt.teams.length > 0 ? (
+                                                        <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                                                            {evt.teams.map((team) => (
+                                                                <div key={team.id} className="rounded-lg border border-slate-100 bg-[#f8fafc] p-3.5 flex items-center justify-between gap-3 text-xs">
+                                                                    <div className="min-w-0">
+                                                                        <p className="font-extrabold text-[#071936] truncate">{team.name}</p>
+                                                                        <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Track: {team.trackName || 'Chung'}</p>
+                                                                        {team.skillsNeeded && (
+                                                                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                                                                {team.skillsNeeded.split(',').slice(0, 2).map((s) => (
+                                                                                    <span key={s} className="bg-amber-50 border border-amber-100 text-amber-700 px-1 py-0.2 rounded text-[8px] font-black uppercase">{s.trim()}</span>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex gap-1.5 shrink-0">
+                                                                        <Link to={`/dashboard/chat?teamId=${team.id}`} className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-black px-2.5 py-1 rounded text-[10px] uppercase transition-colors cursor-pointer">Chat</Link>
+                                                                        <Link to={`/events/${evt.id}?tab=teams`} className="bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 font-black px-2.5 py-1 rounded text-[10px] uppercase transition-colors cursor-pointer">Details</Link>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-xs text-slate-400 italic">No team rosters assigned under your track.</p>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Judge Duty Details */}
+                                            {evt.isJudge && (
+                                                <div className="space-y-3">
+                                                    <p className="text-xs font-black uppercase tracking-wider text-slate-400">Judge Workload ({evt.matrices.length} Rounds)</p>
+                                                    {evt.matrices.length > 0 ? (
+                                                        <div className="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                                                            {evt.matrices.map((matrix) => (
+                                                                <div key={matrix.id} className="rounded-lg border border-slate-100 bg-[#f8fafc] p-3.5 flex items-center justify-between gap-3 text-xs">
+                                                                    <div className="min-w-0">
+                                                                        <p className="font-extrabold text-[#071936] truncate">Round: {matrix.roundName}</p>
+                                                                        <p className="text-[10px] text-slate-500 font-semibold mt-0.5">Track: {matrix.trackName || 'Chung'}</p>
+                                                                    </div>
+                                                                    <div className="shrink-0">
+                                                                        <Link to={`/dashboard/grading?matrixId=${matrix.id}`} className="bg-blue-600 border border-blue-600 text-white hover:bg-blue-700 font-black px-3.5 py-1 rounded text-[10px] uppercase transition-colors cursor-pointer block text-center">Grade</Link>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-xs text-slate-400 italic">No evaluation round matrices assigned to your panel.</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="rounded-xl bg-amber-50 border border-amber-200 p-6 text-center mt-6">
                             <p className="text-sm font-semibold text-amber-800">
-                                Tài khoản của bạn chưa được Coordinator phân công làm Mentor hoặc Judge cho bất kỳ bảng/vòng thi nào.
+                                You have not been assigned to any hackathon events or duties yet.
                             </p>
                             <p className="text-xs text-amber-600 mt-2">
-                                Vui lòng liên hệ Ban tổ chức (Coordinator) để được phân công nhiệm vụ.
+                                Please contact the event Coordinator to receive your assignments.
                             </p>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Detailed Assignments Section */}
-            {!loading && (assignments.mentor || assignments.judge) && (
-                <div className="grid gap-6 md:grid-cols-2 mt-6">
-                    {/* Mentor assigned teams */}
-                    {assignments.mentor && (
-                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
-                            <div>
-                                <h3 className="text-base font-black text-[#071936]">Đội thi đang phụ trách</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Danh sách các đội trong hạng mục bạn được phân công hỗ trợ.</p>
-                            </div>
-                            {assignedTeams.length > 0 ? (
-                                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
-                                    {assignedTeams.map((team) => (
-                                        <div key={team.id} className="rounded-xl border border-slate-100 bg-[#f8fafc] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:border-blue-200 transition-colors">
-                                            <div>
-                                                <p className="font-extrabold text-[#071936] text-sm">{team.name}</p>
-                                                <p className="text-xs text-slate-500 font-medium mt-0.5">Hạng mục: {team.trackName || 'Chung'}</p>
-                                                {team.skillsNeeded && (
-                                                    <div className="flex flex-wrap gap-1 mt-1.5">
-                                                        {team.skillsNeeded.split(',').slice(0, 3).map(s => (
-                                                            <span key={s} className="bg-amber-50 border border-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-black">{s.trim()}</span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Link to={`/dashboard/chat?teamId=${team.id}`} className="btn-secondary py-1 px-3 text-[10px] font-black text-center cursor-pointer hover:scale-105 active:scale-95 transition-all">Chat</Link>
-                                                <Link to={`/events/${team.eventId}?tab=teams`} className="btn-primary py-1 px-3 text-[10px] font-black text-center bg-blue-600 border-blue-600 text-white cursor-pointer hover:scale-105 active:scale-95 transition-all">Xem đội</Link>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-xs text-slate-400 italic">Chưa có đội thi nào thuộc hạng mục phân công của bạn.</p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Judge assigned rounds/matrices */}
-                    {assignments.judge && (
-                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
-                            <div>
-                                <h3 className="text-base font-black text-[#071936]">Vòng thi đang chấm điểm</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Danh sách các vòng thi, hạng mục bạn được phân công làm giám khảo.</p>
-                            </div>
-                            {assignedMatrices.length > 0 ? (
-                                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
-                                    {assignedMatrices.map((matrix) => (
-                                        <div key={matrix.id} className="rounded-xl border border-slate-100 bg-[#f8fafc] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:border-blue-200 transition-colors">
-                                            <div>
-                                                <p className="font-extrabold text-[#071936] text-sm">{matrix.eventName}</p>
-                                                <p className="text-xs text-slate-500 font-medium mt-0.5">Bảng: {matrix.trackName || 'Chung'} | Vòng: {matrix.roundName}</p>
-                                            </div>
-                                            <div>
-                                                <Link to={`/dashboard/grading?matrixId=${matrix.id}`} className="btn-primary py-1.5 px-3 text-[10px] font-black bg-blue-600 border-blue-600 text-white cursor-pointer hover:scale-105 active:scale-95 transition-all block text-center">Chấm điểm</Link>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-xs text-slate-400 italic">Bạn chưa được phân công làm giám khảo cho vòng thi nào.</p>
-                            )}
                         </div>
                     )}
                 </div>
