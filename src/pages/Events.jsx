@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 import { demoEvent, getEventPhase } from '../utils/hackathon';
@@ -45,7 +45,7 @@ function getEventCoverImage(event) {
     }
 }
 
-function MarketplaceEventCard({ event, navigate }) {
+function MarketplaceEventCard({ event, navigate, myTeam }) {
     const phase = getEventPhase(event);
     const tracks = event.tracks || [];
     const detailUrl = `/events/${event.id}`;
@@ -80,6 +80,12 @@ function MarketplaceEventCard({ event, navigate }) {
                 <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm border border-slate-200 text-[10px] font-black tracking-wider text-slate-700 uppercase px-2 py-0.5 rounded shadow-sm">
                     {event.season} {event.year}
                 </span>
+                {myTeam && (
+                    <span className="absolute top-3 right-3 bg-emerald-500 text-white text-[10px] font-black tracking-wider uppercase px-2.5 py-1 rounded shadow-md flex items-center gap-1.5 z-10">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        Joined: {myTeam.name}
+                    </span>
+                )}
             </div>
 
             {/* Card Content Body */}
@@ -126,13 +132,23 @@ function MarketplaceEventCard({ event, navigate }) {
 
 export default function Events() {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    
+    // Read search parameters for phase tab
+    const defaultPhase = searchParams.get('filter') === 'participating' ? 'participating' : 'all';
+    
     const [events, setEvents] = useState([]);
+    const [myTeams, setMyTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchInput, setSearchInput] = useState('');
     const [query, setQuery] = useState('');
-    const [selectedPhase, setSelectedPhase] = useState('all');
+    const [selectedPhase, setSelectedPhase] = useState(defaultPhase);
     const [sortBy, setSortBy] = useState('relevant');
+
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    const isManager = ['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR'].includes(role);
 
     const fetchEvents = async () => {
         try {
@@ -147,9 +163,56 @@ export default function Events() {
         }
     };
 
+    const fetchMyTeams = async () => {
+        if (!token || isManager) return;
+        try {
+            const res = await axiosClient.get('/teams/my-team');
+            setMyTeams(res.result || []);
+        } catch (err) {
+            console.error("Error fetching user teams:", err);
+        }
+    };
+
     useEffect(() => {
         fetchEvents();
-    }, []);
+        fetchMyTeams();
+    }, [token, isManager]);
+
+    // Sync selectedPhase tab when search query parameter changes
+    useEffect(() => {
+        const filter = searchParams.get('filter');
+        if (filter === 'participating') {
+            setSelectedPhase('participating');
+        } else if (selectedPhase === 'participating') {
+            setSelectedPhase('all');
+        }
+    }, [searchParams]);
+
+    const handlePhaseChange = (phaseKey) => {
+        setSelectedPhase(phaseKey);
+        setSearchParams(prev => {
+            const nextParams = new URLSearchParams(prev);
+            if (phaseKey === 'participating') {
+                nextParams.set('filter', 'participating');
+            } else {
+                nextParams.delete('filter');
+            }
+            return nextParams;
+        });
+    };
+
+    const phaseOptions = useMemo(() => {
+        const options = [
+            { key: 'all', label: 'All' },
+            { key: 'running', label: 'Ongoing', dot: 'sky' },
+            { key: 'upcoming', label: 'Upcoming', dot: 'orange' },
+            { key: 'ended', label: 'Finished', dot: 'gray' },
+        ];
+        if (token && !isManager && myTeams.length > 0) {
+            options.unshift({ key: 'participating', label: 'My Events (Đã tham gia)', dot: 'emerald' });
+        }
+        return options;
+    }, [token, isManager, myTeams]);
 
     const displayEvents = useMemo(() => (events.length ? events : [demoEvent]), [events]);
 
@@ -160,6 +223,7 @@ export default function Events() {
             
             const eventPhase = getEventPhase(event).key;
             const matchesPhase = selectedPhase === 'all' || 
+                (selectedPhase === 'participating' && myTeams.some(t => String(t.eventId) === String(event.id))) ||
                 (selectedPhase === 'running' && (eventPhase === 'running' || eventPhase === 'registration')) ||
                 (selectedPhase === 'upcoming' && eventPhase === 'upcoming') ||
                 (selectedPhase === 'ended' && eventPhase === 'ended');
@@ -194,7 +258,7 @@ export default function Events() {
                 <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center pb-6 border-b border-slate-100">
                     {/* Category tabs */}
                     <div className="flex flex-wrap gap-2">
-                        {PHASE_OPTIONS.map((option) => (
+                        {phaseOptions.map((option) => (
                             <button
                                 key={option.key}
                                 type="button"
@@ -203,7 +267,7 @@ export default function Events() {
                                         ? 'bg-[#2c4e66] border-[#2c4e66] text-white'
                                         : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                                 }`}
-                                onClick={() => setSelectedPhase(option.key)}
+                                onClick={() => handlePhaseChange(option.key)}
                             >
                                 {option.label}
                             </button>
@@ -273,9 +337,17 @@ export default function Events() {
                     </div>
                 ) : filteredEvents.length ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {filteredEvents.map((event) => (
-                            <MarketplaceEventCard event={event} key={event.id} navigate={navigate} />
-                        ))}
+                        {filteredEvents.map((event) => {
+                            const userTeam = myTeams.find(t => String(t.eventId) === String(event.id));
+                            return (
+                                <MarketplaceEventCard 
+                                    event={event} 
+                                    key={event.id} 
+                                    navigate={navigate} 
+                                    myTeam={userTeam} 
+                                />
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="text-center py-16 text-sm text-slate-500">

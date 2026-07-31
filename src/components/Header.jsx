@@ -32,6 +32,8 @@ export default function Header() {
     const displayName = account.fullName || email || 'Account';
     const avatarUrl = account.avatarUrl || '';
     const isManager = managerRoles.has(role);
+    const isMyTeamsActive = pathname === '/events' && location.search.includes('filter=participating');
+    const isEventsActive = pathname === '/events' && !location.search.includes('filter=participating');
     const navClass = ({ isActive }) => (isActive ? 'nav-link-active' : 'nav-link-item');
 
     const handleLogout = () => {
@@ -64,10 +66,10 @@ export default function Header() {
                     </Link>
 
                     <nav className="hidden items-center gap-8 md:flex relative top-[1px]" aria-label="Main Navigation">
-                        <NavLink to="/events" className={navClass}>Events</NavLink>
+                        <NavLink to="/events" className={isEventsActive ? 'nav-link-active' : 'nav-link-item'}>Events</NavLink>
                         <NavLink to="/leaderboard" className={navClass}>Leaderboard</NavLink>
                         <NavLink to="/about" className={navClass}>About Us</NavLink>
-                        {token && !isManager && <NavLink to="/my-team" className={navClass}>My Team</NavLink>}
+                        {token && !isManager && <NavLink to="/events?filter=participating" className={isMyTeamsActive ? 'nav-link-active' : 'nav-link-item'}>My Teams</NavLink>}
                     </nav>
                 </div>
  
@@ -101,8 +103,8 @@ export default function Header() {
                                         {isManager ? 'Dashboard' : 'My Profile'}
                                     </Link>
                                     {!isManager && (
-                                        <Link to="/my-team" onClick={() => setShowDropdown(false)} className="block px-4 py-2 text-sm font-bold text-[#0b1f3f] hover:bg-[#eaf3ff]">
-                                            My Team
+                                        <Link to="/events?filter=participating" onClick={() => setShowDropdown(false)} className="block px-4 py-2 text-sm font-bold text-[#0b1f3f] hover:bg-[#eaf3ff]">
+                                            My Teams
                                         </Link>
                                     )}
                                     <button type="button" onClick={handleLogout} className="block w-full px-4 py-2 text-left text-sm font-bold text-red-600 hover:bg-red-50">
@@ -123,10 +125,10 @@ export default function Header() {
             {showMobileNav && (
                 <nav id="mobile-navigation" className="mobile-navigation" aria-label="Mobile Navigation">
                     <NavLink to="/" end className={navClass} onClick={() => setShowMobileNav(false)}>Home</NavLink>
-                    <NavLink to="/events" className={navClass} onClick={() => setShowMobileNav(false)}>Events</NavLink>
+                    <NavLink to="/events" className={isEventsActive ? 'nav-link-active' : 'nav-link-item'} onClick={() => setShowMobileNav(false)}>Events</NavLink>
                     <NavLink to="/leaderboard" className={navClass} onClick={() => setShowMobileNav(false)}>Leaderboard</NavLink>
                     <NavLink to="/about" className={navClass} onClick={() => setShowMobileNav(false)}>About Us</NavLink>
-                    {token && !isManager && <NavLink to="/my-team" className={navClass} onClick={() => setShowMobileNav(false)}>My Team</NavLink>}
+                    {token && !isManager && <NavLink to="/events?filter=participating" className={isMyTeamsActive ? 'nav-link-active' : 'nav-link-item'} onClick={() => setShowMobileNav(false)}>My Teams</NavLink>}
                 </nav>
             )}
         </header>

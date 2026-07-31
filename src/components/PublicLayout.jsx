@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import Header from './Header';
+import FloatingChat from './FloatingChat';
 import logoFpt from '../assets/fpt.jpg';
 
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
@@ -18,6 +19,7 @@ export default function PublicLayout() {
             <div className="public-content">
                 <Outlet />
             </div>
+            <FloatingChat />
             <footer className="site-footer">
                 <div className="site-footer-grid">
                     <div>
