@@ -13,9 +13,9 @@ function exportAchievement(profile, achievement) {
   <section style="width:900px;margin:40px auto;padding:56px;border:2px solid #0f63c9;background:white">
     <p style="letter-spacing:6px;text-transform:uppercase;color:#0f63c9;font-weight:800">SEAL Hackathon Certificate</p>
     <h1 style="font-size:48px;margin:24px 0 8px">${profile.fullName}</h1>
-    <p style="font-size:18px;line-height:1.7">Đã đạt <b>${achievement.prizeName}</b> tại <b>${achievement.eventName || 'SEAL Hackathon'} ${achievement.eventYear || ''}</b>.</p>
-    <p style="font-size:16px">Đội thi: <b>${achievement.teamName || 'Đang cập nhật'}</b></p>
-    <p style="margin-top:48px;color:#5c6d83">Mã thành tích: SEAL-${achievement.id}</p>
+    <p style="font-size:18px;line-height:1.7">Achieved <b>${achievement.prizeName}</b> at <b>${achievement.eventName || 'SEAL Hackathon'} ${achievement.eventYear || ''}</b>.</p>
+    <p style="font-size:16px">Team: <b>${achievement.teamName || "Pending update"}</b></p>
+    <p style="margin-top:48px;color:#5c6d83">Achievement code: SEAL-${achievement.id}</p>
   </section>
 </body>
 </html>`;
@@ -30,10 +30,10 @@ function exportAchievement(profile, achievement) {
 
 function getPrizePresentation(prizeName = '') {
     const normalized = prizeName.toLowerCase();
-    if (normalized.includes('nhất') || normalized.includes('vô địch') || normalized.includes('first')) return { rank: '01', medal: '🥇', label: 'Giải nhất', tone: 'gold' };
-    if (normalized.includes('nhì') || normalized.includes('á quân') || normalized.includes('second')) return { rank: '02', medal: '🥈', label: 'Giải nhì', tone: 'silver' };
-    if (normalized.includes('ba') || normalized.includes('third')) return { rank: '03', medal: '🥉', label: 'Giải ba', tone: 'bronze' };
-    return { rank: '★', medal: '🏅', label: prizeName || 'Giải thưởng', tone: 'award' };
+    if (normalized.includes("best") || normalized.includes("champion") || normalized.includes('first')) return { rank: '01', medal: '🥇', label: "First prize", tone: 'gold' };
+    if (normalized.includes("second") || normalized.includes("runner-up") || normalized.includes('second')) return { rank: '02', medal: '🥈', label: "Second prize", tone: 'silver' };
+    if (normalized.includes('ba') || normalized.includes('third')) return { rank: '03', medal: '🥉', label: "Third prize", tone: 'bronze' };
+    return { rank: '★', medal: '🏅', label: prizeName || "Prize", tone: 'award' };
 }
 
 export default function Profile() {
@@ -79,7 +79,7 @@ export default function Profile() {
     useEffect(() => {
         setLoading(true);
         fetchProfile()
-            .catch((err) => setMessage({ text: err.message || 'Không thể tải profile.', type: 'error' }))
+            .catch((err) => setMessage({ text: err.message || "Unable to load profile.", type: 'error' }))
             .finally(() => setLoading(false));
     }, [fetchProfile]);
 
@@ -89,9 +89,9 @@ export default function Profile() {
             setSavingProfile(true);
             const response = await axiosClient.put('/users/me/profile', { avatarUrl });
             setProfile(response.result);
-            setMessage({ text: 'Cập nhật avatar thành công.', type: 'success' });
+            setMessage({ text: "Updated avatar successfully.", type: 'success' });
         } catch (err) {
-            setMessage({ text: err.message || 'Không thể cập nhật profile.', type: 'error' });
+            setMessage({ text: err.message || "Unable to update profile.", type: 'error' });
         } finally {
             setSavingProfile(false);
         }
@@ -101,12 +101,12 @@ export default function Profile() {
         const file = event.target.files?.[0];
         if (!file) return;
         if (!file.type.startsWith('image/')) {
-            setMessage({ text: 'Vui lòng chọn một file ảnh hợp lệ.', type: 'error' });
+            setMessage({ text: "Please select a valid image file.", type: 'error' });
             event.target.value = '';
             return;
         }
         if (file.size > 2 * 1024 * 1024) {
-            setMessage({ text: 'Ảnh đại diện không được vượt quá 2MB.', type: 'error' });
+            setMessage({ text: "Profile photo cannot exceed 2MB.", type: 'error' });
             event.target.value = '';
             return;
         }
@@ -116,7 +116,7 @@ export default function Profile() {
             setAvatarUrl(String(reader.result || ''));
             setMessage({ text: '', type: '' });
         };
-        reader.onerror = () => setMessage({ text: 'Không thể đọc file ảnh. Vui lòng thử lại.', type: 'error' });
+        reader.onerror = () => setMessage({ text: "Cannot read image file. Please try again.", type: 'error' });
         reader.readAsDataURL(file);
     };
 
@@ -128,12 +128,12 @@ export default function Profile() {
         const newErrs = { oldPassword: '', newPassword: '', confirmPassword: '', general: '' };
 
         if (passwords.newPassword === passwords.oldPassword) {
-            newErrs.newPassword = 'Mật khẩu mới không được trùng với mật khẩu hiện tại.';
+            newErrs.newPassword = "The new password must not be the same as the current password.";
             hasErr = true;
         }
 
         if (passwords.newPassword !== passwords.confirmPassword) {
-            newErrs.confirmPassword = 'Mật khẩu xác nhận không khớp với mật khẩu mới.';
+            newErrs.confirmPassword = "The confirmation password does not match the new password.";
             hasErr = true;
         }
 
@@ -150,10 +150,10 @@ export default function Profile() {
             });
             setPasswords({ oldPassword: '', newPassword: '', confirmPassword: '' });
             setShowPasswordForm(false);
-            setMessage({ text: 'Đổi mật khẩu thành công.', type: 'success' });
+            setMessage({ text: "Password changed successfully.", type: 'success' });
         } catch (err) {
-            const errMsg = err.message || 'Không thể đổi mật khẩu.';
-            const isOldPwdErr = errMsg.toLowerCase().includes('hiện tại') || errMsg.toLowerCase().includes('old') || errMsg.toLowerCase().includes('current') || errMsg.toLowerCase().includes('mật khẩu cũ');
+            const errMsg = err.message || "Cannot change password.";
+            const isOldPwdErr = errMsg.toLowerCase().includes("Present") || errMsg.toLowerCase().includes('old') || errMsg.toLowerCase().includes('current') || errMsg.toLowerCase().includes("old password");
             
             if (isOldPwdErr) {
                 setPasswordErrors(prev => ({ ...prev, oldPassword: errMsg }));
@@ -166,7 +166,7 @@ export default function Profile() {
     };
 
     if (loading) {
-        return <main className="section-shell"><div className="rounded-lg bg-white p-8 text-center text-[#5c6d83]">Đang tải profile...</div></main>;
+        return <main className="section-shell"><div className="rounded-lg bg-white p-8 text-center text-[#5c6d83]">Loading profile...</div></main>;
     }
 
     return (
@@ -183,50 +183,50 @@ export default function Profile() {
                         <h1>{profile?.fullName}</h1>
                         <p className="profile-email">{profile?.email}</p>
                         <div className="profile-meta">
-                            <div><span>Mã sinh viên</span><strong>{profile?.studentId || 'Chưa cập nhật'}</strong></div>
-                            <div><span>Trường</span><strong>{profile?.universityName || 'Chưa cập nhật'}</strong></div>
+                            <div><span>Student code</span><strong>{profile?.studentId || "Not updated yet"}</strong></div>
+                            <div><span>School</span><strong>{profile?.universityName || "Not updated yet"}</strong></div>
                         </div>
                     </section>
 
                     {isOwnProfile && (
                         <section className="profile-actions">
                             <div className="profile-actions__header">
-                                <p>Thiết lập tài khoản</p>
-                                <h2>Cập nhật hồ sơ</h2>
+                                <p>Set up an account</p>
+                                <h2>Update profile</h2>
                             </div>
 
                             <form onSubmit={handleAvatarSubmit} className="avatar-upload-form">
                                 <label htmlFor="profile-avatar-upload" className="avatar-upload-label">
                                     <span className="avatar-upload-icon">↑</span>
-                                    <span><strong>Chọn ảnh đại diện</strong><small>PNG, JPG hoặc WEBP · tối đa 2MB</small></span>
+                                    <span><strong>Select avatar</strong><small>PNG, JPG or WEBP · maximum 2MB</small></span>
                                 </label>
                                 <input id="profile-avatar-upload" type="file" accept="image/*" onChange={handleAvatarUpload} className="sr-only" />
                                 {avatarUrl && avatarUrl !== profile?.avatarUrl && (
                                     <button type="submit" disabled={savingProfile} className="btn-primary w-full">
-                                        {savingProfile ? 'Đang lưu...' : 'Lưu ảnh đại diện'}
+                                        {savingProfile ? "Saving..." : "Save your avatar"}
                                     </button>
                                 )}
                             </form>
 
                             <button type="button" className="profile-password-toggle" onClick={() => setShowPasswordForm((current) => !current)} aria-expanded={showPasswordForm}>
-                                <span><strong>Đổi mật khẩu</strong><small>Tăng bảo mật cho tài khoản</small></span>
+                                <span><strong>Change password</strong><small>Increase account security</small></span>
                                 <span aria-hidden="true">{showPasswordForm ? '−' : '+'}</span>
                             </button>
 
                             {showPasswordForm && (
                                 <form onSubmit={handlePasswordSubmit} className="profile-password-form space-y-4">
                                     <div>
-                                        <label htmlFor="current-password">Mật khẩu hiện tại</label>
+                                        <label htmlFor="current-password">Current password</label>
                                         <input id="current-password" required type="password" className="input-custom" value={passwords.oldPassword} onChange={(e) => { setPasswords({ ...passwords, oldPassword: e.target.value }); setPasswordErrors(prev => ({ ...prev, oldPassword: '', general: '' })); }} />
                                         {passwordErrors.oldPassword && <p className="mt-1.5 text-xs font-semibold text-red-600">{passwordErrors.oldPassword}</p>}
                                     </div>
                                     <div>
-                                        <label htmlFor="new-password">Mật khẩu mới</label>
+                                        <label htmlFor="new-password">New password</label>
                                         <input id="new-password" required minLength={6} type="password" className="input-custom" value={passwords.newPassword} onChange={(e) => { setPasswords({ ...passwords, newPassword: e.target.value }); setPasswordErrors(prev => ({ ...prev, newPassword: '', general: '' })); }} />
                                         {passwordErrors.newPassword && <p className="mt-1.5 text-xs font-semibold text-red-600">{passwordErrors.newPassword}</p>}
                                     </div>
                                     <div>
-                                        <label htmlFor="confirm-password">Xác nhận mật khẩu mới</label>
+                                        <label htmlFor="confirm-password">Confirm new password</label>
                                         <input id="confirm-password" required minLength={6} type="password" className="input-custom" value={passwords.confirmPassword} onChange={(e) => { setPasswords({ ...passwords, confirmPassword: e.target.value }); setPasswordErrors(prev => ({ ...prev, confirmPassword: '', general: '' })); }} />
                                         {passwordErrors.confirmPassword && <p className="mt-1.5 text-xs font-semibold text-red-600">{passwordErrors.confirmPassword}</p>}
                                     </div>
@@ -234,8 +234,8 @@ export default function Profile() {
                                         <p className="text-sm font-semibold text-red-600">{passwordErrors.general}</p>
                                     )}
                                     <div className="flex gap-2">
-                                        <button type="submit" disabled={savingPassword} className="btn-primary flex-1">{savingPassword ? 'Đang đổi...' : 'Xác nhận đổi'}</button>
-                                        <button type="button" className="btn-secondary" onClick={() => { setShowPasswordForm(false); setPasswordErrors({ oldPassword: '', newPassword: '', confirmPassword: '', general: '' }); }}>Hủy</button>
+                                        <button type="submit" disabled={savingPassword} className="btn-primary flex-1">{savingPassword ? "Changing..." : "Confirm exchange"}</button>
+                                        <button type="button" className="btn-secondary" onClick={() => { setShowPasswordForm(false); setPasswordErrors({ oldPassword: '', newPassword: '', confirmPassword: '', general: '' }); }}>Cancel</button>
                                     </div>
                                 </form>
                             )}
@@ -246,11 +246,11 @@ export default function Profile() {
                 <section className="profile-achievements">
                     <div className="profile-achievements__header">
                         <div>
-                            <p>Hall of achievement</p>
-                            <h2>Thành tích nổi bật</h2>
-                            <span>Những cột mốc và giải thưởng đã đạt được tại SEAL Hackathon.</span>
+                            <p>Achievement history</p>
+                            <h2>Outstanding achievements</h2>
+                            <span>Milestones and awards achieved at the SEAL Hackathon.</span>
                         </div>
-                        <strong>{achievements.length}<small>thành tích</small></strong>
+                        <strong>{achievements.length} <small>achievements</small></strong>
                     </div>
                     <div className="achievement-list">
                             {achievements.length ? achievements.map((item) => {
@@ -267,17 +267,17 @@ export default function Profile() {
                                             <span>{item.eventName}</span>
                                         </div>
                                         <div className="achievement-row__team">
-                                            <span>Đội thi</span>
-                                            <strong>{item.teamName || 'Đang cập nhật'}</strong>
+                                            <span>Team</span>
+                                            <strong>{item.teamName || "Updating"}</strong>
                                         </div>
                                         {isOwnProfile && (
-                                            <button type="button" onClick={() => exportAchievement(profile, item)} className="achievement-row__export" title="Xuất chứng nhận">
-                                                Xuất chứng nhận <span aria-hidden="true">↗</span>
+                                            <button type="button" onClick={() => exportAchievement(profile, item)} className="achievement-row__export" title="Export certificate">
+                                                Export certificate <span aria-hidden="true">↗</span>
                                             </button>
                                         )}
                                     </article>
                                 );
-                            }) : <div className="achievement-empty"><span>☆</span><h3>Chưa có thành tích</h3><p>Khi ban tổ chức công bố giải nhất, nhì hoặc ba, thành tích sẽ xuất hiện tại đây.</p></div>}
+                            }) : <div className="achievement-empty"><span>☆</span><h3>No achievements yet</h3><p>When the organizers announce the first, second or third prize, the achievements will appear here.</p></div>}
                     </div>
                 </section>
             </div>

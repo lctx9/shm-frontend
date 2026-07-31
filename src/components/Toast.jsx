@@ -29,7 +29,7 @@ export default function Toast({ message, error, success, onClose }) {
                     </span>
                     <div>
                         <strong className="block text-[11px] font-black uppercase tracking-wider opacity-90">
-                            {isError ? 'Thông báo lỗi / Cảnh báo' : 'Thông báo hệ thống'}
+                            {isError ? "Something went wrong" : "System notification"}
                         </strong>
                         <p className="text-xs font-semibold mt-0.5 leading-relaxed">{text}</p>
                     </div>
@@ -38,7 +38,7 @@ export default function Toast({ message, error, success, onClose }) {
                     type="button"
                     onClick={onClose}
                     className="text-white/80 hover:text-white font-black text-sm px-1.5 py-0.5 leading-none transition-colors cursor-pointer shrink-0"
-                    title="Đóng"
+                    title="Close"
                 >
                     ✕
                 </button>

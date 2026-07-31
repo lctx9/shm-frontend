@@ -54,7 +54,7 @@ function OperationalDashboard() {
             }
 
         } catch (err) {
-            setError('Không thể tải dữ liệu thống kê. Vui lòng kiểm tra backend hoặc quyền truy cập.');
+            setError("Unable to load statistical data. Please check the backend or access permissions.");
         } finally {
             setLoading(false);
         }
@@ -76,7 +76,7 @@ function OperationalDashboard() {
     const maxTeams = Math.max(...chartEvents.map(e => e.teamCount || 0), 5);
 
     const cards = [
-        { label: 'Active Events', value: stats.activeEvents, helper: 'Currently open or ongoing events', to: '/dashboard/events', color: 'border-l-4 border-l-[var(--shield-blue)]' },
+        { label: 'Active Events', value: stats.activeEvents, helper: 'Currently open or ongoing events', to: '/dashboard/events?tab=overview', color: 'border-l-4 border-l-[var(--shield-blue)]' },
         { label: 'Registered Teams', value: stats.totalTeams, helper: 'Total team rosters in system', to: '/dashboard/teams', color: 'border-l-4 border-l-[var(--shield-green)]' },
         { label: 'Pending Submissions', value: stats.pendingSubmissions, helper: 'Submissions awaiting score', to: '/dashboard/submissions', color: 'border-l-4 border-l-amber-500' },
     ];
@@ -220,7 +220,7 @@ function OperationalDashboard() {
                         )}
                     </div>
 
-                    <Link to="/dashboard/events" className="btn-secondary w-full text-center text-xs font-bold py-2.5">
+                    <Link to="/dashboard/events?tab=overview" className="btn-secondary w-full text-center text-xs font-bold py-2.5">
                         Manage Events Directory &rarr;
                     </Link>
                 </div>

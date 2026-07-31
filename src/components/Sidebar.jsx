@@ -14,7 +14,7 @@ const coordinatorGroups = [
     {
         title: 'Tournament Management',
         items: [
-            { to: '/dashboard/events', label: 'Event Management' },
+            { to: '/dashboard/events?tab=overview', label: 'Event Management', activePath: '/dashboard/events' },
             { to: '/dashboard/scoring-config', label: 'Scoring Configuration' },
             { to: '/dashboard/teams', label: 'Teams' },
             { to: '/dashboard/submissions', label: 'Submissions' },

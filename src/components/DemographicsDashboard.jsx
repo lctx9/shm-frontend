@@ -17,8 +17,8 @@ export default function DemographicsDashboard() {
             setError(null);
             const response = await axiosClient.get('/stats/demographics');
             setStats(response.result || null);
-        } catch (err) {
-            setError(err.message || 'Failed to load demographics analytics.');
+        } catch {
+            setError('Unable to load participant demographics. Please check your access permissions and try again.');
         } finally {
             setLoading(false);
         }

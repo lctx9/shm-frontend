@@ -16,7 +16,7 @@ export default function SubmissionManagement() {
             setSubmissions(response.result || []);
             setError('');
         } catch (err) {
-            setError(err.message || 'Không thể tải danh sách bài nộp.');
+            setError(err.message || "Unable to load submission list.");
         } finally {
             setLoading(false);
         }
@@ -40,26 +40,26 @@ export default function SubmissionManagement() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
                 <div>
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Submission monitor</p>
-                    <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Bài nộp của đội thi</h2>
-                    <p className="mt-2 text-sm text-slate-600">Theo dõi bài đã nộp, trạng thái chấm và link tài liệu của từng đội.</p>
+                    <h2 className="text-2xl font-black uppercase tracking-wide text-slate-900">Team submissions</h2>
+                    <p className="mt-2 text-sm text-slate-600">Track submitted work, grading status and document links for each team.</p>
                 </div>
-                <button type="button" onClick={fetchSubmissions} title="Làm mới bài nộp" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
+                <button type="button" onClick={fetchSubmissions} title="Refresh submission" className="btn-secondary h-9 w-9 p-0 inline-flex items-center justify-center text-sm font-bold">↻</button>
             </div>
 
             <section className="grid gap-4 rounded-lg border border-blue-100 bg-white p-4 md:grid-cols-2">
                 <div>
                     <label className="mb-1 block text-sm font-bold text-slate-700">Track</label>
                     <select className="input-custom" value={trackFilter} onChange={(e) => setTrackFilter(e.target.value)}>
-                        <option value="ALL">Tất cả track</option>
+                        <option value="ALL">All tracks</option>
                         {tracks.map((track) => <option key={track} value={track}>{track}</option>)}
                     </select>
                 </div>
                 <div>
-                    <label className="mb-1 block text-sm font-bold text-slate-700">Trạng thái</label>
+                    <label className="mb-1 block text-sm font-bold text-slate-700">Status</label>
                     <select className="input-custom" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                        <option value="ALL">Tất cả</option>
-                        <option value="PENDING">Chờ chấm</option>
-                        <option value="GRADED">Đã chấm</option>
+                        <option value="ALL">All</option>
+                        <option value="PENDING">Pending grading</option>
+                        <option value="GRADED">Graded</option>
                     </select>
                 </div>
             </section>
@@ -71,35 +71,35 @@ export default function SubmissionManagement() {
                     <table className="w-full text-left">
                         <thead className="border-b border-blue-100 bg-blue-50 text-xs font-black uppercase tracking-wide text-slate-500">
                         <tr>
-                            <th className="px-6 py-4">Đội</th>
-                            <th className="px-6 py-4">Track / vòng</th>
-                            <th className="px-6 py-4">Bài nộp</th>
-                            <th className="px-6 py-4">Trạng thái</th>
-                            <th className="px-6 py-4 text-right">Điểm</th>
+                            <th className="px-6 py-4">Team</th>
+                            <th className="px-6 py-4">Track / Round</th>
+                            <th className="px-6 py-4">Submission</th>
+                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4 text-right">Score</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-blue-50">
                         {loading ? (
-                            <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-500">Đang tải...</td></tr>
+                            <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-500">Loading...</td></tr>
                         ) : filteredSubmissions.length === 0 ? (
-                            <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-500">Chưa có bài nộp phù hợp.</td></tr>
+                            <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-500">There are no matching submissions.</td></tr>
                         ) : filteredSubmissions.map((submission) => (
                             <tr key={submission.id} className="hover:bg-blue-50/40">
-                                <td className="px-6 py-4 font-bold text-slate-900">{submission.teamName || `Đội #${submission.teamId}`}</td>
+                                <td className="px-6 py-4 font-bold text-slate-900">{submission.teamName || `Team #${submission.teamId}`}</td>
                                 <td className="px-6 py-4 text-sm text-slate-600">
                                     <p className="font-bold text-slate-800">{submission.trackName || 'Track'}</p>
-                                    <p>{submission.roundName || 'Vòng thi'}</p>
+                                    <p>{submission.roundName || "Round"}</p>
                                 </td>
                                 <td className="max-w-md px-6 py-4">
                                     {submission.fileUrl ? (
                                         <a href={submission.fileUrl} target="_blank" rel="noreferrer" className="break-all text-sm font-bold text-[#0f63c9]">
                                             {submission.fileUrl}
                                         </a>
-                                    ) : <span className="text-sm text-slate-500">Chưa có link</span>}
+                                    ) : <span className="text-sm text-slate-500">No link yet</span>}
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`rounded-full px-3 py-1 text-xs font-black ${submission.graded ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                        {submission.graded ? 'Đã chấm' : 'Chờ chấm'}
+                                        {submission.graded ? "Graded" : "Pending grading"}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right text-xl font-black text-[#0f63c9]">{submission.score ?? '-'}</td>
