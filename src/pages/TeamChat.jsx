@@ -244,6 +244,15 @@ export default function TeamChat({ embedded = false, teamId = null }) {
                     <p className="mt-1 text-sm text-slate-600">Trao đổi trực tiếp giữa mentor và đội thi.</p>
                 </div>
                 <Toast error={error} onClose={() => setError('')} />
+                {error && (error.includes('chưa chính thức bắt đầu') || error.includes('kết thúc') || error.includes('truất quyền') || error.includes('dừng bước')) ? (
+                    <div className="m-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900 flex items-center gap-3">
+                        <span className="text-xl">🔒</span>
+                        <div>
+                            <p className="font-bold">Kênh chat cố vấn đã đóng / tạm khóa</p>
+                            <p className="text-xs text-amber-700 mt-0.5">{error}</p>
+                        </div>
+                    </div>
+                ) : null}
                 <div ref={messagesContainerRef} className="team-chat__messages flex-1 space-y-4 overflow-y-auto p-6">
                     {messages.length === 0 ? (
                         <p className="text-center text-sm text-slate-500">Chưa có tin nhắn.</p>
@@ -261,8 +270,20 @@ export default function TeamChat({ embedded = false, teamId = null }) {
                     })}
                 </div>
                 <form onSubmit={handleSubmit} className="team-chat__composer flex gap-3 border-t border-blue-100 p-4">
-                    <input className="input-custom" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Nhập tin nhắn..." />
-                    <button type="submit" className="btn-primary">Gửi</button>
+                    <input
+                        className="input-custom"
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        disabled={Boolean(error && (error.includes('chưa chính thức bắt đầu') || error.includes('kết thúc') || error.includes('truất quyền') || error.includes('dừng bước')))}
+                        placeholder={error && (error.includes('chưa chính thức bắt đầu') || error.includes('kết thúc') || error.includes('truất quyền') || error.includes('dừng bước')) ? 'Kênh chat đã đóng...' : 'Nhập tin nhắn...'}
+                    />
+                    <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={Boolean(error && (error.includes('chưa chính thức bắt đầu') || error.includes('kết thúc') || error.includes('truất quyền') || error.includes('dừng bước')))}
+                    >
+                        Gửi
+                    </button>
                 </form>
             </section>
         </div>
