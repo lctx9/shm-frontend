@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import Toast from '../components/Toast';
 
@@ -315,9 +315,9 @@ export default function Notifications() {
                                 </div>
                                 <div className="flex items-center gap-3">
                                     {item.actionUrl && (
-                                        <a href={item.actionUrl} className="text-xs font-bold text-[#0f63c9] hover:underline flex items-center gap-1">
+                                        <Link to={item.actionUrl} className="text-xs font-bold text-[#0f63c9] hover:underline flex items-center gap-1">
                                             See details →
-                                        </a>
+                                        </Link>
                                     )}
                                     <button
                                         type="button"
