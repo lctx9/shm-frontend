@@ -17,7 +17,7 @@ function displayCompetitionLabel(value, fallback = '') {
         .replace(/Bảng\s*/gi, 'Track ');
 }
 
-const emptyForm = () => ({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', durationMinutes: 60, topN: 10, judgeIds: [], criteria: defaultCriteria });
+const emptyForm = () => ({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', durationMinutes: 60, gradingDurationMinutes: 30, breakDurationMinutes: 15, topN: 10, judgeIds: [], criteria: defaultCriteria });
 
 function parseCriteria(value) {
     if (!value) return defaultCriteria;
@@ -40,6 +40,8 @@ function formFromMatrix(matrix) {
         submissionStartDate: matrix.submissionStartDate?.slice(0, 16) || '',
         submissionDeadline: matrix.submissionDeadline?.slice(0, 16) || '',
         durationMinutes: duration,
+        gradingDurationMinutes: matrix.gradingDurationMinutes || 30,
+        breakDurationMinutes: matrix.breakDurationMinutes || 15,
         topN: matrix.topN ?? '',
         judgeIds: matrix.judges?.map((judge) => judge.id) || [],
         criteria: parseCriteria(matrix.scoringCriteriaJson),
@@ -152,6 +154,8 @@ export default function ScoringConfiguration() {
         submissionStartDate: form.submissionStartDate || null,
         submissionDeadline: form.submissionDeadline || null,
         durationMinutes: Number(form.durationMinutes) || 60,
+        gradingDurationMinutes: Number(form.gradingDurationMinutes) || 30,
+        breakDurationMinutes: Number(form.breakDurationMinutes) || 15,
         judgeIds: form.judgeIds.map(Number),
         topN: matrix.finalRound ? null : Math.max(1, Number(form.topN)),
         scoringCriteriaJson: JSON.stringify(form.criteria),
@@ -251,18 +255,14 @@ export default function ScoringConfiguration() {
 
                         <fieldset disabled={readOnly || Boolean(selectedMatrix?.isPublished)} className="contents">
                         {activeStep === 'setup' && <section className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm">
-                            <div className="border-b border-blue-100 pb-4"><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Step 1/3</p><h3 className="mt-1 text-lg font-black text-slate-900">Set up the round</h3><p className="mt-1 text-sm text-slate-500">Set guideline documents, test duration (minutes) and number of teams to continue.</p></div>
-                            <div className="mt-5 grid gap-4 md:grid-cols-2">
+                            <div className="border-b border-blue-100 pb-4"><p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f63c9]">Step 1/3</p><h3 className="mt-1 text-lg font-black text-slate-900">Set up the round</h3><p className="mt-1 text-sm text-slate-500">Set guideline documents, test duration (minutes), judge grading duration (minutes) and number of teams to continue.</p></div>
+                            <div className="mt-5 grid gap-4 md:grid-cols-3">
                                 <label className="text-sm font-bold text-slate-700">Guideline / topic<input className="input-custom mt-2" placeholder="Link to PDF, Drive or instruction manual" value={form.guidelineUrl} onChange={(event) => setForm({ ...form, guidelineUrl: event.target.value })} /></label>
                                 <label className="text-sm font-bold text-slate-700">Test duration (Minutes)<input type="number" min="1" className="input-custom mt-2 font-bold text-[#0f63c9]" placeholder="VD: 60, 90, 120" value={form.durationMinutes} onChange={(event) => setForm({ ...form, durationMinutes: event.target.value })} /></label>
+                                <label className="text-sm font-bold text-slate-700">Judge grading duration (Minutes)<input type="number" min="1" className="input-custom mt-2 font-bold text-indigo-600" placeholder="VD: 30, 60" value={form.gradingDurationMinutes} onChange={(event) => setForm({ ...form, gradingDurationMinutes: event.target.value })} /></label>
                             </div>
                             <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/70 p-3.5 text-xs text-blue-900 leading-relaxed font-medium">
-                                ⏱️ <strong>Time mechanism:</strong> The submission time is the duration of the competition round (<strong>{form.durationMinutes || 60} minute</strong>).
-                                {Number(selectedMatrix?.roundOrder) === 1 ? (
-                                    <span> Round 1 will automatically count down correctly {form.durationMinutes || 60} minutes starting from the mark <strong>Tournament start time</strong>.</span>
-                                ) : (
-                                    <span> Subsequent rounds will automatically count down correctly {form.durationMinutes || 60} minutes right from the mark <strong>Coordinator presses the Open New Round button</strong>.</span>
-                                )}
+                                ⏱️ <strong>Round Schedule & Deadlines:</strong> Submission deadline (<strong>{form.durationMinutes || 60} minutes</strong>) and Judge grading duration (<strong>{form.gradingDurationMinutes || 30} minutes</strong>) are synchronized across <strong>all tracks</strong> in this round ({displayCompetitionLabel(selectedMatrix?.roundName)}).
                             </div>
                             {!selectedMatrix?.finalRound && <label className="mt-4 block max-w-xs text-sm font-bold text-slate-700">Number of teams moving on (Top N)<input type="number" min="1" className="input-custom mt-2" value={form.topN} onChange={(event) => setForm({ ...form, topN: event.target.value })} /></label>}
                         </section>}

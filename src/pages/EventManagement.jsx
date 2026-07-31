@@ -155,7 +155,7 @@ export default function EventManagement() {
     const [selectedEventId, setSelectedEventId] = useState('');
     const [selectedMatrixId, setSelectedMatrixId] = useState('');
     const [form, setForm] = useState(emptyEvent);
-    const [matrixForm, setMatrixForm] = useState({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
+    const [matrixForm, setMatrixForm] = useState({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', gradingDurationMinutes: 30, topN: 10, judgeIds: [], criteria: defaultCriteria });
     const [prizeForm, setPrizeForm] = useState(emptyPrize);
     const [activeTab, setActiveTab] = useState('overview');
     const [createStep, setCreateStep] = useState(0);
@@ -332,7 +332,7 @@ export default function EventManagement() {
 
     useEffect(() => {
         if (!selectedMatrix) {
-            setMatrixForm({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', topN: 10, judgeIds: [], criteria: defaultCriteria });
+            setMatrixForm({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', gradingDurationMinutes: 30, topN: 10, judgeIds: [], criteria: defaultCriteria });
             return;
         }
 
@@ -340,6 +340,7 @@ export default function EventManagement() {
             guidelineUrl: selectedMatrix.guidelineUrl || '',
             submissionStartDate: toLocalInput(selectedMatrix.submissionStartDate),
             submissionDeadline: toLocalInput(selectedMatrix.submissionDeadline),
+            gradingDurationMinutes: selectedMatrix.gradingDurationMinutes || 30,
             topN: selectedMatrix.topN || 10,
             judgeIds: selectedMatrix.judges?.map((user) => user.id) || [],
             criteria: parseJson(selectedMatrix.scoringCriteriaJson, defaultCriteria),
@@ -752,6 +753,7 @@ export default function EventManagement() {
                 guidelineUrl: matrixForm.guidelineUrl,
                 submissionStartDate: matrixForm.submissionStartDate || null,
                 submissionDeadline: matrixForm.submissionDeadline || null,
+                gradingDurationMinutes: Number(matrixForm.gradingDurationMinutes) || 30,
                 judgeIds: matrixForm.judgeIds.map(Number),
                 topN: selectedMatrix?.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
                 scoringCriteriaJson: JSON.stringify(matrixForm.criteria),
@@ -827,6 +829,7 @@ export default function EventManagement() {
                         guidelineUrl: matrixForm.guidelineUrl,
                         submissionStartDate: matrixForm.submissionStartDate || null,
                         submissionDeadline: matrixForm.submissionDeadline || null,
+                        gradingDurationMinutes: Number(matrixForm.gradingDurationMinutes) || 30,
                         judgeIds: matrixForm.judgeIds.map(Number),
                         topN: matrix.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
                         scoringCriteriaJson: JSON.stringify(matrixForm.criteria),
@@ -1530,7 +1533,7 @@ export default function EventManagement() {
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="grid gap-4 md:grid-cols-3">
+                                    <div className="grid gap-4 md:grid-cols-4">
                                         <div>
                                             <label className="mb-1 block text-xs font-bold text-slate-700">Guideline / Topic</label>
                                             <input className="input-custom" placeholder="Link to guidelines, challenge brief, or round rules" value={matrixForm.guidelineUrl} onChange={(e) => setMatrixForm({ ...matrixForm, guidelineUrl: e.target.value })} />
@@ -1542,6 +1545,10 @@ export default function EventManagement() {
                                         <div>
                                             <label className="mb-1 block text-xs font-bold text-slate-700">Deadline</label>
                                             <input type="datetime-local" className="input-custom" value={matrixForm.submissionDeadline} onChange={(e) => setMatrixForm({ ...matrixForm, submissionDeadline: e.target.value })} />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-bold text-slate-700">Judge grading time (Minutes)</label>
+                                            <input type="number" min="1" className="input-custom font-bold text-indigo-600" value={matrixForm.gradingDurationMinutes} onChange={(e) => setMatrixForm({ ...matrixForm, gradingDurationMinutes: e.target.value })} />
                                         </div>
                                     </div>
                                     {!selectedMatrix?.finalRound && (
