@@ -1,71 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import axiosClient from '../api/axiosClient';
 
-// Static mock teams to make the directory look complete
-const MOCK_TEAMS = [
-    {
-        id: 'mock-team-1',
-        name: 'Alpha Byte',
-        trackName: 'Artificial Intelligence',
-        type: 'PUBLIC',
-        skillsNeeded: 'Python, TensorFlow, Deep Learning',
-        members: [
-            { id: 'm1', fullName: 'Aarav Mehta', role: 'LEADER' },
-            { id: 'm2', fullName: 'Ishaan Sharma', role: 'MEMBER' },
-            { id: 'm3', fullName: 'Ananya Iyer', role: 'MEMBER' }
-        ]
-    },
-    {
-        id: 'mock-team-2',
-        name: 'AI Avengers',
-        trackName: 'Web Application',
-        type: 'PRIVATE',
-        skillsNeeded: 'React, Node.js, UI/UX Design',
-        members: [
-            { id: 'm4', fullName: 'Kabir Singh', role: 'LEADER' },
-            { id: 'm5', fullName: 'Kiara Advani', role: 'MEMBER' },
-            { id: 'm6', fullName: 'Rohan Mehra', role: 'MEMBER' },
-            { id: 'm7', fullName: 'Aditi Rao', role: 'MEMBER' }
-        ]
-    },
-    {
-        id: 'mock-team-3',
-        name: 'DevDynasty',
-        trackName: 'Mobile App Development',
-        type: 'PUBLIC',
-        skillsNeeded: 'Flutter, Firebase, Kotlin',
-        members: [
-            { id: 'm8', fullName: 'Dev Patel', role: 'LEADER' },
-            { id: 'm9', fullName: 'Priya Patel', role: 'MEMBER' },
-            { id: 'm10', fullName: 'Rahul Verma', role: 'MEMBER' },
-            { id: 'm11', fullName: 'Siddharth Malhotra', role: 'MEMBER' },
-            { id: 'm12', fullName: 'Alia Bhatt', role: 'MEMBER' }
-        ]
-    },
-    {
-        id: 'mock-team-4',
-        name: 'Cyber Sentinels',
-        trackName: 'Web Application',
-        type: 'PUBLIC',
-        skillsNeeded: 'Solidity, Ethereum, Web3.js',
-        members: [
-            { id: 'm13', fullName: 'Arjun Rampal', role: 'LEADER' },
-            { id: 'm14', fullName: 'Shraddha Kapoor', role: 'MEMBER' }
-        ]
-    },
-    {
-        id: 'mock-team-5',
-        name: 'Hack-o-Holics',
-        trackName: 'Artificial Intelligence',
-        type: 'PRIVATE',
-        skillsNeeded: 'C++, Raspberry Pi, Arduino, Python',
-        members: [
-            { id: 'm15', fullName: 'Varun Dhawan', role: 'LEADER' },
-            { id: 'm16', fullName: 'Kriti Sanon', role: 'MEMBER' },
-            { id: 'm17', fullName: 'Tiger Shroff', role: 'MEMBER' }
-        ]
-    }
-];
+// Only real database teams
+const MOCK_TEAMS = [];
 
 export default function AllTeamsPool({ eventId, onTeamJoined }) {
     const [teams, setTeams] = useState([]);
@@ -89,10 +26,9 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
         return new Date() >= new Date(event.eventStartDate);
     }, [event]);
 
-    // Combine mock teams and database teams
+    // Use only real database teams
     const allTeams = useMemo(() => {
-        // Map database teams event properties
-        return [...MOCK_TEAMS, ...teams];
+        return teams;
     }, [teams]);
 
     // Check if user is currently in a team for this event
