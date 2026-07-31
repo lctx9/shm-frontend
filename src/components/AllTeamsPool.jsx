@@ -91,6 +91,11 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
         return new Date() >= new Date(event.eventStartDate);
     }, [event]);
 
+    const isRegistrationEnded = useMemo(() => {
+        if (!event?.regEndDate) return false;
+        return new Date() > new Date(event.regEndDate);
+    }, [event]);
+
     // Combine mock teams and database teams
     const allTeams = useMemo(() => {
         // Map database teams event properties
@@ -339,7 +344,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                             <th className="px-6 py-4 border-b border-slate-200">Members</th>
                             <th className="px-6 py-4 border-b border-slate-200">Capacity</th>
                             <th className="px-6 py-4 border-b border-slate-200">Status</th>
-                            {!isManager && !userTeam && !isEventStarted && (
+                            {!isManager && !userTeam && !isEventStarted && !isRegistrationEnded && (
                                 <th className="px-6 py-4 border-b border-slate-200 text-right">Action</th>
                             )}
                         </tr>
@@ -414,7 +419,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                                     </td>
 
                                     {/* Action Column */}
-                                    {!isManager && !userTeam && !isEventStarted && (
+                                    {!isManager && !userTeam && !isEventStarted && !isRegistrationEnded && (
                                         <td className="px-6 py-4 text-right shrink-0">
                                             {isFull ? (
                                                 <span className="text-xs text-slate-400 italic font-semibold">Locked</span>
@@ -446,7 +451,7 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
                         })}
                         {filteredTeams.length === 0 && (
                             <tr>
-                                <td colSpan={(!isManager && !userTeam && !isEventStarted) ? 5 : 4} className="text-center py-10 text-slate-400 font-semibold italic">
+                                <td colSpan={(!isManager && !userTeam && !isEventStarted && !isRegistrationEnded) ? 5 : 4} className="text-center py-10 text-slate-400 font-semibold italic">
                                     No teams found.
                                 </td>
                             </tr>
