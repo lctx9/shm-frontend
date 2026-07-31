@@ -514,6 +514,9 @@ export default function EventDetail() {
                             embedded={true} 
                             onTeamChanged={(teamExists) => {
                                 setHasTeam(teamExists);
+                                if (!teamExists) {
+                                    handleTabChange('all-teams');
+                                }
                             }} 
                         />
                     </div>
