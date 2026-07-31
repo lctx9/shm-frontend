@@ -401,10 +401,10 @@ function StaffDashboard() {
             {/* Compact Greeting Header */}
             <section className="rounded-xl border border-[#d7e6f8] bg-[#f8fafc]/80 px-6 py-4 sm:px-7 sm:py-5 text-slate-800 shadow-xs">
                 <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0f63c9]">Hệ thống SEAL Staff</p>
-                    <h2 className="mt-1 text-xl sm:text-2xl font-black text-[#071936]">Bảng điều khiển Staff</h2>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0f63c9]">SEAL Staff Portal</p>
+                    <h2 className="mt-1 text-xl sm:text-2xl font-black text-[#071936]">Staff Dashboard</h2>
                     <p className="mt-1 text-xs sm:text-sm text-[#5c6d83]">
-                        Chào mừng quay trở lại, <span className="font-extrabold text-[#0f63c9]">{email}</span>. Dưới đây là các nhiệm vụ được phân công chi tiết của bạn.
+                        Welcome back, <span className="font-extrabold text-[#0f63c9]">{email}</span>. Here is the breakdown of your assigned event deliverables.
                     </p>
                 </div>
             </section>
