@@ -152,10 +152,11 @@ export default function EventManagement() {
     const [mentors, setMentors] = useState([]);
     const [judges, setJudges] = useState([]);
     const [prizes, setPrizes] = useState([]);
+    const [submissions, setSubmissions] = useState([]);
     const [selectedEventId, setSelectedEventId] = useState('');
     const [selectedMatrixId, setSelectedMatrixId] = useState('');
     const [form, setForm] = useState(emptyEvent);
-    const [matrixForm, setMatrixForm] = useState({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', gradingDurationMinutes: 30, topN: 10, judgeIds: [], criteria: defaultCriteria });
+    const [matrixForm, setMatrixForm] = useState({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', gradingDurationMinutes: 10, topN: 10, judgeIds: [], criteria: defaultCriteria });
     const [prizeForm, setPrizeForm] = useState(emptyPrize);
     const [activeTab, setActiveTab] = useState('overview');
     const [createStep, setCreateStep] = useState(0);
@@ -294,11 +295,12 @@ export default function EventManagement() {
     };
 
     const fetchAll = async (preferredEventId = '') => {
-        const [eventRes, teamRes, staffRes, templateRes] = await Promise.all([
+        const [eventRes, teamRes, staffRes, templateRes, submissionRes] = await Promise.all([
             axiosClient.get('/events'),
             axiosClient.get('/teams').catch(() => ({ result: [] })),
             axiosClient.get('/users/role/STAFF').catch(() => ({ result: [] })),
             axiosClient.get('/rule-templates').catch(() => ({ result: [] })),
+            axiosClient.get('/submissions').catch(() => ({ result: [] })),
         ]);
 
         const loadedEvents = eventRes.result || [];
@@ -311,6 +313,7 @@ export default function EventManagement() {
         setMentors(staffRes.result || []);
         setJudges(staffRes.result || []);
         setTemplates(templateRes.result || []);
+        setSubmissions(submissionRes.result || []);
         setSelectedEventId(nextEvent ? String(nextEventId) : '');
         setSelectedMatrixId((currentMatrixId) => {
             const keepMatrix = nextEvent?.matrices?.find((matrix) => String(matrix.id) === String(currentMatrixId));
@@ -332,7 +335,7 @@ export default function EventManagement() {
 
     useEffect(() => {
         if (!selectedMatrix) {
-            setMatrixForm({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', gradingDurationMinutes: 30, topN: 10, judgeIds: [], criteria: defaultCriteria });
+            setMatrixForm({ guidelineUrl: '', submissionStartDate: '', submissionDeadline: '', gradingDurationMinutes: 10, topN: 10, judgeIds: [], criteria: defaultCriteria });
             return;
         }
 
@@ -340,7 +343,7 @@ export default function EventManagement() {
             guidelineUrl: selectedMatrix.guidelineUrl || '',
             submissionStartDate: toLocalInput(selectedMatrix.submissionStartDate),
             submissionDeadline: toLocalInput(selectedMatrix.submissionDeadline),
-            gradingDurationMinutes: selectedMatrix.gradingDurationMinutes || 30,
+            gradingDurationMinutes: selectedMatrix.gradingDurationMinutes || 10,
             topN: selectedMatrix.topN || 10,
             judgeIds: selectedMatrix.judges?.map((user) => user.id) || [],
             criteria: parseJson(selectedMatrix.scoringCriteriaJson, defaultCriteria),
@@ -561,6 +564,10 @@ export default function EventManagement() {
     const saveEvent = async (e) => {
         e.preventDefault();
         if (!ensureCoordinator()) return;
+        if (form.id) {
+            setMessage({ type: 'error', text: "Event configuration is locked and cannot be modified after creation." });
+            return;
+        }
         if (form.tracks.some((track) => track.mentorIds.length < 1 || track.mentorIds.length > 2)) {
             setMessage({ type: 'error', text: "Each group needs to be assigned 1 to 2 mentors." });
             return;
@@ -569,11 +576,9 @@ export default function EventManagement() {
         setMessage(null);
 
         try {
-            const response = form.id
-                ? await axiosClient.put(`/events/${form.id}`, eventPayload())
-                : await axiosClient.post('/events', eventPayload());
-            setMessage({ type: 'success', text: form.id ? 'Da cap nhat event.' : 'Da tao event moi.' });
-            await fetchAll(response.result?.id || form.id || '');
+            const response = await axiosClient.post('/events', eventPayload());
+            setMessage({ type: 'success', text: "Event created successfully." });
+            await fetchAll(response.result?.id || '');
         } catch (err) {
             setMessage({ type: 'error', text: err.message || 'Unable to save the event.' });
         } finally {
@@ -753,7 +758,7 @@ export default function EventManagement() {
                 guidelineUrl: matrixForm.guidelineUrl,
                 submissionStartDate: matrixForm.submissionStartDate || null,
                 submissionDeadline: matrixForm.submissionDeadline || null,
-                gradingDurationMinutes: Number(matrixForm.gradingDurationMinutes) || 30,
+                gradingDurationMinutes: Number(matrixForm.gradingDurationMinutes) || 10,
                 judgeIds: matrixForm.judgeIds.map(Number),
                 topN: selectedMatrix?.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
                 scoringCriteriaJson: JSON.stringify(matrixForm.criteria),
@@ -829,7 +834,7 @@ export default function EventManagement() {
                         guidelineUrl: matrixForm.guidelineUrl,
                         submissionStartDate: matrixForm.submissionStartDate || null,
                         submissionDeadline: matrixForm.submissionDeadline || null,
-                        gradingDurationMinutes: Number(matrixForm.gradingDurationMinutes) || 30,
+                        gradingDurationMinutes: Number(matrixForm.gradingDurationMinutes) || 10,
                         judgeIds: matrixForm.judgeIds.map(Number),
                         topN: matrix.finalRound ? null : Math.max(1, Number(matrixForm.topN)),
                         scoringCriteriaJson: JSON.stringify(matrixForm.criteria),
@@ -1325,7 +1330,7 @@ export default function EventManagement() {
                                                 {isCurrentRoundFinal ? (
                                                     <span>🏆 Announcement of results & Ranking</span>
                                                 ) : (
-                                                    <span>⚡ Results announced & Open {nextRoundName}</span>
+                                                    <span>Results announced & Open {nextRoundName}</span>
                                                 )}
                                             </button>
                                         )}
@@ -1396,19 +1401,10 @@ export default function EventManagement() {
                         <Section
                             title="Information and event calendar"
                             eyebrow="Basic configuration"
-                            actions={selectedEvent && (
-                                <button 
-                                    type="button" 
-                                    className="btn-secondary" 
-                                    onClick={deleteEvent} 
-                                    disabled={loading || readOnly}
-                                >
-                                    {Number(selectedEvent.teamCount || 0) > 0 ? "Pause the event" : "Delete event"}
-                                </button>
-                            )}
+                            actions={null}
                         >
                             <form onSubmit={saveEvent} className="space-y-5">
-                                <fieldset disabled={readOnly} className="contents">
+                                <fieldset disabled={readOnly || Boolean(form.id)} className="contents">
                                 <div><h3 className="font-black text-slate-900">1. Identification information</h3><p className="mt-1 text-sm text-slate-500">The underlying content is visible to participants on a public page.</p></div>
                                 <div className="grid gap-4 md:grid-cols-[1fr_180px_140px]">
                                     <input required className="input-custom" placeholder="Event name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -1428,55 +1424,80 @@ export default function EventManagement() {
                                     <label className="text-sm font-bold text-slate-700">End of exam<input required type="datetime-local" className="input-custom mt-1" value={form.eventEndDate} onChange={(e) => setForm({ ...form, eventEndDate: e.target.value })} /></label>
                                     <label className="text-sm font-bold text-slate-700">Total number of rounds (including finals)<input required min="2" type="number" disabled={Boolean(selectedEvent?.structureInitialized)} className="input-custom mt-1 disabled:cursor-not-allowed disabled:bg-slate-100" value={form.roundCount} onChange={(e) => setForm({ ...form, roundCount: Math.max(2, Number(e.target.value)) })} /></label>
                                 </div>
-                                <div className="rounded-xl border border-blue-100 bg-slate-50 p-4">
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-black text-slate-800">3. Tracks and assigned mentors</p>
-                                            <p className="mt-1 text-xs text-slate-500">Assign one or two staff mentors to each track.</p>
-                                        </div>
-                                        <button type="button" className="btn-secondary" onClick={() => setForm((current) => ({ ...current, tracks: [...current.tracks, { id: null, name: `Track ${String.fromCharCode(65 + current.tracks.length)}`, mentorIds: [], maxTeams: null }] }))}>Add track</button>
-                                    </div>
-                                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                                        {form.tracks.map((track, index) => (
-                                            <div key={index} className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm">
-                                                <div className="flex gap-2">
-                                                    <input required className="input-custom font-bold" value={track.name} onChange={(e) => updateTrack(index, { name: e.target.value })} placeholder="Tournament name" />
-                                                    <button type="button" className="btn-secondary" disabled={form.tracks.length <= 1} onClick={() => setForm((current) => ({ ...current, tracks: current.tracks.filter((_, itemIndex) => itemIndex !== index) }))}>Erase</button>
-                                                </div>
-                                                <label className="mt-3 block text-xs font-bold text-slate-700">
-                                                    Limit the number of registered teams (0 or leave blank = unlimited)
-                                                    <input 
-                                                        type="number" 
-                                                        min="0" 
-                                                        className="input-custom mt-1.5" 
-                                                        value={track.maxTeams || ''} 
-                                                        onChange={(e) => updateTrack(index, { maxTeams: e.target.value ? Number(e.target.value) : null })} 
-                                                        placeholder="For example: 15"
-                                                    />
-                                                </label>
-                                                <p className="mb-2 mt-4 text-xs font-black uppercase tracking-wide text-[#0f63c9]">Select the Mentor in charge ({track.mentorIds.length}/2)</p>
-                                                <div className="max-h-36 space-y-2 overflow-auto">
-                                                    {mentors.map((user) => (
-                                                        <label key={user.id} className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${track.mentorIds.some((id) => String(id) === String(user.id)) ? 'bg-blue-50 font-bold text-blue-800' : 'text-slate-600'}`}>
-                                                            <input type="checkbox" checked={track.mentorIds.some((id) => String(id) === String(user.id))} disabled={!track.mentorIds.some((id) => String(id) === String(user.id)) && track.mentorIds.length >= 2} onChange={() => toggleTrackMentor(index, user.id)} />
-                                                            {user.fullName || user.email}
-                                                        </label>
-                                                    ))}
-                                                    {mentors.length === 0 && <p className="text-sm text-amber-700">No mentor account yet.</p>}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800">
-                                        Current structure: {form.tracks.length} tracks and {form.roundCount} rounds.
-                                    </div>
-                                    {selectedEvent?.structureInitialized && <p className="mt-2 text-xs font-semibold text-[#0f63c9]">The structure is initialized. New tracks and mentor assignments will sync automatically.</p>}
-                                </div>
-                                <label className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                                    <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
-                                    Allows events to display and work
-                                </label>
-                                <button type="submit" className="btn-primary w-full" disabled={loading || readOnly}>{loading ? "Saving..." : "Save changes"}</button>
+                                 <div className="rounded-xl border border-blue-100 bg-slate-50 p-5 shadow-sm">
+                                     <div className="mb-4 flex items-center justify-between border-b border-blue-100 pb-3">
+                                         <div>
+                                             <h3 className="text-base font-black text-slate-900">Grading Progress & Assigned Judges by Round</h3>
+                                             <p className="mt-0.5 text-xs text-slate-500">Monitor judge grading completion for each round before announcing results.</p>
+                                         </div>
+                                         <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-[#0f63c9]">
+                                             {selectedEvent?.matrices?.length || 0} Rounds / Tracks
+                                         </span>
+                                     </div>
+
+                                     {selectedEvent?.matrices?.length ? (
+                                         <div className="space-y-4">
+                                             {selectedEvent.matrices.map((matrix) => {
+                                                 const matrixSubs = submissions.filter((sub) => String(sub.matrixId) === String(matrix.id));
+                                                 const totalSubs = matrixSubs.length;
+                                                 const gradedSubs = matrixSubs.filter((sub) => Boolean(sub.graded || sub.score != null)).length;
+                                                 const isFullyGraded = totalSubs > 0 && gradedSubs === totalSubs;
+                                                 const progressPct = totalSubs > 0 ? Math.round((gradedSubs / totalSubs) * 100) : 0;
+
+                                                 return (
+                                                     <div key={matrix.id} className="rounded-xl border border-blue-100 bg-white p-4 shadow-sm">
+                                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                                             <div>
+                                                                 <span className="text-[11px] font-black uppercase tracking-wider text-[#0f63c9]">
+                                                                     {displayCompetitionLabel(matrix.roundName)}
+                                                                 </span>
+                                                                 <h4 className="font-black text-slate-900">
+                                                                     {matrix.finalRound ? "Final Round (All Tracks)" : displayCompetitionLabel(matrix.trackName)}
+                                                                 </h4>
+                                                             </div>
+                                                             <div className="flex items-center gap-3">
+                                                                 <span className={`rounded-full px-3 py-1 text-xs font-black ${isFullyGraded ? 'bg-emerald-100 text-emerald-800' : gradedSubs > 0 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'}`}>
+                                                                     {totalSubs === 0 ? "No submissions yet" : `${gradedSubs} / ${totalSubs} Submissions Graded (${progressPct}%)`}
+                                                                 </span>
+                                                             </div>
+                                                         </div>
+
+                                                         {totalSubs > 0 && (
+                                                             <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                                                 <div
+                                                                     className={`h-full transition-all duration-300 ${isFullyGraded ? 'bg-emerald-500' : 'bg-[#0f63c9]'}`}
+                                                                     style={{ width: `${progressPct}%` }}
+                                                                 />
+                                                             </div>
+                                                         )}
+
+                                                         <div className="mt-3 pt-3 border-t border-slate-100">
+                                                             <p className="text-xs font-bold text-slate-500 mb-2">Assigned Judges ({matrix.judges?.length || 0}):</p>
+                                                             {matrix.judges?.length ? (
+                                                                 <div className="flex flex-wrap gap-2">
+                                                                     {matrix.judges.map((judge) => (
+                                                                         <span key={judge.id} className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/70 px-2.5 py-1 text-xs font-bold text-blue-900">
+                                                                             👤 {judge.fullName || judge.email}
+                                                                         </span>
+                                                                     ))}
+                                                                 </div>
+                                                             ) : (
+                                                                 <p className="text-xs text-amber-700 font-medium">⚠️ No judges assigned yet to this round. Configure judges in Scoring Configuration.</p>
+                                                             )}
+                                                         </div>
+                                                     </div>
+                                                 );
+                                             })}
+                                         </div>
+                                     ) : (
+                                         <div className="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center text-xs font-medium text-slate-500">
+                                             No rounds initialized yet for this event.
+                                         </div>
+                                     )}
+                                 </div>
+                                {!form.id && (
+                                    <button type="submit" className="btn-primary w-full" disabled={loading || readOnly}>{loading ? "Saving..." : "Save changes"}</button>
+                                )}
                                 </fieldset>
                             </form>
                         </Section>
@@ -1547,8 +1568,8 @@ export default function EventManagement() {
                                             <input type="datetime-local" className="input-custom" value={matrixForm.submissionDeadline} onChange={(e) => setMatrixForm({ ...matrixForm, submissionDeadline: e.target.value })} />
                                         </div>
                                         <div>
-                                            <label className="mb-1 block text-xs font-bold text-slate-700">Judge grading time (Minutes)</label>
-                                            <input type="number" min="1" className="input-custom font-bold text-indigo-600" value={matrixForm.gradingDurationMinutes} onChange={(e) => setMatrixForm({ ...matrixForm, gradingDurationMinutes: e.target.value })} />
+                                            <label className="mb-1 block text-xs font-bold text-slate-700">Grading duration (Minutes)</label>
+                                            <input type="number" min="1" className="input-custom font-bold text-emerald-700" placeholder="e.g. 10, 15, 30" value={matrixForm.gradingDurationMinutes || ''} onChange={(e) => setMatrixForm({ ...matrixForm, gradingDurationMinutes: e.target.value })} />
                                         </div>
                                     </div>
                                     {!selectedMatrix?.finalRound && (
