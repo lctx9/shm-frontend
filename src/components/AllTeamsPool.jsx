@@ -257,6 +257,14 @@ export default function AllTeamsPool({ eventId, onTeamJoined }) {
         try {
             if (targetTeam.id.toString().startsWith('mock-')) {
                 await new Promise(resolve => setTimeout(resolve, 800));
+                if (joinPassword !== '1234') {
+                    setJoinError('Incorrect PIN (Hint: Use 1234 for mock teams)');
+                    setJoinStatuses(prev => ({
+                        ...prev,
+                        [targetTeam.id]: { text: 'Failed', type: 'error' }
+                    }));
+                    return;
+                }
                 setPasswordJoinTeam(null);
                 setJoinPassword('');
                 setJoinError('');
