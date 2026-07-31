@@ -219,18 +219,18 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
                 }
                 setSubmissionsMap(newSubmissionsMap);
 
-                setFormData(current => {
-                    const firstMatrixId = current.matrixId && teamMatrices.some(m => String(m.id) === String(current.matrixId))
-                        ? current.matrixId
-                        : (Object.keys(newSubmissionsMap)[0] || teamMatrices[0]?.id || '');
-                    const roundSubmission = newSubmissionsMap[String(firstMatrixId)] || null;
-                    setSubmission(roundSubmission);
-                    return {
-                        ...current,
-                        matrixId: String(firstMatrixId),
-                        fileUrl: roundSubmission?.fileUrl || '',
-                    };
-                });
+                const currentMatrixId = formData.matrixId;
+                const firstMatrixId = currentMatrixId && teamMatrices.some(m => String(m.id) === String(currentMatrixId))
+                    ? currentMatrixId
+                    : (Object.keys(newSubmissionsMap)[0] || teamMatrices[0]?.id || '');
+                const roundSubmission = newSubmissionsMap[String(firstMatrixId)] || null;
+                
+                setSubmission(roundSubmission);
+                setFormData(current => ({
+                    ...current,
+                    matrixId: String(firstMatrixId || ''),
+                    fileUrl: roundSubmission?.fileUrl || '',
+                }));
                 
                 setJoinRequests(requestRes.status === 'fulfilled' ? requestRes.value.result || [] : []);
                 setSentInvitations(sentInvRes.status === 'fulfilled' ? sentInvRes.value.result || [] : []);
@@ -250,11 +250,17 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
     }, [fetchTeamDataForEvent]);
 
     // === REAL-TIME COUNTDOWN & AUTO-REFETCH FOR INTER-ROUND BREAK & DEADLINES ===
-    useEffect(() => {
-        const hasBreakOrActiveTimer = matrices.some(m => (m.breakRemainingSeconds && m.breakRemainingSeconds > 0) || m.breakEndTime);
-        if (!hasBreakOrActiveTimer) return;
+    const matricesRef = useRef(matrices);
+    matricesRef.current = matrices;
 
+    useEffect(() => {
         const intervalId = setInterval(() => {
+            const currentMatrices = matricesRef.current;
+            if (!currentMatrices || currentMatrices.length === 0) return;
+
+            const hasBreakOrActiveTimer = currentMatrices.some(m => (m.breakRemainingSeconds && m.breakRemainingSeconds > 0) || m.breakEndTime);
+            if (!hasBreakOrActiveTimer) return;
+
             setMatrices(prevMatrices => {
                 let shouldRefetch = false;
                 const updated = prevMatrices.map(matrix => {
@@ -278,16 +284,8 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
             });
         }, 1000);
 
-        // Polling định kỳ 5s để tự động bắt sự kiện khi Coordinator chuyển vòng/hết giờ giải lao
-        const pollId = setInterval(() => {
-            fetchTeamDataForEvent();
-        }, 5000);
-
-        return () => {
-            clearInterval(intervalId);
-            clearInterval(pollId);
-        };
-    }, [matrices, fetchTeamDataForEvent]);
+        return () => clearInterval(intervalId);
+    }, [fetchTeamDataForEvent]);
 
     const activeOrUpcomingEvents = useMemo(() => {
         return events.filter((event) => {
