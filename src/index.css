@@ -2238,12 +2238,14 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     display: grid;
     grid-template-columns: 320px minmax(0, 1fr);
     gap: 24px;
+    height: calc(100vh - 120px);
+    overflow: hidden;
 }
 
 .judge-queue {
-    position: sticky;
-    top: 88px;
-    align-self: start;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     border: 1px solid var(--app-border);
     border-radius: var(--app-radius);
     background: #ffffff;
@@ -2328,7 +2330,7 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 }
 
 .judge-queue__list {
-    max-height: 600px;
+    flex: 1;
     overflow-y: auto;
 }
 
@@ -2380,6 +2382,9 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .judge-queue__list .is-pending { background: #fef3c7; color: #92400e; }
 
 .judge-rubric {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     border: 1px solid var(--app-border);
     border-radius: var(--app-radius);
     background: #ffffff;
@@ -3227,4 +3232,12 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 
 @media(max-width:900px){
     .team-workspace { grid-template-columns: 1fr; }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none !important;
+}
+.no-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
 }
