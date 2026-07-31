@@ -5,93 +5,93 @@ import logoFpt from '../assets/fpt.jpg';
 
 const coordinatorGroups = [
     {
-        title: 'Vận hành',
+        title: 'Operations',
         items: [
-            { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
-            { to: '/dashboard/notifications', label: 'Thông báo' },
+            { to: '/dashboard', label: 'Overview', match: ['/dashboard'] },
+            { to: '/dashboard/notifications', label: 'Notifications' },
         ],
     },
     {
-        title: 'Quản lý Giải đấu',
+        title: 'Tournament Management',
         items: [
-            { to: '/dashboard/events', label: 'Quản lý sự kiện' },
-            { to: '/dashboard/scoring-config', label: 'Cấu hình chấm điểm' },
-            { to: '/dashboard/teams', label: 'Đội thi' },
-            { to: '/dashboard/submissions', label: 'Bài nộp' },
+            { to: '/dashboard/events', label: 'Event Management' },
+            { to: '/dashboard/scoring-config', label: 'Scoring Configuration' },
+            { to: '/dashboard/teams', label: 'Teams' },
+            { to: '/dashboard/submissions', label: 'Submissions' },
         ],
     },
     {
-        title: 'Chấm điểm & Kết quả',
+        title: 'Grading & Results',
         items: [
-            { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
-            { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
-            { to: '/dashboard/audit-logs', label: 'Audit điểm' },
+            { to: '/dashboard/scoring-stats', label: 'Scoring Statistics' },
+            { to: '/dashboard/leaderboard', label: 'Leaderboard' },
+            { to: '/dashboard/audit-logs', label: 'Scoring Audit' },
         ],
     },
 ];
 
 const adminGroups = [
     {
-        title: 'Quản trị hệ thống',
+        title: 'System Administration',
         items: [
-            { to: '/dashboard', label: 'Tổng quan hệ thống', match: ['/dashboard'] },
-            { to: '/dashboard/users', label: 'Tài khoản & phân quyền' },
-            { to: '/dashboard/student-approval', label: 'Phê duyệt tài khoản' },
-            { to: '/dashboard/staff', label: 'Quản lý staff' },
-            { to: '/dashboard/monitoring', label: 'Giám sát hệ thống' },
+            { to: '/dashboard', label: 'System Overview', match: ['/dashboard'] },
+            { to: '/dashboard/users', label: 'Accounts & Permissions' },
+            { to: '/dashboard/student-approval', label: 'Account Approvals' },
+            { to: '/dashboard/staff', label: 'Staff Management' },
+            { to: '/dashboard/monitoring', label: 'System Monitoring' },
         ],
     },
     {
-        title: 'Vận hành cuộc thi',
+        title: 'Competition Operations',
         items: [
-            { to: '/dashboard/events', label: 'Sự kiện (chỉ xem)' },
-            { to: '/dashboard/scoring-config', label: 'Cấu hình điểm (chỉ xem)' },
-            { to: '/dashboard/submissions', label: 'Bài nộp' },
+            { to: '/dashboard/events', label: 'Events (View Only)' },
+            { to: '/dashboard/scoring-config', label: 'Scoring Config (View Only)' },
+            { to: '/dashboard/submissions', label: 'Submissions' },
         ],
     },
     {
-        title: 'Chấm điểm & kết quả',
+        title: 'Grading & Results',
         items: [
-            { to: '/dashboard/grading', label: 'Tiến độ chấm (chỉ xem)' },
-            { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
-            { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
-            { to: '/dashboard/audit-logs', label: 'Audit điểm' },
+            { to: '/dashboard/grading', label: 'Grading Progress (View Only)' },
+            { to: '/dashboard/scoring-stats', label: 'Scoring Statistics' },
+            { to: '/dashboard/leaderboard', label: 'Leaderboard' },
+            { to: '/dashboard/audit-logs', label: 'Scoring Audit' },
         ],
     },
     {
-        title: 'Truyền thông',
+        title: 'Communications',
         items: [
-            { to: '/dashboard/notifications', label: 'Thông báo (chỉ xem)' },
+            { to: '/dashboard/notifications', label: 'Notifications (View Only)' },
         ],
     },
     {
-        title: 'Vận hành dữ liệu',
+        title: 'Data Operations',
         items: [
-            { to: '/dashboard/backups', label: 'Sao lưu & khôi phục' },
-            { to: '/dashboard/settings', label: 'Cấu hình hệ thống' },
+            { to: '/dashboard/backups', label: 'Backups & Restores' },
+            { to: '/dashboard/settings', label: 'System Settings' },
         ],
     },
 ];
 
 const judgeGroups = [
     {
-        title: 'Judge',
+        title: 'Judge Duties',
         items: [
-            { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
-            { to: '/dashboard/grading', label: 'Chấm bài' },
-            { to: '/dashboard/scoring-stats', label: 'Thống kê điểm' },
-            { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
+            { to: '/dashboard', label: 'Overview', match: ['/dashboard'] },
+            { to: '/dashboard/grading', label: 'Grading' },
+            { to: '/dashboard/scoring-stats', label: 'Scoring Statistics' },
+            { to: '/dashboard/leaderboard', label: 'Leaderboard' },
         ],
     },
 ];
 
 const mentorGroups = [
     {
-        title: 'Mentor',
+        title: 'Mentor Duties',
         items: [
-            { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
-            { to: '/dashboard/teams', label: 'Đội phụ trách' },
-            { to: '/dashboard/chat', label: 'Trao đổi với đội' },
+            { to: '/dashboard', label: 'Overview', match: ['/dashboard'] },
+            { to: '/dashboard/teams', label: 'Assigned Teams' },
+            { to: '/dashboard/chat', label: 'Team Chat' },
         ],
     },
 ];
@@ -106,26 +106,26 @@ function getGroups(role) {
 
 function getStaffGroups(assignments) {
     const groups = [{
-        title: 'Staff',
+        title: 'Staff Duties',
         items: [
-            { to: '/dashboard', label: 'Tổng quan', match: ['/dashboard'] },
+            { to: '/dashboard', label: 'Overview', match: ['/dashboard'] },
         ],
     }];
     if (assignments.mentor) {
         groups.push({
-            title: 'Nhiệm vụ Mentor',
+            title: 'Mentor Duties',
             items: [
-                { to: '/dashboard/teams', label: 'Đội được hướng dẫn' },
-                { to: '/dashboard/chat', label: 'Chat với đội' },
+                { to: '/dashboard/teams', label: 'Assigned Teams' },
+                { to: '/dashboard/chat', label: 'Team Chat' },
             ],
         });
     }
     if (assignments.judge) {
         groups.push({
-            title: 'Nhiệm vụ Judge',
+            title: 'Judge Duties',
             items: [
-                { to: '/dashboard/grading', label: 'Bài cần chấm' },
-                { to: '/dashboard/leaderboard', label: 'Bảng xếp hạng' },
+                { to: '/dashboard/grading', label: 'Pending Submissions' },
+                { to: '/dashboard/leaderboard', label: 'Leaderboard' },
             ],
         });
     }
@@ -350,20 +350,19 @@ export default function Sidebar() {
             </nav>
 
             <div className="p-4 space-y-3" style={{ borderTop: '1px solid #e2e8f0' }}>
-                <div className="flex items-center gap-2.5 rounded-xl p-2.5" style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black" style={{ background: '#eaf3ff', border: '1px solid #d7e6f8', color: '#0f63c9' }}>
-                        {(email || 'U').charAt(0).toUpperCase()}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-bold text-[#0b1f3f]" title={email}>{email}</p>
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#0f63c9] mt-0.5">{role}</p>
+                <Link to="/dashboard/profile" className="flex items-center gap-2.5 rounded-xl p-2.5 hover:bg-[#eaf3ff] border border-transparent hover:border-[#d7e6f8] transition-all cursor-pointer block text-left">
+                    <div className="flex items-center gap-2.5">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-black" style={{ background: '#eaf3ff', border: '1px solid #d7e6f8', color: '#0f63c9' }}>
+                            {(email || 'U').charAt(0).toUpperCase()}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-bold text-[#0b1f3f]" title={email}>{email}</p>
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#0f63c9] mt-0.5">{role}</p>
+                        </div>
                     </div>
-                </div>
-
-                <Link to="/dashboard/profile" className={`block rounded-lg px-3 py-2 text-sm font-bold ${navClass({ to: '/dashboard/profile' })}`}>
-                    Hồ sơ
                 </Link>
-                <button type="button" onClick={logout} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-rose-600 hover:text-white hover:border-rose-500 transition-all shadow-sm">Đăng xuất</button>
+
+                <button type="button" onClick={logout} className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-rose-600 hover:text-white hover:border-rose-500 transition-all shadow-sm cursor-pointer">Log Out</button>
             </div>
         </aside>
     );
