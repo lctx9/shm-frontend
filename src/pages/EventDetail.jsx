@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { formatDateTime, getEventPhase } from '../utils/hackathon';
+import MyTeam from './MyTeam';
+import ParticipantsPool from '../components/ParticipantsPool';
+import AllTeamsPool from '../components/AllTeamsPool';
 
 function parseCriteria(value) {
     if (!value) return [];
@@ -156,10 +159,51 @@ function TimelineSection({ event }) {
 
 export default function EventDetail() {
     const { eventId } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const initialTab = searchParams.get('tab') || 'home';
+    const [activeTab, setActiveTab] = useState(initialTab);
+    const [hasTeam, setHasTeam] = useState(false);
     const [event, setEvent] = useState(null);
     const [prizes, setPrizes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [showJoinModal, setShowJoinModal] = useState(false);
+
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    const isManager = ['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR'].includes(role);
+
+    useEffect(() => {
+        const checkUserTeam = async () => {
+            if (!token || isManager || !eventId) return;
+            try {
+                const res = await axiosClient.get(`/teams/my-team?eventId=${eventId}`);
+                const teams = res.result || [];
+                setHasTeam(teams.length > 0);
+            } catch (err) {
+                console.error("Error checking user team:", err);
+            }
+        };
+        checkUserTeam();
+    }, [eventId, token, isManager]);
+
+    useEffect(() => {
+        const tab = searchParams.get('tab') || 'home';
+        setActiveTab(tab);
+    }, [searchParams]);
+
+    const handleTabChange = (newTab) => {
+        setActiveTab(newTab);
+        setSearchParams(prev => {
+            const nextParams = new URLSearchParams(prev);
+            if (newTab === 'home') {
+                nextParams.delete('tab');
+            } else {
+                nextParams.set('tab', newTab);
+            }
+            return nextParams;
+        });
+    };
 
     useEffect(() => {
         const fetchEvent = async () => {
@@ -209,151 +253,277 @@ export default function EventDetail() {
     const tracks = event.tracks || [];
     const coverImage = getEventCoverImage(event);
 
+    const handleCreateTeamPath = () => {
+        setShowJoinModal(false);
+        handleTabChange('my-team');
+    };
+
+    const handleLookingPath = () => {
+        setShowJoinModal(false);
+        localStorage.setItem(`shm_registered_looking_event_${event.id}`, 'true');
+        handleTabChange('participants');
+    };
+
+    const tabClass = (tabName) => {
+        const isActive = activeTab === tabName;
+        return `w-full text-left px-4 py-2.5 rounded-full text-sm flex items-center gap-2 transition-colors cursor-pointer ${
+            isActive 
+                ? 'bg-[#1f3747] text-white font-bold' 
+                : 'hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium'
+        }`;
+    };
+
     return (
         <main className="bg-white min-h-screen text-slate-800 py-12 px-6 max-w-[1400px] mx-auto">
             <div className="flex flex-col lg:flex-row gap-8 items-start">
                 
                 {/* Left Sidebar Navigation */}
                 <aside className="w-full lg:w-56 shrink-0 space-y-1 animate-none">
-                    <button className="w-full text-left px-4 py-2.5 rounded-full bg-[#1f3747] text-white font-bold text-sm flex items-center gap-2">
+                    <button 
+                        onClick={() => handleTabChange('home')}
+                        className={tabClass('home')}
+                    >
                         <span>🏠</span> Home
                     </button>
-                    <button className="w-full text-left px-4 py-2.5 rounded-full hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2">
+                    <button 
+                        onClick={() => handleTabChange('participants')}
+                        className={tabClass('participants')}
+                    >
                         <span>👥</span> Participants
                     </button>
+                    <button 
+                        onClick={() => handleTabChange('all-teams')}
+                        className={tabClass('all-teams')}
+                    >
+                        <span>🏆</span> All Teams
+                    </button>
+                    {(hasTeam || activeTab === 'my-team') && (
+                        <button 
+                            onClick={() => handleTabChange('my-team')}
+                            className={tabClass('my-team')}
+                        >
+                            <span>🛡️</span> My Team
+                        </button>
+                    )}
                     <button className="w-full text-left px-4 py-2.5 rounded-full hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2">
                         <span>🎓</span> Mentors/Judges
                     </button>
                     <button className="w-full text-left px-4 py-2.5 rounded-full hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2">
                         <span>🤝</span> Our Sponsors
                     </button>
-                    <button className="w-full text-left px-4 py-2.5 rounded-full hover:bg-slate-50 text-slate-600 hover:text-slate-900 font-medium text-sm flex items-center gap-2">
-                        <span>📰</span> Latest AI News
-                    </button>
                 </aside>
 
-                {/* Center Content */}
-                <div className="flex-1 min-w-0 animate-none">
-                    {/* Cover Graphic Banner */}
-                    <div className="w-full overflow-hidden border border-slate-200 mb-6 bg-slate-50">
-                        <img 
-                            src={coverImage} 
-                            alt={event.name} 
-                            className="w-full h-auto max-h-[420px] object-cover" 
+                {activeTab === 'home' ? (
+                    <>
+                        {/* Center Content */}
+                        <div className="flex-1 min-w-0 animate-none">
+                            {/* Cover Graphic Banner */}
+                            <div className="w-full overflow-hidden border border-slate-200 mb-6 bg-slate-50">
+                                <img 
+                                    src={coverImage} 
+                                    alt={event.name} 
+                                    className="w-full h-auto max-h-[420px] object-cover" 
+                                />
+                            </div>
+
+                            {/* Title Header */}
+                            <h1 className="text-3xl font-black text-slate-900 mb-4 flex items-center gap-2 leading-tight">
+                                🚀 {event.name}
+                            </h1>
+
+                            {/* Call to Actions inside header block */}
+                            <div className="flex flex-wrap items-center gap-4 mb-8">
+                                {canJoin && <button onClick={() => setShowJoinModal(true)} className="btn-primary cursor-pointer">Join Hackathon</button>}
+                                {ended && <Link to={`/events/${event.id}/results`} className="btn-primary">View Results</Link>}
+                                <div className="text-xs text-slate-500">
+                                    <strong>Who can register?</strong> Students register in teams of 2 to 5 members.
+                                </div>
+                            </div>
+
+                            {/* Event Description */}
+                            <div className="prose max-w-none text-slate-600 text-sm sm:text-base leading-relaxed mb-12">
+                                <p>{event.description || 'Welcome to this season\'s hackathon challenge! Team up, build prototypes, and turn your tech ideas into reality.'}</p>
+                            </div>
+
+                            {/* Competition Rules */}
+                            <section className="mt-8">
+                                <SectionTitle>Requirements & Rules</SectionTitle>
+                                {rules ? (
+                                    <div className="text-sm sm:text-base text-slate-600 leading-relaxed whitespace-pre-line">{rules}</div>
+                                ) : (
+                                    <p className="text-xs text-slate-400">Rules document is being finalized by the organizing committee.</p>
+                                )}
+                                {event.ruleDocumentUrl && (
+                                    <a 
+                                        className="inline-block mt-4 text-xs font-bold text-[#2c4e66] hover:underline" 
+                                        href={event.ruleDocumentUrl} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                    >
+                                        Download Full Rule Book ↗
+                                    </a>
+                                )}
+                            </section>
+
+                            {/* Event Tracks */}
+                            <section className="mt-8">
+                                <SectionTitle>Tracks</SectionTitle>
+                                {tracks.length ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {tracks.map((track) => (
+                                            <div key={track.id} className="border border-slate-200 p-5 rounded-none hover:border-slate-400 transition-colors">
+                                                <h3 className="text-sm font-black text-slate-900 mb-2">{track.name}</h3>
+                                                <p className="text-xs text-slate-500 leading-relaxed">{track.description || 'Details regarding this track statement will be announced shortly.'}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-slate-400">Tracks have not been configured for this event yet.</p>
+                                )}
+                            </section>
+
+                            {/* Event Prizes */}
+                            <section className="mt-8">
+                                <SectionTitle>Prizes</SectionTitle>
+                                {prizes.length ? (
+                                    <div className="space-y-4">
+                                        {prizes.map((prize) => (
+                                            <div key={prize.id} className="flex gap-4 border border-slate-200 p-5 rounded-none">
+                                                <span className="text-2xl text-amber-500 leading-none">★</span>
+                                                <div>
+                                                    <h3 className="text-sm font-black text-slate-900">{prize.name}</h3>
+                                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{prize.description || 'Cash prizes, scholarships, and academic recognition.'}</p>
+                                                    {prize.teamName && (
+                                                        <small className="inline-block mt-2 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-black uppercase rounded">
+                                                            Winner: {prize.teamName}
+                                                        </small>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-slate-400">Prize structure will be announced by organizers.</p>
+                                )}
+                            </section>
+
+                            {/* Scoring Criteria */}
+                            <section className="mt-8">
+                                <SectionTitle>Scoring Rubric</SectionTitle>
+                                {criteria.length ? (
+                                    <div className="space-y-4">
+                                        {criteria.map((criterion) => (
+                                            <div key={criterion.id || criterion.label} className="border border-slate-200 p-5 rounded-none">
+                                                <div className="flex justify-between items-baseline mb-2">
+                                                    <h3 className="text-sm font-black text-slate-900">{criterion.label}</h3>
+                                                    <span className="text-xs font-bold text-[#2c4e66]">
+                                                        {criterion.weight ? `${criterion.weight}%` : `${criterion.maxScore || 100} pts`}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-500 leading-relaxed">{criterion.description || 'Assessed by jury members.'}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-slate-400">Detailed rubric has not been released yet.</p>
+                                )}
+                            </section>
+                        </div>
+
+                        {/* Right Sidebar Info Panel */}
+                        <aside className="w-full lg:w-[320px] shrink-0 space-y-6">
+                            <CountdownSection event={event} />
+                            <TimelineSection event={event} />
+                        </aside>
+                    </>
+                ) : activeTab === 'my-team' ? (
+                    <div className="flex-1 min-w-0 animate-none">
+                        <MyTeam 
+                            eventId={event.id} 
+                            embedded={true} 
+                            onTeamChanged={(teamExists) => {
+                                setHasTeam(teamExists);
+                            }} 
                         />
                     </div>
-
-                    {/* Title Header */}
-                    <h1 className="text-3xl font-black text-slate-900 mb-4 flex items-center gap-2 leading-tight">
-                        🚀 {event.name}
-                    </h1>
-
-                    {/* Call to Actions inside header block */}
-                    <div className="flex flex-wrap items-center gap-4 mb-8">
-                        {canJoin && <Link to={`/my-team?registerEventId=${event.id}`} className="btn-primary">Join Hackathon</Link>}
-                        {ended && <Link to={`/events/${event.id}/results`} className="btn-primary">View Results</Link>}
-                        <div className="text-xs text-slate-500">
-                            <strong>Who can register?</strong> Students register in teams of 2 to 5 members.
-                        </div>
+                ) : activeTab === 'participants' ? (
+                    <div className="flex-1 min-w-0 animate-none">
+                        <ParticipantsPool eventId={event.id} />
                     </div>
-
-                    {/* Event Description */}
-                    <div className="prose max-w-none text-slate-600 text-sm sm:text-base leading-relaxed mb-12">
-                        <p>{event.description || 'Welcome to this season\'s hackathon challenge! Team up, build prototypes, and turn your tech ideas into reality.'}</p>
+                ) : activeTab === 'all-teams' ? (
+                    <div className="flex-1 min-w-0 animate-none">
+                        <AllTeamsPool 
+                            eventId={event.id} 
+                            onTeamJoined={(joined) => {
+                                setHasTeam(joined);
+                            }}
+                        />
                     </div>
-
-                    {/* Competition Rules */}
-                    <section className="mt-8">
-                        <SectionTitle>Requirements & Rules</SectionTitle>
-                        {rules ? (
-                            <div className="text-sm sm:text-base text-slate-600 leading-relaxed whitespace-pre-line">{rules}</div>
-                        ) : (
-                            <p className="text-xs text-slate-400">Rules document is being finalized by the organizing committee.</p>
-                        )}
-                        {event.ruleDocumentUrl && (
-                            <a 
-                                className="inline-block mt-4 text-xs font-bold text-[#2c4e66] hover:underline" 
-                                href={event.ruleDocumentUrl} 
-                                target="_blank" 
-                                rel="noreferrer"
-                            >
-                                Download Full Rule Book ↗
-                            </a>
-                        )}
-                    </section>
-
-                    {/* Event Tracks */}
-                    <section className="mt-8">
-                        <SectionTitle>Tracks</SectionTitle>
-                        {tracks.length ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {tracks.map((track) => (
-                                    <div key={track.id} className="border border-slate-200 p-5 rounded-none hover:border-slate-400 transition-colors">
-                                        <h3 className="text-sm font-black text-slate-900 mb-2">{track.name}</h3>
-                                        <p className="text-xs text-slate-500 leading-relaxed">{track.description || 'Details regarding this track statement will be announced shortly.'}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-xs text-slate-400">Tracks have not been configured for this event yet.</p>
-                        )}
-                    </section>
-
-                    {/* Event Prizes */}
-                    <section className="mt-8">
-                        <SectionTitle>Prizes</SectionTitle>
-                        {prizes.length ? (
-                            <div className="space-y-4">
-                                {prizes.map((prize) => (
-                                    <div key={prize.id} className="flex gap-4 border border-slate-200 p-5 rounded-none">
-                                        <span className="text-2xl text-amber-500 leading-none">★</span>
-                                        <div>
-                                            <h3 className="text-sm font-black text-slate-900">{prize.name}</h3>
-                                            <p className="text-xs text-slate-500 mt-1 leading-relaxed">{prize.description || 'Cash prizes, scholarships, and academic recognition.'}</p>
-                                            {prize.teamName && (
-                                                <small className="inline-block mt-2 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-black uppercase rounded">
-                                                    Winner: {prize.teamName}
-                                                </small>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-xs text-slate-400">Prize structure will be announced by organizers.</p>
-                        )}
-                    </section>
-
-                    {/* Scoring Criteria */}
-                    <section className="mt-8">
-                        <SectionTitle>Scoring Rubric</SectionTitle>
-                        {criteria.length ? (
-                            <div className="space-y-4">
-                                {criteria.map((criterion) => (
-                                    <div key={criterion.id || criterion.label} className="border border-slate-200 p-5 rounded-none">
-                                        <div className="flex justify-between items-baseline mb-2">
-                                            <h3 className="text-sm font-black text-slate-900">{criterion.label}</h3>
-                                            <span className="text-xs font-bold text-[#2c4e66]">
-                                                {criterion.weight ? `${criterion.weight}%` : `${criterion.maxScore || 100} pts`}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-slate-500 leading-relaxed">{criterion.description || 'Assessed by jury members.'}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-xs text-slate-400">Detailed rubric has not been released yet.</p>
-                        )}
-                    </section>
-                </div>
-
-                {/* Right Sidebar Info Panel */}
-                <aside className="w-full lg:w-[320px] shrink-0 space-y-6">
-                    <CountdownSection event={event} />
-                    <TimelineSection event={event} />
-                </aside>
+                ) : null}
 
             </div>
+
+            {/* Join Hackathon Path Decision Modal */}
+            {showJoinModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-slate-200">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-black text-[#0b1f3f]">Join Hackathon</h3>
+                            <button 
+                                onClick={() => setShowJoinModal(false)}
+                                className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p className="text-sm text-slate-500 mb-6 font-medium">
+                            Choose how you would like to participate in <strong>{event.name}</strong>:
+                        </p>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Card 1: Create Team */}
+                            <button
+                                onClick={handleCreateTeamPath}
+                                className="text-left p-5 rounded-xl border border-slate-200 hover:border-[#0f63c9] hover:shadow-[0_8px_20px_rgba(15,99,201,0.1)] transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer bg-white"
+                            >
+                                <div>
+                                    <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-xl mb-3">
+                                        🛡️
+                                    </div>
+                                    <h4 className="font-black text-slate-900 text-base">Create a Team</h4>
+                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                        Start a new team as a Leader, set up your track, and invite members.
+                                    </p>
+                                </div>
+                                <span className="text-xs font-bold text-[#0f63c9] mt-3 inline-flex items-center gap-1">
+                                    Create now →
+                                </span>
+                            </button>
+
+                            {/* Card 2: Looking for a Team */}
+                            <button
+                                onClick={handleLookingPath}
+                                className="text-left p-5 rounded-xl border border-slate-200 hover:border-amber-500 hover:shadow-[0_8px_20px_rgba(245,158,11,0.1)] transition-all duration-300 flex flex-col justify-between h-48 cursor-pointer bg-white"
+                            >
+                                <div>
+                                    <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-xl mb-3">
+                                        🔍
+                                    </div>
+                                    <h4 className="font-black text-slate-900 text-base">Looking for Team</h4>
+                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                                        Join the participant pool so other teams and leaders can find and invite you.
+                                    </p>
+                                </div>
+                                <span className="text-xs font-bold text-amber-600 mt-3 inline-flex items-center gap-1">
+                                    Join pool →
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }
