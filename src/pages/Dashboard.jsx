@@ -5,11 +5,11 @@ import Toast from '../components/Toast';
 import AdminOverview from './AdminOverview';
 
 const roleCopy = {
-    ADMIN: 'Quản trị hệ thống',
-    COORDINATOR: 'Điều phối sự kiện',
-    STAFF: 'Nhân sự cuộc thi',
-    JUDGE: 'Giám khảo',
-    MENTOR: 'Mentor hướng dẫn đội thi',
+    ADMIN: 'System Administrator',
+    COORDINATOR: 'Event Coordinator',
+    STAFF: 'Event Staff',
+    JUDGE: 'Judge',
+    MENTOR: 'Team Mentor',
 };
 
 function OperationalDashboard() {
@@ -75,9 +75,9 @@ function OperationalDashboard() {
     const maxTeams = Math.max(...chartEvents.map(e => e.teamCount || 0), 5);
 
     const cards = [
-        { label: 'Sự kiện đang hoạt động', value: stats.activeEvents, helper: 'Event đang mở hoặc đang diễn ra', to: '/dashboard/events', color: 'border-l-4 border-l-[var(--shield-blue)]' },
-        { label: 'Đội thi đăng ký', value: stats.totalTeams, helper: 'Tổng số đội đã đăng ký thi', to: '/dashboard/teams', color: 'border-l-4 border-l-[var(--shield-green)]' },
-        { label: 'Bài nộp chờ chấm', value: stats.pendingSubmissions, helper: 'Submission chưa có điểm số', to: '/dashboard/submissions', color: 'border-l-4 border-l-amber-500' },
+        { label: 'Active Events', value: stats.activeEvents, helper: 'Currently open or ongoing events', to: '/dashboard/events', color: 'border-l-4 border-l-[var(--shield-blue)]' },
+        { label: 'Registered Teams', value: stats.totalTeams, helper: 'Total team rosters in system', to: '/dashboard/teams', color: 'border-l-4 border-l-[var(--shield-green)]' },
+        { label: 'Pending Submissions', value: stats.pendingSubmissions, helper: 'Submissions awaiting score', to: '/dashboard/submissions', color: 'border-l-4 border-l-amber-500' },
     ];
 
     return (
@@ -86,13 +86,13 @@ function OperationalDashboard() {
             <section className="rounded-xl border border-[#d7e6f8] bg-[#f8fafc]/80 px-6 py-4 sm:px-7 sm:py-5 text-slate-800 shadow-xs">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0f63c9]">Hệ thống quản lý SEAL</p>
-                        <h2 className="mt-1 text-xl sm:text-2xl font-black text-[#071936]">Bảng điều khiển</h2>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0f63c9]">SEAL Management System</p>
+                        <h2 className="mt-1 text-xl sm:text-2xl font-black text-[#071936]">Operational Dashboard</h2>
                         <p className="mt-1 text-xs sm:text-sm text-[#5c6d83]">
-                            Chào mừng quay trở lại! Bạn đang làm việc với vai trò <span className="font-extrabold text-[#0f63c9]">{roleCopy[role] || role || 'Khách'}</span>.
+                            Welcome back! You are operating as <span className="font-extrabold text-[#0f63c9]">{roleCopy[role] || role || 'Guest'}</span>.
                         </p>
                     </div>
-                    <button type="button" onClick={fetchDashboardStats} disabled={loading} title="Làm mới dữ liệu" className="btn-secondary h-8 w-8 p-0 inline-flex items-center justify-center text-xs font-bold bg-white text-slate-700 border-slate-200 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer">
+                    <button type="button" onClick={fetchDashboardStats} disabled={loading} title="Refresh data" className="btn-secondary h-8 w-8 p-0 inline-flex items-center justify-center text-xs font-bold bg-white text-slate-700 border-slate-200 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer">
                         {loading ? <span className="animate-spin">↻</span> : '↻'}
                     </button>
                 </div>
@@ -117,7 +117,7 @@ function OperationalDashboard() {
                         </div>
                         <div className="mt-5 border-t border-dashed border-[var(--shield-line)] pt-3 flex items-center justify-between">
                             <span className="text-xs font-bold text-[var(--shield-blue)] group-hover:underline flex items-center gap-1">
-                                Quản lý chi tiết 
+                                Manage Details 
                             </span>
                             <span className="text-[var(--shield-blue)] transform group-hover:translate-x-1 transition-transform">&rarr;</span>
                         </div>
@@ -130,8 +130,8 @@ function OperationalDashboard() {
                 {/* Chart 1: Grading Circular Gauge */}
                 <div className="rounded-xl border border-[var(--shield-line)] bg-white p-6 shadow-sm flex flex-col justify-between">
                     <div>
-                        <h2 className="text-base font-black text-[var(--shield-ink)]">Tiến độ chấm điểm bài nộp</h2>
-                        <p className="text-xs text-[var(--shield-copy)] mt-1">Tỷ lệ bài nộp đã được chấm điểm trên tổng số bài</p>
+                        <h2 className="text-base font-black text-[var(--shield-ink)]">Submissions Grading Progress</h2>
+                        <p className="text-xs text-[var(--shield-copy)] mt-1">Ratio of graded submissions relative to total entries</p>
                     </div>
 
                     <div className="my-6 flex flex-col items-center justify-center gap-6 sm:flex-row">
@@ -154,25 +154,25 @@ function OperationalDashboard() {
                             </svg>
                             <div className="absolute flex flex-col items-center justify-center text-center">
                                 <span className="text-2xl font-black text-[var(--shield-ink)]">{loading ? '...' : `${gradingPercentage}%`}</span>
-                                <span className="text-[9px] font-black uppercase text-[var(--shield-copy)] tracking-wider">Hoàn thành</span>
+                                <span className="text-[9px] font-black uppercase text-[var(--shield-copy)] tracking-wider">Completed</span>
                             </div>
                         </div>
 
                         {/* Chart stats info */}
                         <div className="flex-1 space-y-3">
                             <div className="flex items-center justify-between border-b border-[#edf3fa] pb-2">
-                                <span className="text-xs font-semibold text-[var(--shield-copy)]">Tổng số bài nộp</span>
+                                <span className="text-xs font-semibold text-[var(--shield-copy)]">Total Submissions</span>
                                 <span className="text-sm font-black text-[var(--shield-ink)]">{loading ? '...' : totalSubmissions}</span>
                             </div>
                             <div className="flex items-center justify-between border-b border-[#edf3fa] pb-2">
                                 <span className="text-xs font-semibold text-[var(--shield-copy)] flex items-center gap-1.5">
-                                    <span className="h-2 w-2 rounded-full bg-[var(--shield-blue)]"></span> Đã chấm điểm
+                                    <span className="h-2 w-2 rounded-full bg-[var(--shield-blue)]"></span> Graded
                                 </span>
                                 <span className="text-sm font-black text-[var(--shield-green)]">{loading ? '...' : gradedSubmissions}</span>
                             </div>
                             <div className="flex items-center justify-between border-b border-[#edf3fa] pb-2">
                                 <span className="text-xs font-semibold text-[var(--shield-copy)] flex items-center gap-1.5">
-                                    <span className="h-2 w-2 rounded-full bg-amber-500"></span> Chờ chấm
+                                    <span className="h-2 w-2 rounded-full bg-amber-500"></span> Pending
                                 </span>
                                 <span className="text-sm font-black text-amber-600">{loading ? '...' : pendingSubmissions}</span>
                             </div>
@@ -180,23 +180,23 @@ function OperationalDashboard() {
                     </div>
                     
                     <Link to="/dashboard/submissions" className="btn-secondary w-full text-center text-xs font-bold py-2.5">
-                        Xem danh sách bài nộp &rarr;
+                        View Submissions Registry &rarr;
                     </Link>
                 </div>
 
                 {/* Chart 2: Teams registered per event */}
                 <div className="rounded-xl border border-[var(--shield-line)] bg-white p-6 shadow-sm flex flex-col justify-between">
                     <div>
-                        <h2 className="text-base font-black text-[var(--shield-ink)]">Quy mô đội thi theo giải đấu</h2>
-                        <p className="text-xs text-[var(--shield-copy)] mt-1">Số lượng đội thi đăng ký tham gia các sự kiện gần đây</p>
+                        <h2 className="text-base font-black text-[var(--shield-ink)]">Teams Registered per Event</h2>
+                        <p className="text-xs text-[var(--shield-copy)] mt-1">Registered team rosters across recent hackathons</p>
                     </div>
 
                     {/* SVG Bar Chart */}
                     <div className="my-6 min-h-[140px] flex items-end gap-3 px-2 border-b border-l border-[#e2e8f0] pb-2 pt-4">
                         {loading ? (
-                            <div className="w-full text-center text-xs text-[var(--shield-copy)] py-12 animate-pulse">Đang tải biểu đồ...</div>
+                            <div className="w-full text-center text-xs text-[var(--shield-copy)] py-12 animate-pulse">Loading visualization...</div>
                         ) : chartEvents.length === 0 ? (
-                            <div className="w-full text-center text-xs text-[var(--shield-copy)] py-12">Chưa có dữ liệu giải đấu.</div>
+                            <div className="w-full text-center text-xs text-[var(--shield-copy)] py-12">No event metrics database found.</div>
                         ) : (
                             chartEvents.map((event) => {
                                 const heightPercent = Math.max(10, Math.round(((event.teamCount || 0) / maxTeams) * 100));
@@ -204,7 +204,7 @@ function OperationalDashboard() {
                                     <div key={event.id} className="flex-1 flex flex-col items-center group relative">
                                         {/* Tooltip on hover */}
                                         <div className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-150 bg-[var(--shield-ink)] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10 pointer-events-none">
-                                            {event.teamCount || 0} đội
+                                            {event.teamCount || 0} teams
                                         </div>
                                         <div 
                                             style={{ height: `${heightPercent}%`, minHeight: '12px' }} 
@@ -220,27 +220,27 @@ function OperationalDashboard() {
                     </div>
 
                     <Link to="/dashboard/events" className="btn-secondary w-full text-center text-xs font-bold py-2.5">
-                        Quản lý danh sách sự kiện &rarr;
+                        Manage Events Directory &rarr;
                     </Link>
                 </div>
             </section>
 
             {/* Quick Actions & Navigation Link section */}
             <section className="rounded-xl border border-[var(--shield-line)] bg-white p-6 shadow-sm">
-                <h2 className="text-base font-black text-[var(--shield-ink)]">Phím tắt thao tác nhanh</h2>
-                <p className="text-xs text-[var(--shield-copy)] mt-1">Truy cập nhanh các phân hệ chức năng dành cho Điều phối viên</p>
+                <h2 className="text-base font-black text-[var(--shield-ink)]">Quick Actions Panel</h2>
+                <p className="text-xs text-[var(--shield-copy)] mt-1">Fast-track pathways to event coordinator workspaces</p>
                 
                 <div className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                     <Link to="/dashboard/scoring-config" className="flex items-center justify-between rounded-xl bg-[var(--shield-blue-soft)] p-4 text-xs font-bold text-[var(--shield-blue)] hover:bg-blue-100 transition-all">
-                        <span>Cấu hình chấm điểm</span>
+                        <span>Scoring Config</span>
                         <span>&rarr;</span>
                     </Link>
                     <Link to="/dashboard/notifications" className="flex items-center justify-between rounded-xl bg-[var(--shield-blue-soft)] p-4 text-xs font-bold text-[var(--shield-blue)] hover:bg-blue-100 transition-all">
-                        <span>Gửi thông báo mới</span>
+                        <span>Broadcast Notification</span>
                         <span>&rarr;</span>
                     </Link>
                     <Link to="/dashboard/leaderboard" className="flex items-center justify-between rounded-xl bg-[var(--shield-blue-soft)] p-4 text-xs font-bold text-[var(--shield-blue)] hover:bg-blue-100 transition-all">
-                        <span>Xem bảng xếp hạng</span>
+                        <span>View Leaderboard</span>
                         <span>&rarr;</span>
                     </Link>
                 </div>

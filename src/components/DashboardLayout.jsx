@@ -5,24 +5,24 @@ import Sidebar from './Sidebar';
 const managerRoles = new Set(['ADMIN', 'COORDINATOR', 'STAFF', 'JUDGE', 'MENTOR']);
 
 const pageTitles = {
-    '/dashboard/users': 'Tài khoản & phân quyền',
-    '/dashboard/monitoring': 'Giám sát hệ thống',
-    '/dashboard/backups': 'Sao lưu & khôi phục',
-    '/dashboard/settings': 'Cấu hình hệ thống',
-    '/dashboard': 'Tổng quan',
-    '/dashboard/events': 'Quản lý sự kiện',
-    '/dashboard/scoring-config': 'Cấu hình chấm điểm',
-    '/dashboard/teams': 'Đội thi',
-    '/dashboard/submissions': 'Bài nộp',
-    '/dashboard/student-approval': 'Phê duyệt thí sinh',
-    '/dashboard/staff': 'Quản lý staff',
-    '/dashboard/grading': 'Chấm bài',
-    '/dashboard/scoring-stats': 'Thống kê điểm',
-    '/dashboard/leaderboard': 'Bảng xếp hạng',
-    '/dashboard/notifications': 'Thông báo',
-    '/dashboard/audit-logs': 'Audit điểm',
-    '/dashboard/chat': 'Trao đổi với đội',
-    '/dashboard/profile': 'Hồ sơ',
+    '/dashboard/users': 'Accounts & Permissions',
+    '/dashboard/monitoring': 'System Monitoring',
+    '/dashboard/backups': 'Backups & Restores',
+    '/dashboard/settings': 'System Settings',
+    '/dashboard': 'Overview',
+    '/dashboard/events': 'Event Management',
+    '/dashboard/scoring-config': 'Scoring Configuration',
+    '/dashboard/teams': 'Teams',
+    '/dashboard/submissions': 'Submissions',
+    '/dashboard/student-approval': 'Account Approvals',
+    '/dashboard/staff': 'Staff Management',
+    '/dashboard/grading': 'Grading',
+    '/dashboard/scoring-stats': 'Scoring Statistics',
+    '/dashboard/leaderboard': 'Leaderboard',
+    '/dashboard/notifications': 'Notifications',
+    '/dashboard/audit-logs': 'Scoring Audit',
+    '/dashboard/chat': 'Team Chat',
+    '/dashboard/profile': 'Profile',
 };
 
 export default function DashboardLayout() {
@@ -34,7 +34,7 @@ export default function DashboardLayout() {
     }
 
     const currentPageTitle = location.pathname === '/dashboard' && role === 'ADMIN'
-        ? 'Tổng quan hệ thống'
+        ? 'System Overview'
         : pageTitles[location.pathname] || 'Dashboard';
 
     return (
