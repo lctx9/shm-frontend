@@ -83,16 +83,16 @@ function OperationalDashboard() {
     return (
         <div className="mx-auto max-w-7xl space-y-6">
             {/* Compact Greeting Header */}
-            <section className="rounded-lg border border-[#0e5362] bg-gradient-to-r from-[#062f3b] to-[#104e5b] px-6 py-4 sm:px-7 sm:py-5 text-white shadow-sm">
+            <section className="rounded-xl border border-[#d7e6f8] bg-[#f8fafc]/80 px-6 py-4 sm:px-7 sm:py-5 text-slate-800 shadow-xs">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#70d0d6]">Hệ thống quản lý SEAL</p>
-                        <h1 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-white" style={{ color: '#ffffff' }}>Bảng điều khiển</h1>
-                        <p className="mt-1 text-xs sm:text-sm text-[#c7dce2]">
-                            Chào mừng quay trở lại! Bạn đang làm việc với vai trò <span className="font-extrabold text-[#70d0d6]">{roleCopy[role] || role || 'Khách'}</span>.
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0f63c9]">Hệ thống quản lý SEAL</p>
+                        <h2 className="mt-1 text-xl sm:text-2xl font-black text-[#071936]">Bảng điều khiển</h2>
+                        <p className="mt-1 text-xs sm:text-sm text-[#5c6d83]">
+                            Chào mừng quay trở lại! Bạn đang làm việc với vai trò <span className="font-extrabold text-[#0f63c9]">{roleCopy[role] || role || 'Khách'}</span>.
                         </p>
                     </div>
-                    <button type="button" onClick={fetchDashboardStats} disabled={loading} title="Làm mới dữ liệu" className="btn-secondary h-8 w-8 p-0 inline-flex items-center justify-center text-xs font-bold bg-white/10 text-white border-white/20 hover:bg-white/20 transition-all active:scale-95">
+                    <button type="button" onClick={fetchDashboardStats} disabled={loading} title="Làm mới dữ liệu" className="btn-secondary h-8 w-8 p-0 inline-flex items-center justify-center text-xs font-bold bg-white text-slate-700 border-slate-200 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer">
                         {loading ? <span className="animate-spin">↻</span> : '↻'}
                     </button>
                 </div>
@@ -255,6 +255,8 @@ function StaffDashboard() {
     const [loading, setLoading] = useState(true);
     const [pendingGradingCount, setPendingGradingCount] = useState(0);
     const [pendingChatCount, setPendingChatCount] = useState(0);
+    const [assignedTeams, setAssignedTeams] = useState([]);
+    const [assignedMatrices, setAssignedMatrices] = useState([]);
 
     useEffect(() => {
         let active = true;
@@ -280,17 +282,30 @@ function StaffDashboard() {
                             const subs = subRes.result || [];
                             const evts = eventRes.result || [];
                             const matrixMap = new Map();
+                            const judgeMatricesList = [];
+                            
                             evts.forEach((event) => 
-                                (event.matrices || []).forEach((matrix) => 
-                                    matrixMap.set(String(matrix.id), matrix)
-                                )
+                                (event.matrices || []).forEach((matrix) => {
+                                    matrixMap.set(String(matrix.id), matrix);
+                                    if ((matrix.judges || []).some(j => j.email === email)) {
+                                        judgeMatricesList.push({
+                                            id: matrix.id,
+                                            roundName: matrix.roundName,
+                                            trackName: matrix.trackName,
+                                            eventName: event.name,
+                                            eventId: event.id
+                                        });
+                                    }
+                                })
                             );
+                            
                             const visible = subs.filter((sub) => {
                                 const matrix = matrixMap.get(String(sub.matrixId));
                                 return (matrix?.judges || []).some((judge) => judge.email === email);
                             });
                             const count = visible.filter((sub) => !sub.graded).length;
                             setPendingGradingCount(count);
+                            setAssignedMatrices(judgeMatricesList);
                         }).catch(() => {})
                     );
                 }
@@ -311,6 +326,7 @@ function StaffDashboard() {
                                     .map((matrix) => String(matrix.trackId))
                             );
                             const myTeams = allTeams.filter((team) => trackIds.has(String(team.trackId)));
+                            setAssignedTeams(myTeams);
                             
                             const chatPromises = myTeams.map(team => 
                                 axiosClient.get(`/chat/teams/${team.id}`)
@@ -365,12 +381,12 @@ function StaffDashboard() {
     return (
         <div className="mx-auto max-w-7xl space-y-6">
             {/* Compact Greeting Header */}
-            <section className="rounded-lg border border-[#0e5362] bg-gradient-to-r from-[#062f3b] to-[#104e5b] px-6 py-4 sm:px-7 sm:py-5 text-white shadow-sm">
+            <section className="rounded-xl border border-[#d7e6f8] bg-[#f8fafc]/80 px-6 py-4 sm:px-7 sm:py-5 text-slate-800 shadow-xs">
                 <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#70d0d6]">Hệ thống SEAL Staff</p>
-                    <h1 className="mt-1 text-xl sm:text-2xl font-black tracking-tight text-white" style={{ color: '#ffffff' }}>Bảng điều khiển Staff</h1>
-                    <p className="mt-1 text-xs sm:text-sm text-[#c7dce2]">
-                        Chào mừng quay trở lại, <span className="font-extrabold text-[#70d0d6]">{email}</span>. Dưới đây là các phân hệ nhiệm vụ dành riêng cho bạn.
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0f63c9]">Hệ thống SEAL Staff</p>
+                    <h2 className="mt-1 text-xl sm:text-2xl font-black text-[#071936]">Bảng điều khiển Staff</h2>
+                    <p className="mt-1 text-xs sm:text-sm text-[#5c6d83]">
+                        Chào mừng quay trở lại, <span className="font-extrabold text-[#0f63c9]">{email}</span>. Dưới đây là các nhiệm vụ được phân công chi tiết của bạn.
                     </p>
                 </div>
             </section>
@@ -458,6 +474,73 @@ function StaffDashboard() {
                             <p className="text-xs text-amber-600 mt-2">
                                 Vui lòng liên hệ Ban tổ chức (Coordinator) để được phân công nhiệm vụ.
                             </p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Detailed Assignments Section */}
+            {!loading && (assignments.mentor || assignments.judge) && (
+                <div className="grid gap-6 md:grid-cols-2 mt-6">
+                    {/* Mentor assigned teams */}
+                    {assignments.mentor && (
+                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+                            <div>
+                                <h3 className="text-base font-black text-[#071936]">Đội thi đang phụ trách</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Danh sách các đội trong hạng mục bạn được phân công hỗ trợ.</p>
+                            </div>
+                            {assignedTeams.length > 0 ? (
+                                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                                    {assignedTeams.map((team) => (
+                                        <div key={team.id} className="rounded-xl border border-slate-100 bg-[#f8fafc] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:border-blue-200 transition-colors">
+                                            <div>
+                                                <p className="font-extrabold text-[#071936] text-sm">{team.name}</p>
+                                                <p className="text-xs text-slate-500 font-medium mt-0.5">Hạng mục: {team.trackName || 'Chung'}</p>
+                                                {team.skillsNeeded && (
+                                                    <div className="flex flex-wrap gap-1 mt-1.5">
+                                                        {team.skillsNeeded.split(',').slice(0, 3).map(s => (
+                                                            <span key={s} className="bg-amber-50 border border-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-black">{s.trim()}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <Link to={`/dashboard/chat?teamId=${team.id}`} className="btn-secondary py-1 px-3 text-[10px] font-black text-center cursor-pointer hover:scale-105 active:scale-95 transition-all">Chat</Link>
+                                                <Link to={`/events/${team.eventId}?tab=teams`} className="btn-primary py-1 px-3 text-[10px] font-black text-center bg-blue-600 border-blue-600 text-white cursor-pointer hover:scale-105 active:scale-95 transition-all">Xem đội</Link>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-400 italic">Chưa có đội thi nào thuộc hạng mục phân công của bạn.</p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Judge assigned rounds/matrices */}
+                    {assignments.judge && (
+                        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
+                            <div>
+                                <h3 className="text-base font-black text-[#071936]">Vòng thi đang chấm điểm</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Danh sách các vòng thi, hạng mục bạn được phân công làm giám khảo.</p>
+                            </div>
+                            {assignedMatrices.length > 0 ? (
+                                <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                                    {assignedMatrices.map((matrix) => (
+                                        <div key={matrix.id} className="rounded-xl border border-slate-100 bg-[#f8fafc] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:border-blue-200 transition-colors">
+                                            <div>
+                                                <p className="font-extrabold text-[#071936] text-sm">{matrix.eventName}</p>
+                                                <p className="text-xs text-slate-500 font-medium mt-0.5">Bảng: {matrix.trackName || 'Chung'} | Vòng: {matrix.roundName}</p>
+                                            </div>
+                                            <div>
+                                                <Link to={`/dashboard/grading?matrixId=${matrix.id}`} className="btn-primary py-1.5 px-3 text-[10px] font-black bg-blue-600 border-blue-600 text-white cursor-pointer hover:scale-105 active:scale-95 transition-all block text-center">Chấm điểm</Link>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-slate-400 italic">Bạn chưa được phân công làm giám khảo cho vòng thi nào.</p>
+                            )}
                         </div>
                     )}
                 </div>
