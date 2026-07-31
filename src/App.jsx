@@ -69,17 +69,17 @@ function App() {
                         <Route index element={<Dashboard />} />
                         <Route path="teams" element={<TeamExplorer />} />
                         <Route path="my-team" element={<Navigate to="/my-team" replace />} />
-                        <Route path="submissions" element={<SubmissionManagement />} />
-                        <Route path="events" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><EventManagement /></RoleRoute>} />
-                        <Route path="scoring-config" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><ScoringConfiguration /></RoleRoute>} />
+                        <Route path="submissions" element={<RoleRoute roles={['COORDINATOR']}><SubmissionManagement /></RoleRoute>} />
+                        <Route path="events" element={<RoleRoute roles={['COORDINATOR']}><EventManagement /></RoleRoute>} />
+                        <Route path="scoring-config" element={<RoleRoute roles={['COORDINATOR']}><ScoringConfiguration /></RoleRoute>} />
                         <Route path="users" element={<RoleRoute roles={['ADMIN']}><UserManagement /></RoleRoute>} />
                         <Route path="monitoring" element={<RoleRoute roles={['ADMIN']}><AdminMonitoring /></RoleRoute>} />
                         <Route path="backups" element={<RoleRoute roles={['ADMIN']}><BackupRestore /></RoleRoute>} />
                         <Route path="settings" element={<RoleRoute roles={['ADMIN']}><AdminSettings /></RoleRoute>} />
-                        <Route path="student-approval" element={<RoleRoute roles={['ADMIN']}><StudentApproval /></RoleRoute>} />
+                        <Route path="student-approval" element={<RoleRoute roles={['COORDINATOR']}><StudentApproval /></RoleRoute>} />
                         <Route path="staff" element={<RoleRoute roles={['ADMIN']}><StaffManagement /></RoleRoute>} />
                         <Route path="audit-logs" element={<RoleRoute roles={['COORDINATOR', 'ADMIN']}><AuditLogs /></RoleRoute>} />
-                        <Route path="grading" element={<RoleRoute roles={['JUDGE', 'STAFF', 'COORDINATOR', 'ADMIN']}><Grading /></RoleRoute>} />
+                        <Route path="grading" element={<RoleRoute roles={['JUDGE', 'STAFF', 'COORDINATOR']}><Grading /></RoleRoute>} />
                         <Route path="scoring-stats" element={<RoleRoute roles={['COORDINATOR', 'ADMIN', 'JUDGE']}><ScoringStats /></RoleRoute>} />
                         <Route path="leaderboard" element={<Leaderboard />} />
                         <Route path="notifications" element={<Notifications />} />
