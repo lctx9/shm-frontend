@@ -177,80 +177,117 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
         }
     }, [registeringEventId, events]);
 
-    useEffect(() => {
-        const fetchTeamDataForEvent = async () => {
-            if (!formData.eventId) return;
-            if (myTeams.length === 0) {
-                setTeam(null);
-                setMatrices([]);
-                setSubmission(null);
-                setJoinRequests([]);
-                if (onTeamChanged) onTeamChanged(false);
-                return;
-            }
-            const currentEventTeam = myTeams.find(t => String(t.eventId) === String(formData.eventId)) || null;
-            setTeam(currentEventTeam);
-            if (onTeamChanged) onTeamChanged(Boolean(currentEventTeam));
+    const fetchTeamDataForEvent = useCallback(async () => {
+        if (!formData.eventId) return;
+        if (myTeams.length === 0) {
+            setTeam(null);
+            setMatrices([]);
+            setSubmission(null);
+            setJoinRequests([]);
+            if (onTeamChanged) onTeamChanged(false);
+            return;
+        }
+        const currentEventTeam = myTeams.find(t => String(t.eventId) === String(formData.eventId)) || null;
+        setTeam(currentEventTeam);
+        if (onTeamChanged) onTeamChanged(Boolean(currentEventTeam));
 
-            if (currentEventTeam) {
-                try {
-                    const isLeaderRole = currentEventTeam?.members?.some((member) => member.email === currentEmail && member.role === 'LEADER');
-                    const [matrixRes, submissionRes, requestRes, sentInvRes] = await Promise.allSettled([
-                        axiosClient.get(`/events/${currentEventTeam.eventId}/matrices`),
-                        axiosClient.get('/submissions/my-submission'),
-                        isLeaderRole
-                            ? axiosClient.get(`/teams/${currentEventTeam.id}/join-requests`)
-                            : Promise.resolve({ result: [] }),
-                        isLeaderRole
-                            ? axiosClient.get(`/teams/${currentEventTeam.id}/sent-invitations`)
-                            : Promise.resolve({ result: [] }),
-                    ]);
-                    const teamMatrices = matrixRes.status === 'fulfilled'
-                        ? (matrixRes.value.result || []).filter((matrix) => matrix.trackId == null || String(matrix.trackId) === String(currentEventTeam.trackId))
-                        : [];
-                    setMatrices(teamMatrices);
-                    
-                    const loadedSubmissions = submissionRes.status === 'fulfilled' ? submissionRes.value.result || [] : [];
-                    // Key tất cả submissions theo matrixId để tìm kiếm O(1)
-                    const newSubmissionsMap = {};
-                    if (Array.isArray(loadedSubmissions)) {
-                        loadedSubmissions
-                            .filter(s => String(s.teamId) === String(currentEventTeam.id))
-                            .forEach(s => { newSubmissionsMap[String(s.matrixId)] = s; });
-                    }
-                    setSubmissionsMap(newSubmissionsMap);
+        if (currentEventTeam) {
+            try {
+                const isLeaderRole = currentEventTeam?.members?.some((member) => member.email === currentEmail && member.role === 'LEADER');
+                const [matrixRes, submissionRes, requestRes, sentInvRes] = await Promise.allSettled([
+                    axiosClient.get(`/events/${currentEventTeam.eventId}/matrices`),
+                    axiosClient.get('/submissions/my-submission'),
+                    isLeaderRole
+                        ? axiosClient.get(`/teams/${currentEventTeam.id}/join-requests`)
+                        : Promise.resolve({ result: [] }),
+                    isLeaderRole
+                        ? axiosClient.get(`/teams/${currentEventTeam.id}/sent-invitations`)
+                        : Promise.resolve({ result: [] }),
+                ]);
+                const teamMatrices = matrixRes.status === 'fulfilled'
+                    ? (matrixRes.value.result || []).filter((matrix) => matrix.trackId == null || String(matrix.trackId) === String(currentEventTeam.trackId))
+                    : [];
+                setMatrices(teamMatrices);
+                
+                const loadedSubmissions = submissionRes.status === 'fulfilled' ? submissionRes.value.result || [] : [];
+                // Key tất cả submissions theo matrixId để tìm kiếm O(1)
+                const newSubmissionsMap = {};
+                if (Array.isArray(loadedSubmissions)) {
+                    loadedSubmissions
+                        .filter(s => String(s.teamId) === String(currentEventTeam.id))
+                        .forEach(s => { newSubmissionsMap[String(s.matrixId)] = s; });
+                }
+                setSubmissionsMap(newSubmissionsMap);
 
-                    const firstMatrixId = Object.keys(newSubmissionsMap)[0] || teamMatrices[0]?.id || '';
+                setFormData(current => {
+                    const firstMatrixId = current.matrixId && teamMatrices.some(m => String(m.id) === String(current.matrixId))
+                        ? current.matrixId
+                        : (Object.keys(newSubmissionsMap)[0] || teamMatrices[0]?.id || '');
                     const roundSubmission = newSubmissionsMap[String(firstMatrixId)] || null;
                     setSubmission(roundSubmission);
-                    
-                    setJoinRequests(requestRes.status === 'fulfilled' ? requestRes.value.result || [] : []);
-                    setSentInvitations(sentInvRes.status === 'fulfilled' ? sentInvRes.value.result || [] : []);
-
-                    // Parse dữ liệu form từ submission của vòng đầu tiên (nếu có)
-                    let initialValues = {};
-                    if (roundSubmission?.submissionDataJson) {
-                        try { initialValues = JSON.parse(roundSubmission.submissionDataJson); } catch {}
-                    }
-                    setSubmissionValues(initialValues);
-
-                    setFormData((current) => ({
+                    return {
                         ...current,
-                        matrixId: firstMatrixId,
+                        matrixId: String(firstMatrixId),
                         fileUrl: roundSubmission?.fileUrl || '',
-                    }));
-                } catch (error) {
-                    console.error("Error fetching data for team", error);
-                }
-            } else {
-                setMatrices([]);
-                setSubmission(null);
-                setJoinRequests([]);
-            }
-        };
+                    };
+                });
+                
+                setJoinRequests(requestRes.status === 'fulfilled' ? requestRes.value.result || [] : []);
+                setSentInvitations(sentInvRes.status === 'fulfilled' ? sentInvRes.value.result || [] : []);
 
+            } catch (error) {
+                console.error("Error fetching data for team", error);
+            }
+        } else {
+            setMatrices([]);
+            setSubmission(null);
+            setJoinRequests([]);
+        }
+    }, [formData.eventId, myTeams, currentEmail, onTeamChanged]);
+
+    useEffect(() => {
         fetchTeamDataForEvent();
-    }, [formData.eventId, myTeams, currentEmail]);
+    }, [fetchTeamDataForEvent]);
+
+    // === REAL-TIME COUNTDOWN & AUTO-REFETCH FOR INTER-ROUND BREAK & DEADLINES ===
+    useEffect(() => {
+        const hasBreakOrActiveTimer = matrices.some(m => (m.breakRemainingSeconds && m.breakRemainingSeconds > 0) || m.breakEndTime);
+        if (!hasBreakOrActiveTimer) return;
+
+        const intervalId = setInterval(() => {
+            setMatrices(prevMatrices => {
+                let shouldRefetch = false;
+                const updated = prevMatrices.map(matrix => {
+                    let remaining = matrix.breakRemainingSeconds;
+                    if (matrix.breakEndTime) {
+                        const diffSec = Math.max(0, Math.floor((new Date(matrix.breakEndTime) - new Date()) / 1000));
+                        if (remaining > 0 && diffSec === 0) shouldRefetch = true;
+                        remaining = diffSec;
+                    } else if (remaining != null && remaining > 0) {
+                        remaining = remaining - 1;
+                        if (remaining === 0) shouldRefetch = true;
+                    }
+                    return { ...matrix, breakRemainingSeconds: remaining };
+                });
+
+                if (shouldRefetch) {
+                    fetchTeamDataForEvent();
+                }
+
+                return updated;
+            });
+        }, 1000);
+
+        // Polling định kỳ 5s để tự động bắt sự kiện khi Coordinator chuyển vòng/hết giờ giải lao
+        const pollId = setInterval(() => {
+            fetchTeamDataForEvent();
+        }, 5000);
+
+        return () => {
+            clearInterval(intervalId);
+            clearInterval(pollId);
+        };
+    }, [matrices, fetchTeamDataForEvent]);
 
     const activeOrUpcomingEvents = useMemo(() => {
         return events.filter((event) => {
@@ -287,6 +324,13 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
         if (!prevMatrix || !prevMatrix.submissionDeadline) return true;
         return new Date() >= new Date(prevMatrix.submissionDeadline);
     }, [selectedMatrix, matrices]);
+
+    const isInterRoundBreak = useMemo(() => {
+        if (!selectedMatrix) return false;
+        // Vòng 1 (roundOrder <= 1) không áp dụng thời gian nghỉ giữa các vòng
+        if (selectedMatrix.roundOrder <= 1) return false;
+        return Boolean(selectedMatrix.breakRemainingSeconds > 0);
+    }, [selectedMatrix]);
 
     // Parse submissionFormSchema của sự kiện hiện tại
     const submissionSchema = useMemo(() => {
@@ -979,7 +1023,7 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
                                                                 className="input-custom min-h-[80px] resize-y"
                                                                 placeholder={field.placeholder || ''}
                                                                 value={submissionValues[field.id] || ''}
-                                                                disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
+                                                                disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || isInterRoundBreak || !isSubmissionStarted || isSubmissionEnded}
                                                                 onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
                                                             />
                                                         ) : (
@@ -988,7 +1032,7 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
                                                                 className="input-custom"
                                                                 placeholder={field.type === 'url' ? 'https://' : (field.placeholder || '')}
                                                                 value={submissionValues[field.id] || ''}
-                                                                disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded}
+                                                                disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || isInterRoundBreak || !isSubmissionStarted || isSubmissionEnded}
                                                                 onChange={(e) => setSubmissionValues(prev => ({ ...prev, [field.id]: e.target.value }))}
                                                             />
                                                         )}
@@ -997,11 +1041,11 @@ export default function MyTeam({ eventId: propEventId, embedded = false, onTeamC
                                             </div>
                                         ) : (
                                             /* Fallback: old form — event has no schema */
-                                            <input required type="url" className="input-custom" placeholder="GitHub, Drive, or demo link" value={formData.fileUrl} disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
+                                            <input required type="url" className="input-custom" placeholder="GitHub, Drive, or demo link" value={formData.fileUrl} disabled={team?.disqualificationStatus === 'APPROVED' || !isLeader || !isEventStarted || !isPreviousRoundEnded || isInterRoundBreak || !isSubmissionStarted || isSubmissionEnded} onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })} />
                                         )}
 
-                                         <button type="submit" disabled={team?.disqualificationStatus === 'APPROVED' || savingSubmission || !isLeader || !isEventStarted || !isPreviousRoundEnded || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
-                                            {team?.disqualificationStatus === 'APPROVED' ? 'Disqualified' : !isLeader ? 'Only Team Leader can edit or upload submissions' : savingSubmission ? 'Saving...' : !isEventStarted ? 'Event not started' : !isPreviousRoundEnded ? 'Previous round active' : !isSubmissionStarted ? 'Gate not open' : isSubmissionEnded ? 'Overdue' : submission ? 'Update Submission' : 'Submit'}
+                                         <button type="submit" disabled={team?.disqualificationStatus === 'APPROVED' || savingSubmission || !isLeader || !isEventStarted || !isPreviousRoundEnded || isInterRoundBreak || !isSubmissionStarted || isSubmissionEnded} className="btn-primary w-full">
+                                            {team?.disqualificationStatus === 'APPROVED' ? 'Disqualified' : !isLeader ? 'Only Team Leader can edit or upload submissions' : savingSubmission ? 'Saving...' : !isEventStarted ? 'Event not started' : !isPreviousRoundEnded ? 'Previous round active' : isInterRoundBreak ? 'Inter-round Break (Waiting...)' : !isSubmissionStarted ? 'Gate not open' : isSubmissionEnded ? 'Overdue' : submission ? 'Update Submission' : 'Submit'}
                                         </button>
                                         {submitError && <p className="mt-2 text-sm font-semibold text-red-600">{submitError}</p>}
                                         {submitSuccess && <p className="mt-2 text-sm font-semibold text-green-600">{submitSuccess}</p>}

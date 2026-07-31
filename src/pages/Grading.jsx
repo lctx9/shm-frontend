@@ -283,7 +283,24 @@ export default function Grading() {
     useEffect(() => {
         fetchData();
         const pollId = window.setInterval(() => fetchDataQuiet(), 4000);
-        return () => window.clearInterval(pollId);
+        const secondTimer = window.setInterval(() => {
+            setEvents((prevEvents) =>
+                prevEvents.map((event) => ({
+                    ...event,
+                    matrices: (event.matrices || []).map((matrix) => {
+                        if (matrix.gradingRemainingSeconds != null && matrix.gradingRemainingSeconds > 0) {
+                            return { ...matrix, gradingRemainingSeconds: matrix.gradingRemainingSeconds - 1 };
+                        }
+                        return matrix;
+                    }),
+                }))
+            );
+        }, 1000);
+
+        return () => {
+            window.clearInterval(pollId);
+            window.clearInterval(secondTimer);
+        };
     }, []);
 
     const handleSelect = (submission) => {
