@@ -1,3 +1,4 @@
+🔗 **Backend Repository:** https://github.com/lctx9/shm-backend
 # SEAL Hackathon Management System - Frontend
 
 Welcome to the frontend application for the **SEAL Hackathon Management System** (`shm-frontend`). This web application powers the entire hackathon experience for students, team leaders, mentors, judges, coordinators, and system administrators.
